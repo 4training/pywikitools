@@ -21,13 +21,20 @@ Command line options:
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
     --rewrite-all: Rewrite all language information pages
 
+Logging:
+    If configured in config.ini (see config.example.ini), output will be logged to three different files
+    in three different verbosity levels (WARNING, INFO, DEBUG)
+
 Examples:
 
-Have lots of debugging output
-    python3 pwb.py resourcesbot.py -l debug
+Script runs completely but doesn't make any changes on the server (best for understanding what the script does)
+    python3 pwb.py -simulate resourcesbot.py -l info
 
-Only update German language information page
-    python3 pwb.py resourcesbot.py --lang de
+Normal run (updating language information pages where necessary)
+    python3 pwb.py resourcesbot.py
+
+Only update German language information page with lots of debugging output
+    python3 pwb.py resourcesbot.py --lang de -l debug
 """
 
 import os
@@ -439,11 +446,17 @@ def set_loglevel(loglevel_arg):
     log_path = config.get('Paths', 'logs', fallback='')
     if log_path == '':
         logger.warning('No log directory specified in configuration. Using current working directory')
+    # Logging output to files with different verbosity
     if config.has_option("resourcesbot", "logfile"):
         fh = logging.FileHandler(log_path + config['resourcesbot']['logfile'])
         fh.setLevel(logging.WARNING)
         fh.setFormatter(fformatter)
         root.addHandler(fh)
+    if config.has_option("resourcesbot", "infologfile"):
+        fh_info = logging.FileHandler(log_path + config['resourcesbot']['infologfile'])
+        fh_info.setLevel(logging.INFO)
+        fh_info.setFormatter(fformatter)
+        root.addHandler(fh_info)
     if config.has_option("resourcesbot", "debuglogfile"):
         fh_debug = logging.FileHandler(log_path + config['resourcesbot']['debuglogfile'])
         fh_debug.setLevel(logging.DEBUG)
