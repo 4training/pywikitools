@@ -178,15 +178,19 @@ def process_page(page: str):
 
     global_result['en'][page] = file_details
 
-    if global_only_lang is None:
-        # Standard: look up all existing translations of this worksheet
-        available_translations = fortraininglib.list_page_translations(page)
-        logger.info(F"This worksheet is translated into: {str(available_translations)}")
-        if 'en' in available_translations:
-            available_translations.remove('en')
-    else:
-        # We only look at this one language
-        available_translations = [global_only_lang]
+    # Look up all existing translations of this worksheet
+    available_translations = fortraininglib.list_page_translations(page)
+    if global_only_lang is not None:
+        # We could speed this up a bit by finding a different API call that isn't checking all translations
+        # but only looks at the translation progress for this language. For now it's okay
+        if global_only_lang in available_translations:
+            available_translations = [global_only_lang]
+        else:
+            available_translations = []
+    if 'en' in available_translations:
+        available_translations.remove('en')
+    logger.info(F"This worksheet is translated into: {str(available_translations)}")
+
     # now let's retrieve the translated file names
     for lang in available_translations:
         page_info: dict = {}
@@ -398,7 +402,7 @@ def process_language(lang: str):
         logger.info(F"List of available training resources in language {lang} needs to be re-written.")
         write_available_resources(lang)
     else:
-        logger.debug(F"List of available training resources in language {lang} doesn't need to be re-written.")
+        logger.info(F"List of available training resources in language {lang} doesn't need to be re-written.")
 
 def parse_arguments() -> dict:
     """
@@ -603,7 +607,7 @@ if __name__ == "__main__":
         rewrite_all = True
     if args['lang']:
         logger.info(F"Parameter lang is set, limiting processing to language {args['lang']}")
-        global_only_lang = args['lang']
+        global_only_lang = str(args['lang'])
 
     for page in fortraininglib.get_worksheet_list():
         process_page(page)
