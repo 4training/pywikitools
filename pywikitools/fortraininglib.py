@@ -165,15 +165,10 @@ def get_pdf_name(worksheet: str, languagecode: str):
             pdf = t["translation"]
     return pdf
 
-
-def list_page_translations(page: str) -> List[str]:
-    """ Returns a list of language codes of all the existing translations of the page
-    Unfinished translations will be ignored (TODO: make the details of this configurable by an optional parameter)
-
-    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
-    @return a list with language codes like ['en','de','ar','kn']
-            In case no other translation exists the result will be ['en']
-            In case of an error the list will be empty []
+def get_msggroupstats(page: str) -> str:
+    """ Returns messagegroupstats json from the given page.
+        In case of an error, returns empty string or None.
+        Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
     """
     counter = 1
     while counter < 4:
@@ -183,25 +178,42 @@ def list_page_translations(page: str) -> List[str]:
             'meta' : 'messagegroupstats',
             'format' : 'json',
             'mgsgroup': 'page-' + page})
-        logger.info(f"Retrieving translation information of {page}, try #{counter}. Response: {response.status_code}")
+        logger.info(F"Retrieving translation information of {page}, try #{counter}. Response: {response.status_code}")
         json = response.json()
 
         if not 'continue' in json:  # Now we have a complete response
             break
         counter += 1
     if ('continue' in json) or (counter == 4):
-        logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, still no result")
+        logger.warning(F"Error while trying to get all translations of {page} - tried 3 times, still no result")
     if not 'query' in json:
-        return []
+        return ""
     if not 'messagegroupstats' in json['query']:
+        return ""
+    else:
+        return json
+
+
+def list_page_translations(page: str):
+    """ Returns a list of language codes of all the existing translations of the page
+    Unfinished translations will be ignored (TODO: make the details of this configurable by an optional parameter)
+
+    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+    @return None in case of an error, otherwise a list like ['en','de','ar','kn'] .
+            In case no other translation exists the result will be ['en']
+    """
+    json = get_msggroupstats(page)
+    if json == "":
         return []
+
     available_translations = []     # list of language codes of the available translations
     for line in json['query']['messagegroupstats']:
         if line['translated'] > 0:
             # This looks like an unfinished translation, we just ignore it
             if (line['total'] - line['fuzzy'] - line['translated']) > 4:
-                logger.info(f"Ignoring translation {page}/{line['language']} ({line['translated']}+{line['fuzzy']}"
-                            f"/{line['total']} translation units translated)")
+                logger.info("Ignoring translation " + page + '/' + str(line['language']) + ' ('
+                      + str(line['translated']) + '+' + str(line['fuzzy'])
+                      + '/' + str(line['total']) + ' translation units translated)')
                 continue
             available_translations.append(line['language'])
             if ((line['translated'] + line ['fuzzy']) < line['total']):

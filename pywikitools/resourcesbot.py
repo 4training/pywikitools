@@ -21,25 +21,19 @@ Command line options:
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
     --rewrite-all: Rewrite all language information pages
 
-Logging:
-    If configured in config.ini (see config.example.ini), output will be logged to three different files
-    in three different verbosity levels (WARNING, INFO, DEBUG)
-
 Examples:
 
-Script runs completely but doesn't make any changes on the server (best for understanding what the script does)
-    python3 pwb.py -simulate resourcesbot.py -l info
+Have lots of debugging output
+    python3 pwb.py resourcesbot.py -l debug
 
-Normal run (updating language information pages where necessary)
-    python3 pwb.py resourcesbot.py
-
-Only update German language information page with lots of debugging output
-    python3 pwb.py resourcesbot.py --lang de -l debug
+Only update German language information page
+    python3 pwb.py resourcesbot.py --lang de
 """
 
 import os
 import re
 import sys
+from pprint import pprint
 import logging
 import json
 import urllib
@@ -48,7 +42,15 @@ import configparser
 from typing import Optional
 import pywikibot
 from pywikibot.data.api import Request
+import pathlib
+
+from pywikibot.tools import empty_iterator
 import fortraininglib
+
+#absolute path of directory
+REPOSITORY_LOC = pathlib.Path(__file__).parent.parent.absolute()
+#absolute path of log directory
+LOG_FOLDER_LOC = os.path.join(REPOSITORY_LOC, "logs")
 
 # Set variables that are globally needed
 global_site = pywikibot.Site()
@@ -147,7 +149,6 @@ def process_page(page: str):
     if not p.exists():
         logger.warning(F'Warning: page {page} does not exist!')
         return
-
     # finding out the name of the English downloadable files (originals)
     file_details = {}
     for file_type in global_file_types:
@@ -170,19 +171,15 @@ def process_page(page: str):
 
     global_result['en'][page] = file_details
 
-    # Look up all existing translations of this worksheet
-    available_translations = fortraininglib.list_page_translations(page)
-    if global_only_lang is not None:
-        # We could speed this up a bit by finding a different API call that isn't checking all translations
-        # but only looks at the translation progress for this language. For now it's okay
-        if global_only_lang in available_translations:
-            available_translations = [global_only_lang]
-        else:
-            available_translations = []
-    if 'en' in available_translations:
-        available_translations.remove('en')
-    logger.info(F"This worksheet is translated into: {str(available_translations)}")
-
+    if global_only_lang is None:
+        # Standard: look up all existing translations of this worksheet
+        available_translations = fortraininglib.list_page_translations(page)
+        logger.info(F"This worksheet is translated into: {str(available_translations)}")
+        if 'en' in available_translations:
+            available_translations.remove('en')
+    else:
+        # We only look at this one language
+        available_translations = [global_only_lang]
     # now let's retrieve the translated file names
     for lang in available_translations:
         page_info: dict = {}
@@ -394,7 +391,7 @@ def process_language(lang: str):
         logger.info(F"List of available training resources in language {lang} needs to be re-written.")
         write_available_resources(lang)
     else:
-        logger.info(F"List of available training resources in language {lang} doesn't need to be re-written.")
+        logger.debug(F"List of available training resources in language {lang} doesn't need to be re-written.")
 
 def parse_arguments() -> dict:
     """
@@ -442,22 +439,148 @@ def set_loglevel(loglevel_arg):
     log_path = config.get('Paths', 'logs', fallback='')
     if log_path == '':
         logger.warning('No log directory specified in configuration. Using current working directory')
-    # Logging output to files with different verbosity
     if config.has_option("resourcesbot", "logfile"):
         fh = logging.FileHandler(log_path + config['resourcesbot']['logfile'])
         fh.setLevel(logging.WARNING)
         fh.setFormatter(fformatter)
         root.addHandler(fh)
-    if config.has_option("resourcesbot", "infologfile"):
-        fh_info = logging.FileHandler(log_path + config['resourcesbot']['infologfile'])
-        fh_info.setLevel(logging.INFO)
-        fh_info.setFormatter(fformatter)
-        root.addHandler(fh_info)
     if config.has_option("resourcesbot", "debuglogfile"):
         fh_debug = logging.FileHandler(log_path + config['resourcesbot']['debuglogfile'])
         fh_debug.setLevel(logging.DEBUG)
         fh_debug.setFormatter(fformatter)
         root.addHandler(fh_debug)
+
+msggroupstats = {}
+
+def get_all_msggroupstats():
+    """
+    example: msggroupstats["Church"] = [{
+                "total": 44,
+                "translated": 0,
+                "fuzzy": 0,
+                "proofread": 0,
+                "code": "af",
+                "language": "af"
+            }, ..., {
+                "total": 44,
+                "translated": 44,
+                "fuzzy": 0,
+                "proofread": 0,
+                "code": "en",
+                "language": "en"
+            }, ...]
+    """
+    global msggroupstats
+    for worksheet in fortraininglib.get_worksheet_list():
+        temp = fortraininglib.get_msggroupstats(worksheet)
+        if temp != "":
+            msggroupstats[worksheet] = temp["query"]["messagegroupstats"]
+
+def create_summary(lang: str):
+    """
+    @param: lang (str): Language code for the language we want to get a summary
+    """
+    incomplete_translations = []
+    if not msggroupstats:
+        get_all_msggroupstats()
+    pdfcounter = 0
+    lang_result = global_result[lang]
+    translated_worksheets = []
+    incomplete_translations_reports = []
+    #iterate through all worksheets to retrieve information about the translation status
+    for worksheet in lang_result:
+        allstats = msggroupstats[worksheet]
+        for language_info in allstats:
+            if language_info["code"] == lang:
+                if language_info["translated"] < language_info["total"]:
+                    incomplete_translations.append(worksheet)
+                    n_trans = language_info["translated"]
+                    n_fuzzy = language_info["fuzzy"]
+                    n_total = language_info["total"]
+                    #report translation status, 
+                    # e.g. The_Three-Thirds_Process: 13+1/14 
+                    # is short for 13 translated units and one fuzzy translation unit out of 14 total translation units
+                    incomplete_translations_reports.append(f"{worksheet}: {n_trans}+{n_fuzzy}/{n_total}")
+        worksheet_dict = lang_result[worksheet]
+        #check if there exists a pdf
+        try:
+            temp = worksheet_dict["pdf"]
+            pdfcounter += 1
+            translated_worksheets.append(worksheet)
+        except: 
+            pass
+    #create the summary string
+    missing_pdf_report = ""
+    total_worksheets = fortraininglib.get_worksheet_list()
+    if len(translated_worksheets) < len(total_worksheets):
+        missing_pdf_report = "PDF missing:"
+        missing_pdfs = [worksheet for worksheet in total_worksheets if worksheet not in translated_worksheets]
+        for worksheet in missing_pdfs:
+            missing_pdf_report += "\n " + worksheet
+    else:
+        missing_pdf_report = "No missing PDFs"
+    incomplete_translations_report = ""
+    if len(incomplete_translations) > 0:
+        incomplete_translations_report = "Incomplete translations:"
+        for line in incomplete_translations_reports:
+            incomplete_translations_report += "\n " + line
+    else:
+        incomplete_translations_report = "All translations are complete"
+    language = fortraininglib.get_language_name(lang, "en")
+    retstring = F"""Report for: {language} ({lang})
+--------------------------------
+{len(translated_worksheets)} worksheets translated and with worksheets. See https://www.4training.net/{language}\n
+""" +  incomplete_translations_report +  "\n" + missing_pdf_report
+    #write summary into log file in the directory logs/languagereports
+    log_languagereport(lang + ".txt", retstring)
+    return retstring, translated_worksheets, incomplete_translations
+
+def log_languagereport(filename: str, text: str):
+    """
+    @param: filename (str): Name of the log file
+    @param: text (str): Text to write into the log file
+    @return: -
+    """
+    dirname = os.path.join(LOG_FOLDER_LOC, "languagereports")
+    os.makedirs(dirname, exist_ok=True)
+    with open(os.path.join(dirname, filename), "w") as f:
+        f.write(text)
+
+def total_summary():
+    """
+    @param: -
+    @return: restring (str): summary, e.g.
+    Total report:
+    - Finished worksheet translations with PDF: 485
+    - Translation finished, PDF missing: 134
+    - Unfinished translations (ignored): 89
+    """
+    #create list with all language codes
+    langlist = global_result.keys()
+
+    everything_top_counter = 0
+    translated_without_pdf_counter = 0
+    incomplete_translation_counter = 0
+
+    for lang in langlist:
+        #translated worksheets: with pdf, but no completeness required
+        _, translated_worksheets, incomplete_translations = create_summary(lang) 
+        #incomplete_translations: some translation units are fuzzy or not translated
+        everything_top = [worksheet for worksheet in translated_worksheets if worksheet not in incomplete_translations]
+        #completely translated, but no pdf
+        translated_without_pdf = [worksheet for worksheet in global_result[lang] if worksheet not in incomplete_translations and worksheet not in translated_worksheets]
+        everything_top_counter += len(everything_top)
+        translated_without_pdf_counter += len(translated_without_pdf)
+        incomplete_translation_counter += len(incomplete_translations)
+    
+    retstring = f"""Total report:
+- Finished worksheet translations with PDF: {everything_top_counter}
+- Translation finished, PDF missing: {translated_without_pdf_counter}
+- Unfinished translations (ignored): {incomplete_translation_counter}"""
+
+    log_languagereport("summary.txt", retstring)
+
+    return retstring
 
 if __name__ == "__main__":
     args = parse_arguments()
@@ -467,7 +590,7 @@ if __name__ == "__main__":
         rewrite_all = True
     if args['lang']:
         logger.info(F"Parameter lang is set, limiting processing to language {args['lang']}")
-        global_only_lang = str(args['lang'])
+        global_only_lang = args['lang']
 
     for page in fortraininglib.get_worksheet_list():
         process_page(page)
@@ -475,3 +598,9 @@ if __name__ == "__main__":
     for lang in global_result:
         if lang != 'en':
             process_language(lang)
+    #with open("global_result.json", "w") as f:
+    #    f.write(json.dumps((global_result)))
+    #with open("global_result.json", "r") as f:
+    #    global_result = dict(json.load(f))
+    
+    total_summary()
