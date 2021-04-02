@@ -165,15 +165,10 @@ def get_pdf_name(worksheet: str, languagecode: str):
             pdf = t["translation"]
     return pdf
 
-
-def list_page_translations(page: str) -> List[str]:
-    """ Returns a list of language codes of all the existing translations of the page
-    Unfinished translations will be ignored (TODO: make the details of this configurable by an optional parameter)
-
-    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
-    @return a list with language codes like ['en','de','ar','kn']
-            In case no other translation exists the result will be ['en']
-            In case of an error the list will be empty []
+def get_msggroupstats(page: str) -> str:
+    """ Returns messagegroupstats json from the given page.
+        In case of an error, returns empty string or None.
+        Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
     """
     counter = 1
     while counter < 4:
@@ -192,9 +187,26 @@ def list_page_translations(page: str) -> List[str]:
     if ('continue' in json) or (counter == 4):
         logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, still no result")
     if not 'query' in json:
-        return []
+        return ""
     if not 'messagegroupstats' in json['query']:
+        return ""
+    else:
+        return json
+
+
+def list_page_translations(page: str) -> List[str]:
+    """ Returns a list of language codes of all the existing translations of the page
+    Unfinished translations will be ignored (TODO: make the details of this configurable by an optional parameter)
+
+    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+    @return a list with language codes like ['en','de','ar','kn']
+            In case no other translation exists the result will be ['en']
+            In case of an error the list will be empty []
+    """
+    json = get_msggroupstats(page)
+    if json == "":
         return []
+
     available_translations = []     # list of language codes of the available translations
     for line in json['query']['messagegroupstats']:
         if line['translated'] > 0:
