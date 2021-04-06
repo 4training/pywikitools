@@ -20,17 +20,19 @@ def get_worksheet_list() -> list:
     @param: -
     @return: worksheet_list (list): List of all worksheets.
     """
-    return ["God's_Story_(five_fingers)", "God's_Story_(first_and_last_sacrifice)",
-            "Baptism", "Prayer", "Forgiving_Step_by_Step", "Confessing_Sins_and_Repenting",
-            "Time_with_God", "Hearing_from_God", "Church", "Healing",
-            "My_Story_with_God", "Bible_Reading_Bookmark", "The_Three-Thirds_Process",
-            # "Bible_Reading_Bookmark_(Seven_Stories_full_of_Hope)",
-            # "Bible_Reading_Bookmark_(Starting_with_the_Creation)",
-            "Training_Meeting_Outline", "A_Daily_Prayer",
-            "Overcoming_Fear_and_Anger", "Getting_Rid_of_Colored_Lenses", "Family_and_our_Relationship_with_God",
-            "Overcoming_Negative_Inheritance",
-            "Forgiving_Step_by_Step:_Training_Notes", "Leading_Others_Through_Forgiveness",
-            "The_Role_of_a_Helper_in_Prayer", "Four_Kinds_of_Disciples"]
+    return [
+        "God's_Story_(five_fingers)", "God's_Story_(first_and_last_sacrifice)",
+        "Baptism", "Prayer", "Forgiving_Step_by_Step", "Confessing_Sins_and_Repenting",
+        "Time_with_God", "Hearing_from_God", "Church", "Healing",
+        "My_Story_with_God", "Bible_Reading_Hints",
+        "Bible_Reading_Hints_(Seven_Stories_full_of_Hope)",
+        "Bible_Reading_Hints_(Starting_with_the_Creation)",
+        "The_Three-Thirds_Process", "Training_Meeting_Outline", "A_Daily_Prayer",
+        "Overcoming_Fear_and_Anger", "Getting_Rid_of_Colored_Lenses", "Family_and_our_Relationship_with_God",
+        "Overcoming_Negative_Inheritance",
+        "Forgiving_Step_by_Step:_Training_Notes", "Leading_Others_Through_Forgiveness",
+        "The_Role_of_a_Helper_in_Prayer", "Leading_a_Prayer_Time",
+        "How_to_Continue_After_a_Prayer_Time", "Four_Kinds_of_Disciples"]
 
 def get_file_types() -> list:
     """
@@ -224,9 +226,9 @@ def list_page_translations(page: str) -> List[str]:
 
 def list_page_templates(page: str) -> List[str]:
     """ Returns list of templates that are transcluded by a given page
-    Strips potential language code at the end of a template used (e.g. returns 'Template:Italic' and not 'Template:Italic/en')
+    Strips potential language code at the end of a template (e.g. returns 'Template:Italic', not 'Template:Italic/en')
     See also https://translatewiki.net/w/api.php?action=help&modules=query%2Btemplates
-    Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&titles=Bible_Reading_Bookmark&prop=templates
+    Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&titles=Polish&prop=templates
     @return empty list in case of an error
     """
     response = requests.get(APIURL, params={
@@ -328,11 +330,11 @@ def get_cc0_notice(version: str, languagecode: str) -> str:
     """
     expanded = expand_template("{{CC0Notice/" + languagecode + "|" + version + "}}")
     if "mw-translate-fuzzy" in expanded:
-        logger.warning("Warning: Template:CC0Notice doesn't seem to be correctly translated into this language."
+        logger.warning("Warning: Template:CC0Notice doesn't seem to be correctly translated into this language. "
                        "Please check https://www.4training.net/Template:CC0Notice")
     if "Template:CC0Notice" in expanded:
-        logger.warning("Warning: Template:CC0Notice doesn't seem to be translated into this language."
-                       "Please translate https://www.4trai  ning.net/Template:CC0Notice")
+        logger.warning("Warning: Template:CC0Notice doesn't seem to be translated into this language. "
+                       "Please translate https://www.4training.net/Template:CC0Notice")
         return "TODO translate https://www.4training.net/Template:CC0Notice"
     return expanded
 

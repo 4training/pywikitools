@@ -61,6 +61,10 @@ LOG_FOLDER_LOC = os.path.join(REPOSITORY_LOC, "logs")
 
 # Set variables that are globally needed
 global_site = pywikibot.Site()
+# That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
+# "No user is logged in on site 4training:en" -> use this as a workaround and test with global_site.logged_in()
+global_site.login()
+
 # Result dictionary: contains information about existing translations and the downloadable file names if existing
 """
 dictionary with language codes
@@ -589,7 +593,7 @@ def total_summary():
         everything_top_counter += len(everything_top)
         translated_without_pdf_counter += len(translated_without_pdf)
         incomplete_translation_counter += len(incomplete_translations)
-    
+
     retstring = f"""Total report:
 - Finished worksheet translations with PDF: {everything_top_counter}
 - Translation finished, PDF missing: {translated_without_pdf_counter}
@@ -612,6 +616,12 @@ if __name__ == "__main__":
     for page in fortraininglib.get_worksheet_list():
         process_page(page)
 
+    if not global_site.logged_in():
+        logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
+        global_site.getuserinfo()
+        logger.warning(f"userinfo: {global_site.userinfo}")
+        sys.exit(2)
+
     for lang in global_result:
         if lang != 'en':
             process_language(lang)
@@ -619,5 +629,5 @@ if __name__ == "__main__":
     #    f.write(json.dumps((global_result)))
     #with open("global_result.json", "r") as f:
     #    global_result = dict(json.load(f))
-    
+
     total_summary()

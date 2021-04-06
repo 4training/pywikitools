@@ -110,6 +110,7 @@ class Lang:
 # See https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes column alpha-2
 LANG_LOCALE = {
         'de': Lang('de', 'DE'),
+        'az': Lang('az', 'AZ'),
         'en': Lang('en', 'US'),
         'fr': Lang('fr', 'FR'),
         'pt-br': Lang('pt', 'BR'),
@@ -118,6 +119,7 @@ LANG_LOCALE = {
         'ro': Lang('ro', 'RO'),
         'es': Lang('es', 'ES'),
         'it': Lang('it', 'IT'),
+        'ku': Lang('ku', 'TR'),
         'sv': Lang('sv', 'SE'),
         'sq': Lang('sq', 'AL'),
         'pl': Lang('pl', 'PL'),
