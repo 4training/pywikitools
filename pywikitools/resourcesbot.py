@@ -535,7 +535,7 @@ def create_summary(lang: str):
     total_worksheets = fortraininglib.get_worksheet_list()
     if len(translated_worksheets) < len(total_worksheets):
         missing_pdf_report = "PDF missing:"
-        missing_pdfs = [worksheet for worksheet in total_worksheets if worksheet not in translated_worksheets]
+        missing_pdfs = [worksheet for worksheet in lang_result if worksheet not in translated_worksheets]
         for worksheet in missing_pdfs:
             missing_pdf_report += "\n " + worksheet
     else:
@@ -629,5 +629,7 @@ if __name__ == "__main__":
     #    f.write(json.dumps((global_result)))
     #with open("global_result.json", "r") as f:
     #    global_result = dict(json.load(f))
-
-    total_summary()
+    if args['lang']:
+        create_summary(global_only_lang)
+    else:
+        total_summary()
