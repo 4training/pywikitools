@@ -37,27 +37,27 @@ for o, a in opts:
         sys.exit()
     else:
         logging.info("unhandled option")
-logging.debug("Worksheetname: " + worksheetname)
+logging.debug(f"Worksheetname: {worksheetname}")
 try:
     os.mkdir(worksheetname)
 except FileExistsError:
     pass
 
 translations = fortraininglib.list_page_translations(worksheetname)
-logging.info('Worksheet ' + worksheetname + ' is translated into ' + str(len(translations)) + ' languages: ' + str(translations))
-for language in translations:
+logging.info(f'Worksheet {worksheetname} is translated into {len(translations)} languages: {translations.keys()}')
+for language in translations.keys():
     pdf = fortraininglib.get_pdf_name(worksheetname, language)
     logging.debug("Language: " + language + ", filename: " + pdf)
     url = fortraininglib.get_file_url(pdf)
     if not url:
-        logging.warning('Language: ' + language + ', file: ' + pdf + " doesn't seem to exist, ignoring")
+        logging.warning(f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring")
         continue
-    file_request = requests.get(url, allow_redirects = True)
+    file_request = requests.get(url, allow_redirects=True)
     file_name = worksheetname + '/' + fortraininglib.get_language_name(language, 'en') + ' - ' + fortraininglib.get_language_name(language) + '.pdf'
     try:
         open(file_name, 'wb').write(file_request.content)
     except FileNotFoundError:
-        logging.warning('Language: ' + language + ', error while trying to open file ' + file_name + ', ignoring')
+        logging.warning(f"Language: {language}, error while trying to open file {file_name}, ignoring")
         pass
-    logging.info('We saved ' + file_name)
+    logging.info("We saved {file_name}")
 

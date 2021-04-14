@@ -6,12 +6,51 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 """
 import logging
 import re
-from typing import List, Optional
+from typing import List, Optional, Dict
 import requests
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
 logger = logging.getLogger('4training.lib')
+
+class TranslationProgress:
+    def __init__(self, translated, fuzzy, total, **kwargs):
+        """
+        The constructor can take a dictionary as returned when doing a translation progress query:
+        { "total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de" },
+        from https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+        """
+        self.translated = int(translated)
+        self.fuzzy = int(fuzzy)
+        self.total = int(total)
+
+    def is_unfinished(self) -> bool:
+        """
+        Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
+        Unfinished translations are not shown on language information pages
+        """
+        if (self.total - self.fuzzy - self.translated) > 4:
+            return True
+        return False
+
+    def is_incomplete(self) -> bool:
+        """
+        A translation is incomplete if it is not unfinished but still there is at least
+        one translation unit which is neither translated nor fuzzy
+        """
+        if self.is_unfinished():
+            return False
+        if self.translated + self.fuzzy < self.total:
+            return True
+        return False
+
+    def __str__(self) -> str:
+        """
+        Print the translation progress
+        e.g. "13+1/14" is short for 13 translated units and one outdated (fuzzy) translation unit,
+        out of 14 translation units total
+        """
+        return f"{self.translated}+{self.fuzzy}/{self.total}"
 
 def get_worksheet_list() -> list:
     """
@@ -167,10 +206,15 @@ def get_pdf_name(worksheet: str, languagecode: str):
             pdf = t["translation"]
     return pdf
 
-def get_msggroupstats(page: str) -> str:
-    """ Returns messagegroupstats json from the given page.
-        In case of an error, returns empty string or None.
-        Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
+    """ Returns all the existing translations of a page
+    @param include_unfinished whether unfinished translations should also be included
+
+    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+    @return a dictionary of language codes -> TranslationProgress objects
+            In case no other translation exists the result will be {'en': progress object}
+            In case of an error the map will be empty {}
+            if you're not interested in the unfinished translations, you're probably only interested in the keys
     """
     counter = 1
     while counter < 4:
@@ -188,39 +232,19 @@ def get_msggroupstats(page: str) -> str:
         counter += 1
     if ('continue' in json) or (counter == 4):
         logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, still no result")
+        return {}
     if not 'query' in json:
-        return ""
+        return {}
     if not 'messagegroupstats' in json['query']:
-        return ""
-    else:
-        return json
+        return {}
 
-
-def list_page_translations(page: str) -> List[str]:
-    """ Returns a list of language codes of all the existing translations of the page
-    Unfinished translations will be ignored (TODO: make the details of this configurable by an optional parameter)
-
-    Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
-    @return a list with language codes like ['en','de','ar','kn']
-            In case no other translation exists the result will be ['en']
-            In case of an error the list will be empty []
-    """
-    json = get_msggroupstats(page)
-    if json == "":
-        return []
-
-    available_translations = []     # list of language codes of the available translations
+    available_translations: Dict[str, TranslationProgress] = {}     # map of language codes to the translation progress
     for line in json['query']['messagegroupstats']:
         if line['translated'] > 0:
-            # This looks like an unfinished translation, we just ignore it
-            if (line['total'] - line['fuzzy'] - line['translated']) > 4:
-                logger.info(f"Ignoring translation {page}/{line['language']} ({line['translated']}+{line['fuzzy']}"
-                            f"/{line['total']} translation units translated)")
-                continue
-            available_translations.append(line['language'])
-            if ((line['translated'] + line ['fuzzy']) < line['total']):
-                logger.warning("Warning: incomplete translation " + str(line['translated']) + '+' + str(line['fuzzy'])
-                        + '/' + str(line['total']) + ' (' + page + '/' + line['language'] + ')')
+            # Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
+            progress = TranslationProgress(**line)
+            if not progress.is_unfinished() or include_unfinished:
+                available_translations[line['language']] = progress
 
     return available_translations
 

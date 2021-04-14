@@ -25,6 +25,10 @@ Logging:
     If configured in config.ini (see config.example.ini), output will be logged to three different files
     in three different verbosity levels (WARNING, INFO, DEBUG)
 
+Reports:
+    We write language reports into the folder specified in config.ini
+    (section Paths, variable languagereports)
+
 Examples:
 
 Script runs completely but doesn't make any changes on the server (best for understanding what the script does)
@@ -40,24 +44,18 @@ Only update German language information page with lots of debugging output
 import os
 import re
 import sys
-from pprint import pprint
 import logging
 import json
 import urllib
 import argparse # For CLI arguments
 import configparser
-from typing import Optional
+from typing import Optional, Dict
 import pywikibot
 from pywikibot.data.api import Request
-import pathlib
 
 from pywikibot.tools import empty_iterator
 import fortraininglib
-
-#absolute path of directory
-REPOSITORY_LOC = pathlib.Path(__file__).parent.parent.absolute()
-#absolute path of log directory
-LOG_FOLDER_LOC = os.path.join(REPOSITORY_LOC, "logs")
+from fortraininglib import TranslationProgress
 
 # Set variables that are globally needed
 global_site = pywikibot.Site()
@@ -106,6 +104,11 @@ global_result['en'] = {
 """
 global_result = {}
 global_result['en'] = {}
+
+# e.g. str(global_translation_progress["Prayer"]["de"]) == "59+0/59"
+global_translation_progress: Dict[str, Dict[str, TranslationProgress]] = {}
+
+global_config = configparser.ConfigParser()
 
 # read-only list of download file types
 global_file_types = fortraininglib.get_file_types()
@@ -183,20 +186,30 @@ def process_page(page: str):
     global_result['en'][page] = file_details
 
     # Look up all existing translations of this worksheet
-    available_translations = fortraininglib.list_page_translations(page)
+    available_translations = fortraininglib.list_page_translations(page, include_unfinished=True)
+    global_translation_progress[page] = available_translations
+    finished_translations = []
+    for language, progress in available_translations.items():
+        if progress.is_unfinished():
+            logger.info(f"Ignoring translation {page}/{language} - ({progress} translation units translated)")
+        else:
+            finished_translations.append(language)
+            if progress.is_incomplete():
+                logger.warning(f"Incomplete translation {page}/{language} - {progress}")
+
     if global_only_lang is not None:
         # We could speed this up a bit by finding a different API call that isn't checking all translations
         # but only looks at the translation progress for this language. For now it's okay
-        if global_only_lang in available_translations:
-            available_translations = [global_only_lang]
+        if global_only_lang in finished_translations:
+            finished_translations = [global_only_lang]
         else:
-            available_translations = []
-    if 'en' in available_translations:
-        available_translations.remove('en')
-    logger.info(F"This worksheet is translated into: {str(available_translations)}")
+            finished_translations = []
+    if 'en' in finished_translations:
+        finished_translations.remove('en')
+    logger.info(f"This worksheet is translated into: {str(finished_translations)}")
 
     # now let's retrieve the translated file names
-    for lang in available_translations:
+    for lang in finished_translations:
         page_info: dict = {}
         page_info['title'] = get_translated_unit(page, lang, "Page display title")
         if page_info['title'] is None:  # apparently this translation doesn't exist
@@ -332,13 +345,15 @@ def write_available_resources(lang: str):
     new_page_content = page.text[0:list_start] + content + page.text[list_end+1:]
     logger.debug(new_page_content)
     page.text = new_page_content
-    page.save("Updated list of available training resources")
+    page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
     logger.info(F"Updated language information page {language}.")
 
 
 def compare(old: dict, new: dict) -> bool:
     """
-    Compares data structures for a language: has there been changes / updates?
+    Compares data structures for a language: have there been relevant changes / updates?
+        As only worksheets with PDF are shown in the lists of available training resources,
+        only changes regarding PDF files are relevant
     @param old,new: dictionary of worksheets, each of them holds a dictionary with more parameters
         (see explanation of global_result)
     @return true if list with available training resources needs to be re-written
@@ -360,7 +375,8 @@ def compare(old: dict, new: dict) -> bool:
                 needs_rewrite = True
         else:
             logger.info(F"Comparison result: Added worksheet {worksheet}")
-            needs_rewrite = True
+            if 'pdf' in new[worksheet]:
+                needs_rewrite = True
     for worksheet in old:
         if worksheet not in new:
             logger.warning(F"Comparison inconsistency: Worksheet {worksheet} vanished.")
@@ -381,6 +397,7 @@ def process_language(lang: str):
         return
 
     rewrite_language = rewrite_all
+    rewrite_json = rewrite_all
     # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
     page = pywikibot.Page(global_site, F"4training:{lang}.json")
     if not page.exists():
@@ -388,25 +405,31 @@ def process_language(lang: str):
         logger.warning(f"{page.full_url()} doesn't seem to exist yet. Creating...")
         page.text = json.JSONEncoder().encode(global_result[lang])
         page.save("Created JSON data structure")
+        rewrite_json = False
         rewrite_language = True
     else:
         try:
             # compare and find out if new worksheets have been added
             saved_structure = json.JSONDecoder().decode(page.text)
             logger.debug(saved_structure)
-            if compare(saved_structure, global_result[lang]):
-                rewrite_language = True
+            if json.JSONEncoder().encode(global_result[lang]) != page.text:
+                rewrite_json = True
+                if compare(saved_structure, global_result[lang]):
+                    rewrite_language = True
         except json.JSONDecodeError as err:
-            logger.warning(F"Error while trying to read JSON data structure: {err}")
+            logger.warning(f"Error while trying to read JSON data structure: {err}")
+            rewrite_json = True
             rewrite_language = True
-    if rewrite_language:
+    if rewrite_json:
         # Write the updated JSON structure
         page.text = json.JSONEncoder().encode(global_result[lang])
-        page.save("Updated JSON data structure") # TODO write human-readable changes here in the save message
-        logger.info(F"List of available training resources in language {lang} needs to be re-written.")
+        page.save("Updated JSON data structure")
+        logger.info(f"Updated {lang}.json")
+    if rewrite_language:
+        logger.info(f"List of available training resources in language {lang} needs to be re-written.")
         write_available_resources(lang)
     else:
-        logger.info(F"List of available training resources in language {lang} doesn't need to be re-written.")
+        logger.info(f"List of available training resources in language {lang} doesn't need to be re-written.")
 
 def parse_arguments() -> dict:
     """
@@ -449,93 +472,56 @@ def set_loglevel(loglevel_arg):
     root.addHandler(sh)
 
     # Read the configuration from config.ini in the same directory
-    config = configparser.ConfigParser()
-    config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-    log_path = config.get('Paths', 'logs', fallback='')
+    global_config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+    log_path = global_config.get('Paths', 'logs', fallback='')
     if log_path == '':
         logger.warning('No log directory specified in configuration. Using current working directory')
     # Logging output to files with different verbosity
-    if config.has_option("resourcesbot", "logfile"):
-        fh = logging.FileHandler(log_path + config['resourcesbot']['logfile'])
+    if global_config.has_option("resourcesbot", "logfile"):
+        fh = logging.FileHandler(log_path + global_config['resourcesbot']['logfile'])
         fh.setLevel(logging.WARNING)
         fh.setFormatter(fformatter)
         root.addHandler(fh)
-    if config.has_option("resourcesbot", "infologfile"):
-        fh_info = logging.FileHandler(log_path + config['resourcesbot']['infologfile'])
+    if global_config.has_option("resourcesbot", "infologfile"):
+        fh_info = logging.FileHandler(log_path + global_config['resourcesbot']['infologfile'])
         fh_info.setLevel(logging.INFO)
         fh_info.setFormatter(fformatter)
         root.addHandler(fh_info)
-    if config.has_option("resourcesbot", "debuglogfile"):
-        fh_debug = logging.FileHandler(log_path + config['resourcesbot']['debuglogfile'])
+    if global_config.has_option("resourcesbot", "debuglogfile"):
+        fh_debug = logging.FileHandler(log_path + global_config['resourcesbot']['debuglogfile'])
         fh_debug.setLevel(logging.DEBUG)
         fh_debug.setFormatter(fformatter)
         root.addHandler(fh_debug)
 
-msggroupstats = {}
-
-def get_all_msggroupstats():
-    """
-    example: msggroupstats["Church"] = [{
-                "total": 44,
-                "translated": 0,
-                "fuzzy": 0,
-                "proofread": 0,
-                "code": "af",
-                "language": "af"
-            }, ..., {
-                "total": 44,
-                "translated": 44,
-                "fuzzy": 0,
-                "proofread": 0,
-                "code": "en",
-                "language": "en"
-            }, ...]
-    """
-    global msggroupstats
-    for worksheet in fortraininglib.get_worksheet_list():
-        temp = fortraininglib.get_msggroupstats(worksheet)
-        if temp != "":
-            msggroupstats[worksheet] = temp["query"]["messagegroupstats"]
-
 def create_summary(lang: str):
     """
     @param: lang (str): Language code for the language we want to get a summary
+    @return tuple with 2 values: number of translated worksheets, number of incomplete worksheets
     """
     incomplete_translations = []
-    if not msggroupstats:
-        get_all_msggroupstats()
     pdfcounter = 0
-    lang_result = global_result[lang]
+    if lang not in global_result:
+        return 0, 0
     translated_worksheets = []
     incomplete_translations_reports = []
     #iterate through all worksheets to retrieve information about the translation status
-    for worksheet in lang_result:
-        allstats = msggroupstats[worksheet]
-        for language_info in allstats:
-            if language_info["code"] == lang:
-                if language_info["translated"] < language_info["total"]:
-                    incomplete_translations.append(worksheet)
-                    n_trans = language_info["translated"]
-                    n_fuzzy = language_info["fuzzy"]
-                    n_total = language_info["total"]
-                    #report translation status, 
-                    # e.g. The_Three-Thirds_Process: 13+1/14 
-                    # is short for 13 translated units and one fuzzy translation unit out of 14 total translation units
-                    incomplete_translations_reports.append(f"{worksheet}: {n_trans}+{n_fuzzy}/{n_total}")
-        worksheet_dict = lang_result[worksheet]
-        #check if there exists a pdf
-        try:
-            temp = worksheet_dict["pdf"]
-            pdfcounter += 1
-            translated_worksheets.append(worksheet)
-        except: 
-            pass
+    for worksheet in global_translation_progress:
+        if lang in global_translation_progress[worksheet]:
+            progress = global_translation_progress[worksheet][lang]
+            if progress.translated < progress.total:
+                incomplete_translations.append(worksheet)
+                incomplete_translations_reports.append(f"{worksheet}: {progress}")
+            if worksheet in global_result[lang]:
+                if "pdf" in global_result[lang][worksheet]:
+                    #check if there exists a pdf
+                    pdfcounter += 1
+                    translated_worksheets.append(worksheet)
     #create the summary string
     missing_pdf_report = ""
     total_worksheets = fortraininglib.get_worksheet_list()
     if len(translated_worksheets) < len(total_worksheets):
         missing_pdf_report = "PDF missing:"
-        missing_pdfs = [worksheet for worksheet in lang_result if worksheet not in translated_worksheets]
+        missing_pdfs = [worksheet for worksheet in global_result[lang] if worksheet not in translated_worksheets]
         for worksheet in missing_pdfs:
             missing_pdf_report += "\n " + worksheet
     else:
@@ -548,13 +534,12 @@ def create_summary(lang: str):
     else:
         incomplete_translations_report = "All translations are complete"
     language = fortraininglib.get_language_name(lang, "en")
-    retstring = F"""Report for: {language} ({lang})
+    report = f"""Report for: {language} ({lang})
 --------------------------------
 {len(translated_worksheets)} worksheets translated and with worksheets. See https://www.4training.net/{language}\n
 """ +  incomplete_translations_report +  "\n" + missing_pdf_report
-    #write summary into log file in the directory logs/languagereports
-    log_languagereport(lang + ".txt", retstring)
-    return retstring, translated_worksheets, incomplete_translations
+    log_languagereport(f"{lang}.txt", report)
+    return translated_worksheets, incomplete_translations
 
 def log_languagereport(filename: str, text: str):
     """
@@ -562,46 +547,45 @@ def log_languagereport(filename: str, text: str):
     @param: text (str): Text to write into the log file
     @return: -
     """
-    dirname = os.path.join(LOG_FOLDER_LOC, "languagereports")
-    os.makedirs(dirname, exist_ok=True)
-    with open(os.path.join(dirname, filename), "w") as f:
-        f.write(text)
+    if global_config.has_option("Paths", "languagereports"):
+        dirname = os.path.join(global_config['Paths']['languagereports'])
+        os.makedirs(dirname, exist_ok=True)
+        with open(os.path.join(dirname, filename), "w") as f:
+            f.write(text)
+    else:
+        logger.warning(f"Option languagereports not found in section [Paths] in config.ini. Not writing {filename}.")
 
 def total_summary():
     """
-    @param: -
-    @return: restring (str): summary, e.g.
+    Creates and writes the reports for individual languages
+    and afterwards writes a total summary, something like
     Total report:
     - Finished worksheet translations with PDF: 485
     - Translation finished, PDF missing: 134
     - Unfinished translations (ignored): 89
     """
-    #create list with all language codes
-    langlist = global_result.keys()
-
     everything_top_counter = 0
     translated_without_pdf_counter = 0
     incomplete_translation_counter = 0
 
-    for lang in langlist:
-        #translated worksheets: with pdf, but no completeness required
-        _, translated_worksheets, incomplete_translations = create_summary(lang) 
-        #incomplete_translations: some translation units are fuzzy or not translated
+    for lang in global_result:
+        # translated worksheets: with pdf, but no completeness required
+        translated_worksheets, incomplete_translations = create_summary(lang)
+        # incomplete_translations: some translation units are fuzzy or not translated
         everything_top = [worksheet for worksheet in translated_worksheets if worksheet not in incomplete_translations]
-        #completely translated, but no pdf
+        # completely translated, but no pdf
         translated_without_pdf = [worksheet for worksheet in global_result[lang] if worksheet not in incomplete_translations and worksheet not in translated_worksheets]
         everything_top_counter += len(everything_top)
         translated_without_pdf_counter += len(translated_without_pdf)
         incomplete_translation_counter += len(incomplete_translations)
 
-    retstring = f"""Total report:
+    report = f"""Total report:
 - Finished worksheet translations with PDF: {everything_top_counter}
 - Translation finished, PDF missing: {translated_without_pdf_counter}
 - Unfinished translations (ignored): {incomplete_translation_counter}"""
 
-    log_languagereport("summary.txt", retstring)
+    log_languagereport("summary.txt", report)
 
-    return retstring
 
 if __name__ == "__main__":
     args = parse_arguments()
@@ -610,7 +594,7 @@ if __name__ == "__main__":
         logger.info('Parameter --rewrite-all is set, rewriting all language information pages')
         rewrite_all = True
     if args['lang']:
-        logger.info(F"Parameter lang is set, limiting processing to language {args['lang']}")
+        logger.info(f"Parameter lang is set, limiting processing to language {args['lang']}")
         global_only_lang = str(args['lang'])
 
     for page in fortraininglib.get_worksheet_list():
@@ -629,7 +613,7 @@ if __name__ == "__main__":
     #    f.write(json.dumps((global_result)))
     #with open("global_result.json", "r") as f:
     #    global_result = dict(json.load(f))
-    if args['lang']:
+    if global_only_lang is not None:
         create_summary(global_only_lang)
     else:
         total_summary()
