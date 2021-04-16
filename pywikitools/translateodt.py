@@ -26,7 +26,7 @@ import shlex
 import getopt
 import os.path
 import re
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 from time import sleep
 import configparser
 from typing import List, Optional
@@ -69,42 +69,46 @@ class Lang:
     FONT_STANDARD = 1
     FONT_ASIAN = 2
     FONT_CTL = 3
-    def __init__(self, languagecode, countrycode = None, font_type = None, custom_font = None):
+    def __init__(self, language_code, country_code=None, font_type=None, custom_font=None):
         """
         @param languagecode: ISO language code
         @param countrycode: ISO country code
         @font_type either Lang.FONT_STANDARD or Lang.FONT_ASIAN or Lang.FONT_CTL
         @custom_font can be defined to use a different font than Arial (used for some complex layout languages)
         """
-        self.languagecode = languagecode
-        if countrycode is None:
-            self.countrycode = ''
+        self._language_code = language_code
+        if country_code is None:
+            self._country_code = ''
         else:
-            self.countrycode = countrycode
-        self.variant = ''   # Currently it looks like we never need to set it
+            self._country_code = country_code
+        self._variant = ''   # Currently it looks like we never need to set it
         if font_type is None:
-            self.font_type = Lang.FONT_STANDARD
+            self._font_type = Lang.FONT_STANDARD
         else:
-            self.font_type = font_type
-        self.custom_font = custom_font
+            self._font_type = font_type
+        self._custom_font = custom_font
 
     def __str__(self):
-        return '("' + self.languagecode + '","' + self.countrycode + '","' + self.variant + '")'
+        return f'("{self._language_code}","{self._country_code}","{self._variant}")'
 
-    def isStandard(self):
-        return self.font_type == Lang.FONT_STANDARD
+    def is_standard(self):
+        return self._font_type == Lang.FONT_STANDARD
 
-    def isAsian(self):
-        return self.font_type == Lang.FONT_ASIAN
+    def is_asian(self):
+        return self._font_type == Lang.FONT_ASIAN
 
-    def isComplex(self):
-        return self.font_type == Lang.FONT_CTL
+    def is_complex(self):
+        return self._font_type == Lang.FONT_CTL
 
-    def hasCustomFont(self):
-        return self.custom_font is not None
+    def has_custom_font(self):
+        return self._custom_font is not None
 
-    def getCustomFont(self) -> str:
-        return str(self.custom_font)
+    def get_custom_font(self) -> str:
+        return str(self._custom_font)
+
+    def to_locale(self) -> Locale:
+        """ Return a LibreOffice Locale object """
+        return Locale(self._language_code, self._country_code, '')
 
 # TODO add missing languages -> unfortunately it seems like we always need a country code as well
 # See https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes column alpha-2
@@ -186,12 +190,12 @@ def open_doc(name: str):
     while ctx is None:
         try:
             ctx = resolver.resolve(f"uno:socket,host=localhost,port={PORT};urp;StarOffice.ComponentContext")
-        except NoConnectException as e:
+        except NoConnectException as error:
             retries += 1
             logger.debug(f"Failed to connect to office. This is attempt #{retries}")
             if retries > CONNECT_TRIES:
                 logger.warning(f"Couldn't connect to LibreOffice. Tried {CONNECT_TRIES} times, giving up now.")
-                raise e
+                raise error
             sleep(2)
 
     smgr = ctx.ServiceManager
@@ -250,8 +254,8 @@ def check_before_search_and_replace(orig: str, trans: str) -> bool:
     if orig == '':
         return False
 
-    # file names: if string ends with '.pdf', '.odt' or '.doc' we ignore it
-    if orig[len(orig)-4:len(orig)] in ['.pdf', '.odt', '.doc']:
+    # if string is a file name, we ignore it
+    if orig.endswith(('.pdf', '.odt', '.doc')):
         return False
 
     if orig == trans:
@@ -297,14 +301,14 @@ def process_snippet(oo_data, orig: str, trans: str):
                 logger.warning(f"Original: \n{orig}")
                 logger.warning(f"Translation: \n{trans}")
                 return
-            for i in range(len(orig_split)):
-                if not check_before_search_and_replace(orig_split[i].strip(), trans_split[i].strip()):
+            for _, (search, replace) in enumerate(zip(orig_split, trans_split)):
+                if not check_before_search_and_replace(search.strip(), replace.strip()):
                     continue
-                replaced = search_and_replace(oo_data, orig_split[i], trans_split[i])
+                replaced = search_and_replace(oo_data, search, replace)
                 if replaced:
-                    logger.info(f"Replaced: {orig_split[i]} with: {trans_split[i]}")
+                    logger.info(f"Replaced: {search} with: {replace}")
                 else:
-                    logger.warning(f"Not found:\n{orig_split[i]}\nTranslation:\n{trans_split[i]}")
+                    logger.warning(f"Not found:\n{search}\nTranslation:\n{replace}")
 
     except AttributeError as error:
         logger.error(f"AttributeError: {error}")  # todo: wait some seconds and try again
@@ -569,8 +573,8 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
                            f"We still can process {t['title']}. You may ignore this warning.")
 
         # for each snippet of translation unit:
-        for i in range(len(orig_split)):
-            process_snippet(oo_data, orig_split[i], trans_split[i])
+        for _, (search, replace) in enumerate(zip(orig_split, trans_split)):
+            process_snippet(oo_data, search, replace)
 
     ############################################################################################
     # Set properties
@@ -654,20 +658,20 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
         #default_style.CharLocale.Language and .Country seem to be read-only
         logger.debug("Setting language locale of Default Style")
         if languagecode in LANG_LOCALE:
-            l = LANG_LOCALE[languagecode]
-            struct_locale = Locale(l.languagecode, l.countrycode, '')
-            logger.info(f"Assigning Locale for language '{languagecode}': {l}")
-            if l.isStandard():
+            lang = LANG_LOCALE[languagecode]
+            struct_locale = lang.to_locale()
+            logger.info(f"Assigning Locale for language '{languagecode}': {lang}")
+            if lang.is_standard():
                 default_style.CharLocale = struct_locale
-            if l.isAsian():
+            if lang.is_asian():
                 default_style.CharLocaleAsian = struct_locale
-            if l.isComplex():
+            if lang.is_complex():
                 default_style.CharLocaleComplex = struct_locale
-            if l.hasCustomFont():
-                logger.warning(F'Using font "{l.getCustomFont()}". Please make sure you have it installed.')
-                default_style.CharFontName = l.getCustomFont()
-                default_style.CharFontNameAsian = l.getCustomFont()
-                default_style.CharFontNameComplex = l.getCustomFont()
+            if lang.has_custom_font():
+                logger.warning(f'Using font "{lang.get_custom_font()}". Please make sure you have it installed.')
+                default_style.CharFontName = lang.get_custom_font()
+                default_style.CharFontNameAsian = lang.get_custom_font()
+                default_style.CharFontNameComplex = lang.get_custom_font()
         else:
             logger.warning(f"Language '{languagecode}' not in LANG_LOCALE. Please ask an administrator to fix this.")
             struct_locale = Locale(languagecode, "", "")
