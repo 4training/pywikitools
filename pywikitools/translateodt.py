@@ -115,6 +115,7 @@ class Lang:
 LANG_LOCALE = {
         'de': Lang('de', 'DE'),
         'az': Lang('az', 'AZ'),
+        'cs': Lang('cs', 'CZ'),
         'en': Lang('en', 'US'),
         'fr': Lang('fr', 'FR'),
         'pt-br': Lang('pt', 'BR'),
@@ -128,6 +129,7 @@ LANG_LOCALE = {
         'sq': Lang('sq', 'AL'),
         'pl': Lang('pl', 'PL'),
         'ru': Lang('ru', 'RU'),
+        'sk': Lang('sk', 'SK'),
         'tr': Lang('tr', 'TR'),
         'tr-tanri': Lang('tr', 'TR'),
         'vi': Lang('vi', 'VN'),

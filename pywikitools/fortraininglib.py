@@ -179,7 +179,7 @@ def get_pdf_name(worksheet: str, languagecode: str):
         pageid = next(iter(response.json()["query"]["pages"]))
         if not 'revisions' in response.json()["query"]["pages"][pageid]:
             return None
-        if not len (response.json()["query"]["pages"][pageid]['revisions']) > 0:
+        if not len(response.json()["query"]["pages"][pageid]['revisions']) > 0:
             return None
         if not '*' in response.json()["query"]["pages"][pageid]['revisions'][0]:
             return None
@@ -194,6 +194,9 @@ def get_pdf_name(worksheet: str, languagecode: str):
         return None
 
     # It's a translation - that's easier, we just look through the translation unit and find the one of the PDF file
+    # TODO this may be incorrect as we now may have also a second pdf (the version for printing) and it randomly returns one of both
+    # TODO we need to read the English original first, get the number of the translation unit with the normal PDF
+    # and read the translation of it to be sure we get the correct PDF name
     response = requests.get(APIURL, params={
         "action" : "query",
         "format" : "json",
@@ -203,8 +206,8 @@ def get_pdf_name(worksheet: str, languagecode: str):
     translations = response.json()["query"]["messagecollection"]
     for t in translations:
         if re.search(r'\.pdf$', t["definition"]):
-            pdf = t["translation"]
-    return pdf
+            return t["translation"]
+    return None
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
     """ Returns all the existing translations of a page

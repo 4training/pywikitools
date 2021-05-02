@@ -47,7 +47,10 @@ translations = fortraininglib.list_page_translations(worksheetname)
 logging.info(f'Worksheet {worksheetname} is translated into {len(translations)} languages: {translations.keys()}')
 for language in translations.keys():
     pdf = fortraininglib.get_pdf_name(worksheetname, language)
-    logging.debug("Language: " + language + ", filename: " + pdf)
+    if pdf is None:
+        logging.warning(f"Couldn't find PDF name in {worksheetname}/{language}")
+        continue
+    logging.debug(f"Language: {language}, filename: {pdf}")
     url = fortraininglib.get_file_url(pdf)
     if not url:
         logging.warning(f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring")
