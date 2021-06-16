@@ -7,11 +7,15 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 import logging
 import re
 from typing import List, Optional, Dict
+
 import requests
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
 logger = logging.getLogger('4training.lib')
+# Language codes of all right-to-left languages we currently have
+RTL_LANGUAGES = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"]
+
 
 class TranslationProgress:
     def __init__(self, translated, fuzzy, total, **kwargs):
@@ -52,7 +56,8 @@ class TranslationProgress:
         """
         return f"{self.translated}+{self.fuzzy}/{self.total}"
 
-def get_worksheet_list() -> list:
+
+def get_worksheet_list() -> List[str]:
     """
     Returns the list of all worksheets. For now hard-coded as this doesn't change very often. Could be changed to
     retrieve that information from the backend.
@@ -73,7 +78,8 @@ def get_worksheet_list() -> list:
         "The_Role_of_a_Helper_in_Prayer", "Leading_a_Prayer_Time",
         "How_to_Continue_After_a_Prayer_Time", "Four_Kinds_of_Disciples"]
 
-def get_file_types() -> list:
+
+def get_file_types() -> List[str]:
     """
     Returns the supported file types.
     @param: -
@@ -89,10 +95,10 @@ def get_language_direction(languagecode: str) -> str:
     https://www.4training.net/mediawiki/api.php?action=query&titles=Prayer/ckb&prop=info
     but this has the cost of an extra API call...
     """
-    RTL = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"] # TODO perhaps not complete
-    if languagecode in RTL:
+    if languagecode in RTL_LANGUAGES:
         return "rtl"
     return "ltr"
+
 
 def get_language_name(language_code: str, translate_to: Optional[str] = None) -> Optional[str]:
     """ Returns the name of a language as either the autonym or translated into another language
@@ -107,24 +113,24 @@ def get_language_name(language_code: str, translate_to: Optional[str] = None) ->
     @return Language name if successful
     @return None in case of error
     """
-    lang_parameter = language_code
+    lang_parameter: str = language_code
     if isinstance(translate_to, str):
         lang_parameter += '|' + translate_to
     response = requests.get(APIURL, params={
-        'action' : 'parse',
-        'text' : '{{#language:' + lang_parameter + '}}',
-        'contentmodel' : 'wikitext',
-        'format' : 'json',
-        'prop' : 'text',
-        'disablelimitreport' : 'true'})
-    if 'parse' in response.json():
-        if 'text' in response.json()['parse']:
-            if '*' in response.json()['parse']['text']:
-                langname = re.search('<p>([^<]*)</p>', response.json()['parse']['text']['*'], re.MULTILINE)
-                if langname:
-                    return langname.group(1).strip()
-                return None
-    return None
+        'action': 'parse',
+        'text': '{{#language:' + lang_parameter + '}}',
+        'contentmodel': 'wikitext',
+        'format': 'json',
+        'prop': 'text',
+        'disablelimitreport': 'true'})
+    try:
+        langname = re.search('<p>([^<]*)</p>', response.json()['parse']['text']['*'], re.MULTILINE)
+        if langname:
+            return langname.group(1).strip()
+        return None
+    except KeyError:
+        return None
+
 
 def get_file_url(filename: str):
     """ Return the full URL of the requested file
@@ -157,60 +163,58 @@ def get_file_url(filename: str):
         return None
     return url_json["query"]["pages"][page_number]["imageinfo"][0]["url"]
 
-def get_pdf_name(worksheet: str, languagecode: str):
-    """ returns the name of the PDF associated with that worksheet translated into a specific language
 
-    @param languagecode shouldn't be 'en'
-    @return None in case we didn't find it
+def get_page_content(page: str) -> Optional[str]:
     """
-    if languagecode == 'en':
-        # This is more complicated: as we need to retrieve the page source and scan it for the name of the PDF file
-        response = requests.get(APIURL, params={
-            "action" : "query",
-            "prop" : "revisions",
-            "rvlimit" : 1,
-            "rvprop" : "content",
-            "format" : "json",
-            "titles" : worksheet})
-        if not 'query' in response.json():
-            return None
-        if not 'pages' in response.json()["query"]:
-            return None
+    Return the wikitext (source) of a page
+    @return None on error
+    """
+    response = requests.get(APIURL, params={
+        "action": "query",
+        "prop": "revisions",
+        "rvlimit": "1",
+        "rvprop": "content",
+        "format": "json",
+        "titles": page})
+    try:
         pageid = next(iter(response.json()["query"]["pages"]))
-        if not 'revisions' in response.json()["query"]["pages"][pageid]:
-            return None
-        if not len(response.json()["query"]["pages"][pageid]['revisions']) > 0:
-            return None
-        if not '*' in response.json()["query"]["pages"][pageid]['revisions'][0]:
-            return None
-        content = response.json()["query"]["pages"][pageid]['revisions'][0]['*']
-        # Now we have the page source, scan it for the PDF file name now
-        pdfdownload = re.search('{{PdfDownload[^}]*}', content)
-        if not pdfdownload:
-            return None
-        pdffile = re.search(r'\w+\.pdf', pdfdownload.group())
-        if pdffile:
-            return pdffile.group()
+        return response.json()["query"]["pages"][pageid]['revisions'][0]['*']
+    except KeyError:
         return None
 
-    # It's a translation - that's easier, we just look through the translation unit and find the one of the PDF file
-    # TODO this may be incorrect as we now may have also a second pdf (the version for printing) and it randomly returns one of both
-    # TODO we need to read the English original first, get the number of the translation unit with the normal PDF
-    # and read the translation of it to be sure we get the correct PDF name
-    response = requests.get(APIURL, params={
-        "action" : "query",
-        "format" : "json",
-        "list" : "messagecollection",
-        "mcgroup" : "page-" + worksheet,
-        "mclanguage" : languagecode})
-    translations = response.json()["query"]["messagecollection"]
-    for t in translations:
-        if re.search(r'\.pdf$', t["definition"]):
-            return t["translation"]
-    return None
+
+def get_pdf_name(worksheet: str, languagecode: str):
+    """ returns the name of the PDF associated with that worksheet translated into a specific language
+    @return None in case we didn't find it
+    """
+    # we need to retrieve the page source of the English original and scan it for the name of the PDF file
+    content = get_page_content(worksheet)
+    if not content:
+        return None
+    # We have the page source, scan it for the PDF file name now
+    pdfdownload = re.search('{{PdfDownload[^}]*}', content)
+    if not pdfdownload:
+        return None
+    pdffile = re.search(r'[^ \n>]+\.pdf', pdfdownload.group())
+    if not pdffile:
+        return None
+    if languagecode == 'en':    # we're already done
+        return pdffile.group()
+    translation_unit: int = 0   # the number of the translation unit containing the name of the PDF file
+    search_tu = re.search(r'--T:(\d+)--', pdfdownload.group())
+    if search_tu:
+        translation_unit = int(search_tu.group(1))
+    if translation_unit == 0:
+        logger.warning("Couldn't find number of translation unit containing the PDF file name")
+        return None
+
+    # now we just need to look up the translation of this translation unit
+    return get_page_content(f"Translations:{worksheet}/{translation_unit}/{languagecode}")
+
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
     """ Returns all the existing translations of a page
+    @param page the worksheet name
     @param include_unfinished whether unfinished translations should also be included
 
     Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
@@ -223,33 +227,33 @@ def list_page_translations(page: str, include_unfinished=False) -> Dict[str, Tra
     while counter < 4:
         # Tricky: Often we need to run this query for a second time so that all data is gathered.
         response = requests.get(APIURL, params={
-            'action' : 'query',
-            'meta' : 'messagegroupstats',
-            'format' : 'json',
+            'action': 'query',
+            'meta': 'messagegroupstats',
+            'format': 'json',
             'mgsgroup': 'page-' + page})
         logger.info(f"Retrieving translation information of {page}, try #{counter}. Response: {response.status_code}")
         json = response.json()
 
-        if not 'continue' in json:  # Now we have a complete response
+        if 'continue' not in json:  # Now we have a complete response
             break
         counter += 1
     if ('continue' in json) or (counter == 4):
         logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, still no result")
         return {}
-    if not 'query' in json:
-        return {}
-    if not 'messagegroupstats' in json['query']:
-        return {}
 
     available_translations: Dict[str, TranslationProgress] = {}     # map of language codes to the translation progress
-    for line in json['query']['messagegroupstats']:
-        if line['translated'] > 0:
-            # Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
-            progress = TranslationProgress(**line)
-            if not progress.is_unfinished() or include_unfinished:
-                available_translations[line['language']] = progress
+    try:
+        for line in json['query']['messagegroupstats']:
+            if line['translated'] > 0:
+                # Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
+                progress = TranslationProgress(**line)
+                if not progress.is_unfinished() or include_unfinished:
+                    available_translations[line['language']] = progress
+    except KeyError:
+        return {}
 
     return available_translations
+
 
 def list_page_templates(page: str) -> List[str]:
     """ Returns list of templates that are transcluded by a given page
@@ -261,29 +265,26 @@ def list_page_templates(page: str) -> List[str]:
     response = requests.get(APIURL, params={
         'action': 'query',
         'format': 'json',
-        'titles' : page,
+        'titles': page,
         'prop': 'templates'})
     json = response.json()
-    if not 'query' in json:
+    try:
+        if len(list(json["query"]["pages"])) == 1:
+            pageid = list(json["query"]["pages"])[0]
+        else:
+            logger.warning("fortraininglib:list_page_templates: Error, multiple pages detected")
+            return []
+        result = []
+        for line in json['query']['pages'][pageid]['templates']:
+            if 'title' in line:
+                language_code = line['title'].find('/')
+                if language_code == -1:
+                    result.append(line['title'])
+                else:
+                    result.append(line['title'][0:language_code])
+        return result
+    except KeyError:
         return []
-    if not 'pages' in json['query']:
-        return []
-    if len(list(json["query"]["pages"])) == 1:
-        pageid = list(json["query"]["pages"])[0]
-    else:
-        logger.warning("fortraininglib:list_page_templates: Error, multiple pages detected")
-        return []
-    if not 'templates' in json['query']['pages'][pageid]:
-        return []
-    result = []
-    for line in json['query']['pages'][pageid]['templates']:
-        if 'title' in line:
-            language_code = line['title'].find('/')
-            if language_code == -1:
-                result.append(line['title'])
-            else:
-                result.append(line['title'][0:language_code])
-    return result
 
 
 def get_translation_units(worksheet: str, languagecode: str):
@@ -293,26 +294,26 @@ def get_translation_units(worksheet: str, languagecode: str):
     @return if successful than returns the structure as is in response.json()["query"]["messagecollection"]
     @return on error: returns string with error message
     """
-    parameters = {
+    response = requests.get(APIURL, params={
         "action": "query",
         "format": "json",
         "list": "messagecollection",
         "mcgroup": "page-" + worksheet,
         "mclanguage": languagecode,
-    }
+    })
 
-    response = requests.get(APIURL, params=parameters)
-    logger.info(F"Retrieving translation of {worksheet} into language {languagecode}... {response.status_code}")
+    logger.info(f"Retrieving translation of {worksheet} into language {languagecode}... {response.status_code}")
     json = response.json()
     if "error" in json:
         if "info" in json["error"]:
-            return "Couldn't get translation units. Error: " + json["error"]["info"]
+            return f"Couldn't get translation units. Error: {json['error']['info']}"
         return "Couldn't get translation units. Strange error."
-    if not "query" in json:
+    if "query" not in json:
         return "Couldn't get translation units. Some serious error"
-    if not "messagecollection" in json["query"]:
+    if "messagecollection" not in json["query"]:
         return "Couldn't get translation units. Unexpected error."
     return json["query"]["messagecollection"]
+
 
 def title_to_message(title: str) -> str:
     """Converts a mediawiki title to its corresponding system message
@@ -331,6 +332,7 @@ def title_to_message(title: str) -> str:
     ret = ret.lower()
     return 'sidebar-' + ret
 
+
 def expand_template(raw_template: str) -> str:
     """
     TODO more documentation
@@ -346,6 +348,7 @@ def expand_template(raw_template: str) -> str:
             return response.json()["expandtemplates"]["wikitext"]
     logger.warning(f"Warning: couldn't expand template {raw_template}")
     return ""
+
 
 def get_cc0_notice(version: str, languagecode: str) -> str:
     """
@@ -364,6 +367,64 @@ def get_cc0_notice(version: str, languagecode: str) -> str:
                        "Please translate https://www.4training.net/Template:CC0Notice")
         return "TODO translate https://www.4training.net/Template:CC0Notice"
     return expanded
+
+
+def mark_for_translation(title: str, user_name: str, password: str):
+    """
+    Mark a page for translation
+
+    Unfortunately this functionality is not exposed in the API yet. (See https://phabricator.wikimedia.org/T235397)
+    Also pywikibot doesn't support calling anything outside the API
+    So we need to log in on our own and call Special:PageTranslation in the necessary way:
+    1. GET https://www.4training.net/mediawiki/index.php?title=Special:PageTranslation&target=Afrikaans&do=mark
+    2. scrape the answer: we need the content of the hidden input fields
+    3. POST https://www.4training.net/Special:PageTranslation (with some data)
+    @param title The title of the page that should be marked for translation
+    @todo currently it's always marking the page for translation, even if there are no changes -> add check
+    @todo better error handling, return if we were successful
+    """
+    try:
+        session = requests.Session()
+        # We need a token in order to log in
+        response = session.get(APIURL, params={
+            "action": "query",
+            "meta": "tokens",
+            "type": "login",
+            "format": "json"
+        })
+
+        # Now we log in (see also https://www.mediawiki.org/wiki/API:Login )
+        session.post(APIURL, data={
+            'action': 'login',
+            'lgname': user_name,
+            'lgpassword': password,
+            'lgtoken': response.json()["query"]["tokens"]["logintoken"]
+        })
+
+        # First step of marking a page for translation
+        response = session.get("https://www.4training.net/mediawiki/index.php", params={
+            "title": "Special:PageTranslation",
+            "target": title,
+            "do": "mark"})
+
+        # scrape the result for the hidden input values we need
+        pattern = re.compile('<input type="hidden" value="([^"]*)" name="([^"]*)"')
+        hidden_inputs: Dict[str, str] = {}
+        for m in pattern.finditer(response.text):
+            hidden_inputs[m.group(2)] = m.group(1)
+
+        # Now we can mark the page for translation
+        session.post("https://www.4training.net/Special:PageTranslation", data={
+            "do": "mark",
+            "title": "Special:PageTranslation",
+            "translatetitle": 1,
+            "revision": hidden_inputs["revision"],
+            "target": hidden_inputs["target"],
+            "token": hidden_inputs["token"]
+        })
+    except KeyError as error:
+        logger.warning(f"mark_for_translation failed: KeyError, no key named {error}")
+
 
 # Other possibly relevant API calls:
 # https://www.4training.net/mediawiki/api.php?action=query&meta=messagetranslations&mttitle=Translations:Church/44

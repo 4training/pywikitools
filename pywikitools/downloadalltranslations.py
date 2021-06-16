@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-""" 
+"""
 Script to download all translated PDFs of a worksheet, e.g. downloadalltranslations.py Forgiving_Step_by_Step
 The PDF files are named [languagename in English] - [language autonym].pdf
 They're put into a (newly created) subdirectory named after the worksheet
@@ -8,8 +8,8 @@ They're put into a (newly created) subdirectory named after the worksheet
 import sys
 import os
 import logging
-import requests
 import getopt
+import requests
 import fortraininglib
 
 def usage():
@@ -22,7 +22,7 @@ except getopt.GetoptError as err:
     print(err)
     usage()
     sys.exit(2)
-if (len(args) != 1):
+if len(args) != 1:
     usage()
     sys.exit(2)
 worksheetname = args[0]
@@ -30,7 +30,7 @@ for o, a in opts:
     if o == "-l":
         numeric_level = getattr(logging, a.upper(), None)
         if not isinstance(numeric_level, int):
-            raise ValueError('Invalid log level: %s' % loglevel)
+            raise ValueError(f"Invalid log level: {a}")
         logging.basicConfig(level=numeric_level)
     elif o in ("-h", "--help"):
         usage()
@@ -56,11 +56,14 @@ for language in translations.keys():
         logging.warning(f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring")
         continue
     file_request = requests.get(url, allow_redirects=True)
-    file_name = worksheetname + '/' + fortraininglib.get_language_name(language, 'en') + ' - ' + fortraininglib.get_language_name(language) + '.pdf'
+    language_autonym = fortraininglib.get_language_name(language) 
+    language_english = fortraininglib.get_language_name(language, 'en') 
+    if language_autonym is None or language_english is None:
+        logging.warning(f"Strang: couldn't get language name for language {language}, ignoring")
+        continue
+    file_name = f"{worksheetname}/{language_english} - {language_autonym}.pdf"
     try:
         open(file_name, 'wb').write(file_request.content)
     except FileNotFoundError:
         logging.warning(f"Language: {language}, error while trying to open file {file_name}, ignoring")
-        pass
-    logging.info("We saved {file_name}")
-
+    logging.info(f"We saved {file_name}")

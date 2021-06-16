@@ -51,14 +51,12 @@ import argparse # For CLI arguments
 import configparser
 from typing import Optional, Dict
 import pywikibot
-from pywikibot.data.api import Request
 
-from pywikibot.tools import empty_iterator
 import fortraininglib
 from fortraininglib import TranslationProgress
 
 # Set variables that are globally needed
-global_site = pywikibot.Site()
+global_site: pywikibot.site.APISite = pywikibot.Site()
 # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
 # "No user is logged in on site 4training:en" -> use this as a workaround and test with global_site.logged_in()
 global_site.login()
@@ -121,29 +119,12 @@ rewrite_all = False
 logger = logging.getLogger('4training.resourcesbot')
 
 
-def change_message_translation(msg_title: str, content: str) -> list:
-    """
-    @param: msgTitle (str): Title of the message we want to change
-    @param: content (str): New text of the translation unit
-    TODO should we do it this way or probably we could just use the pywikibot.Page class and set the text?!
-    """
-
-    global global_site
-    logger.info(F"Change_message_translation: {msg_title}: {content}")
-    requeste_for_token: list = Request(site=global_site, action="query", meta="tokens").submit()
-    my_token: str = requeste_for_token['query']['tokens']['csrftoken']
-    result: list = Request(site=global_site, action="edit",
-                                       title=msg_title, token=my_token, text=content).submit()
-    return result
-
-
-def get_translated_unit(page: str, lang: str, translation_unit_identifier: int) -> Optional[str]:
+def get_translated_unit(page: str, lang: str, translation_unit_identifier) -> Optional[str]:
     """
     Returns the translation of one translation unit of a page into a give language
     @param page (str): name of the page
     @param lang (str): language code
-    @param translation_unit_identifier (int): number of the translation unit
-    TODO this can also be a string with "Page display title"!
+    @param translation_unit_identifier: can either be number of translation unit or "Page display title"
     TODO move this function to fortraininglib, make an extra function get_translated_page_title(page, lang)
     @return the translated string or None if translation doesn't exist
     """
@@ -268,7 +249,7 @@ def write_available_resources(lang: str):
     # Creating the mediawiki string for the list of available training resources
     content = ''
     for worksheet in global_result[lang]:
-        if not 'pdf' in global_result[lang][worksheet]:
+        if 'pdf' not in global_result[lang][worksheet]:
             # Only show worksheets where we have a PDF file in the list
             logger.warning(F"Language {lang}: worksheet {worksheet} doesn't have PDF, not including in list.")
             continue
@@ -346,7 +327,13 @@ def write_available_resources(lang: str):
     logger.debug(new_page_content)
     page.text = new_page_content
     page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
-    logger.info(F"Updated language information page {language}.")
+    user_name = global_config.get("resourcesbot", "username")
+    password = global_config.get("resourcesbot", "password")
+    if user_name != '' and password != '':
+        fortraininglib.mark_for_translation(page.title(), user_name, password)
+        logger.info(f"Updated language information page {language} and marked it for translation.")
+    else:
+        logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
 
 
 def compare(old: dict, new: dict) -> bool:
@@ -431,16 +418,17 @@ def process_language(lang: str):
     else:
         logger.info(f"List of available training resources in language {lang} doesn't need to be re-written.")
 
+
 def parse_arguments() -> dict:
     """
     Parses command-line arguments.
     @return: (dict): parsed arguments
     """
-    MSG: str = 'Verify all worksheet translations'
-    EPI_MSG: str = 'Refer https://datahub.io/core/language-codes/r/0.html for language codes.'
+    msg: str = 'Update list of available training resources in the language information pages'
+    epi_msg: str = 'Refer https://datahub.io/core/language-codes/r/0.html for language codes.'
     LOG_LEVELS: list = ['debug', 'info', 'warning', 'error', 'critical']
 
-    parser = argparse.ArgumentParser(prog='python3 pwb.py resourcesbot', description=MSG, epilog=EPI_MSG)
+    parser = argparse.ArgumentParser(prog='python3 pwb.py resourcesbot', description=msg, epilog=epi_msg)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=LOG_LEVELS, help='set loglevel for the script')
     parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists, also if there have been no changes')
@@ -493,6 +481,7 @@ def set_loglevel(loglevel_arg):
         fh_debug.setFormatter(fformatter)
         root.addHandler(fh_debug)
 
+
 def create_summary(lang: str):
     """
     @param: lang (str): Language code for the language we want to get a summary
@@ -541,6 +530,7 @@ def create_summary(lang: str):
     log_languagereport(f"{lang}.txt", report)
     return translated_worksheets, incomplete_translations
 
+
 def log_languagereport(filename: str, text: str):
     """
     @param: filename (str): Name of the log file
@@ -554,6 +544,7 @@ def log_languagereport(filename: str, text: str):
             f.write(text)
     else:
         logger.warning(f"Option languagereports not found in section [Paths] in config.ini. Not writing {filename}.")
+
 
 def total_summary():
     """
@@ -597,6 +588,10 @@ if __name__ == "__main__":
         logger.info(f"Parameter lang is set, limiting processing to language {args['lang']}")
         global_only_lang = str(args['lang'])
 
+    if not global_config.has_option("resourcesbot", "username") or \
+        not global_config.has_option("resourcesbot", "password"):
+        logger.warning("Missing user name and/or password in configuration. Won't mark pages for translation.")
+
     for page in fortraininglib.get_worksheet_list():
         process_page(page)
 
@@ -609,10 +604,7 @@ if __name__ == "__main__":
     for lang in global_result:
         if lang != 'en':
             process_language(lang)
-    #with open("global_result.json", "w") as f:
-    #    f.write(json.dumps((global_result)))
-    #with open("global_result.json", "r") as f:
-    #    global_result = dict(json.load(f))
+
     if global_only_lang is not None:
         create_summary(global_only_lang)
     else:
