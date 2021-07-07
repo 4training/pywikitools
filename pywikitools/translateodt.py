@@ -237,14 +237,22 @@ def open_doc(name: str):
 
 def remove_links(text: str) -> str:
     """
-    Remove unwanted links and such
+    Remove links. Warns also if there is a link without |
+    Example: [[Prayer]] causes a warning, correct would be [[Prayer|Prayer]].
+    We have this convention so that translators are less confused as they need to write e.g. [[Prayer/de|Gebet]]
+    @return the processed string
     """
-    # Check for links: if there is a link then remove it and warn if there is a link without |
+    # This does all necessary replacements if the link correctly uses the form [[destination|description]]
     cleansed_text = re.sub(r"\[\[(.*?)\|(.*?)\]\]", r"\2", text)
 
-    if re.search(r"\[\[(.*?)\]\]", cleansed_text):
-        logger.warning(f"Found a link without | in {text}")
-        cleansed_text = re.sub(r"\[\[(.*?)\]\]", r"\1", cleansed_text)
+    # Now we check for links who are not following the convention
+    # We need to remove the # of an internal link, otherwise it gets the meaning of a numbering. (#?) does the trick
+    pattern = re.compile(r"\[\[(#?)(.*?)\]\]")
+    match = pattern.search(cleansed_text)
+    if match:
+        logger.warning(f"The following link is errorneous: {match.group(0)}. "
+                       f"It needs to look like [[English destination/language code|{match.group(2)}]]. Please correct.")
+        cleansed_text = pattern.sub(r"\2", cleansed_text)
 
     return cleansed_text
 
@@ -284,8 +292,8 @@ def process_snippet(oo_data, orig: str, trans: str):
     @param trans the translated string (what we're going to replace it with)
     """
     logger.debug(f"process_snippet, orig: {orig}, trans: {trans}")
-    orig = remove_links(orig.strip())
-    trans = remove_links(trans.strip())
+    orig = orig.strip()
+    trans = trans.strip()
 
     if not check_before_search_and_replace(orig, trans):
         return
@@ -417,23 +425,22 @@ def split_translation_unit(text: str, fallback: bool = False) -> List[str]:
     @param fallback: Should we try the fallback splitting-up?
     @return list of strings
     """
-    if not fallback:
-        # TODO put this in separate function clean_links()
-        # Check if there is any internal link destinations like [[#The bold parts|the bold parts]]
-        # to avoid additional splitting at the #, directly here replace [[# by [[
-        # TODO structure this better - have a section of "pre-processing substitutions" like this
-        if re.search(r'\[\[#', text):
-            logger.info("Found internal link, replacing [[# with [[")
-            text = re.sub(R'\[\[#', R'[[', text)
-            #logger.warning(orig)
+    # Split at all kinds of formattings:
+    # '' or ''': italic / bold formatting
+    # <tags>: all kind of html tags like <i> or <b> or </i> or </b>
+    # * or #: bullet list / numbered list items
+    # == up to ======: section headings
+    # : at the beginning of a line: definition list / indent text
+    # ; at the beginning of a line: definition list
+    pattern = re.compile("\'\'+|<.*?>|[*#]|={2,6}|^:|^;", flags=re.MULTILINE)
 
-        # Split at formattings
-        return re.split("\'\'+|<.*?>|[*=#]|^:|^;", text, 0, re.MULTILINE)
+    if fallback:
+        # We replace <br/> line breaks by \n line breaks
+        # and remove italic and bold formatting and all kind of <tags>
+        text = re.sub("< *br */ *>", '\n', text)
+        text = re.sub("\'\'+|<.*?>", '', text, flags=re.MULTILINE)
 
-    # This is the fallback variant: TODO write a more clear comment on this
-    text = re.sub("< *br */ *>", '\n', text)
-    text = re.sub("\'\'+|<.*?>", '', text, 0, re.MULTILINE)
-    return re.split("\'\'+|<.*?>|[*=#]|^:|^;", text, 0, re.MULTILINE)
+    return pattern.split(text)
 
 
 def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
@@ -536,9 +543,13 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
             continue
 
         logger.debug(f"Translation unit: {orig}")
+        # Preprocessing: remove links
+        orig = remove_links(orig)
+        trans = remove_links(trans)
+
         # Check if number of <br/> is equal, otherwise replace by newline
-        br_in_orig = len(re.split("< *br */ *>", orig))
-        br_in_trans = len(re.split("< *br */ *>", trans))
+        br_in_orig = len(re.split("< *br */ *>", orig)) - 1
+        br_in_trans = len(re.split("< *br */ *>", trans)) - 1
         if br_in_orig != br_in_trans:
             orig = re.sub("< *br */ *>", '\n', orig)
             trans = re.sub("< *br */ *>", '\n', trans)
@@ -549,12 +560,11 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
         # check if the structure of the original and the translation fit together
         if len(orig_split) != len(trans_split):
             # TODO give more specific warnings like "missing #" or "Number of = mismatch"
-            logger.info('''Number of '*','=', '#', italic and bold formatting, ';', ':' and html tags is not equal in original and translation:'''
-                + '\n' + t["definition"] + '\n\n' + t["translation"] + '\n\n\n')
-            # fall back: removing all formatting and trying it this way
-            logger.info('Falling back: removing all formatting, trying this now')
-            orig_split = split_translation_unit(orig, True)
-            trans_split = split_translation_unit(trans, True)
+            logger.info("Number of *, =, #, italic and bold formatting, ;, : and html tags is not equal"
+                        f" in original and translation:\n{t['definition']}\n{t['translation']}")
+            logger.info('Falling back: removing all formatting and trying again')
+            orig_split = split_translation_unit(orig, fallback=True)
+            trans_split = split_translation_unit(trans, fallback=True)
 
             if len(orig_split) != len(trans_split):
                 if br_in_orig != br_in_trans:
@@ -568,7 +578,7 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
                 logger.warning(f"Translation: \n{t['translation']}")
                 continue
             logger.warning("Found an issue with formatting (special characters like * = # ; : <b> <i>). "
-                           "I'm removing all formatting and continuing. You may ignore this error "
+                           "I ignored all formatting and could continue. You may ignore this error "
                            f"or correct the translation unit {t['title']}")
 
         if br_in_orig != br_in_trans:
