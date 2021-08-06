@@ -19,29 +19,37 @@ See https://github.com/orgs/4training/projects/1 for the project roadmap
   the system use the pywikibot framework:
   https://www.mediawiki.org/wiki/Manual:Pywikibot
 
-Pywikibot setup:
-----------------
+Setup:
+------
 
-1. Install it, following
+#. Install pywikibot, following
    https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
-2. Copy pywikibot/families/4training_family.py to the pywikibot families
-   directory
-3. ``python3 pwb.py generate_user_files``
-   -> select 1: 4training family
-   -> enter the bot user name
-   -> don’t enter a password here
-4. ``python3 pwb.py login`` -> enter password here
+#. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
+   (same directory where the python scripts you want to run are located). Alternatively you can generate it yourself:
 
-Run scripts with pywikibot:
+   * You need a "full" pywikibot installation (not just the one you get with ``pip install pywikibot``)
+   * Make sure the 4training_family.py is at the correct place in that pywikibot installation
+   * ``python3 pwb.py generate_user_files``
+   * select 1: 4training family
+   * enter the bot user name
+   * don't enter a password here
+#. Set up configuration in ``config.ini``:
+
+   * ``cp config.example.ini config.ini``
+   * Edit and where necessary adjust it
+#. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
+
+Run scripts
 ---------------------------
+``python3 path/to/script args``
 
-``python3 pwb.py path/to/script.py args``
+(*more cumbersome alternative using a full pywikibot installation:* ``python3 /path/to/pwb.py path/to/script.py args``)
+
+If you're not yet logged in, pywikibot will ask you for the password for the user you defined in ``user-config.py``. After successful login, the login cookie is stored in ``pywikibot.lwp`` so you don't have to log in every time again.
 
 File overview
 -------------
 
-4training-backup.py
-    Web-scraping tool to download all worksheets
 config.example.ini
     Example for all configuration settings
 config.ini
@@ -62,17 +70,25 @@ translateodt.py
 cgi-bin/generateodt.py
     CGI-Handler that receives the request (coming from outside like https://www.example.net/cgi-bin/generateodt.py)
     and calls generateodtbot.py
+CorrectBot/
+    Can automatically correct simple mistakes in texts of different languages (not yet operational)
 
-Configuration
--------------
+License
+-------
+Jesus says in Matthew 10:8, “Freely you have received; freely give.”
 
-You first need to create a file config.ini with the correct settings
-(see the config.example.ini for more hints)
+We follow His example and believe His principles are well expressed in the developer world through free and open-source software.
+That's why we want you to have the `four freedoms <https://fsfe.org/freesoftware/>`_ to freely use, study, share and improve this software.
+We only require you to release any derived work under the same conditions (you're not allowed to take this code, build upon it and make the result proprietary):
+
+`GNU General Public License (Version 3) <https://www.gnu.org/licenses/gpl-3.0.en.html>`_
 
 Contributing and coding conventions
 -----------------------------------
 
-See CONTRIBUTING.rst
+By contributing you release your contributed code under the licensing terms explained above. Thank you!
+
+For more details see CONTRIBUTING.rst
 
 Communication
 ~~~~~~~~~~~~~
