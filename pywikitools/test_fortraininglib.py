@@ -39,5 +39,9 @@ class TestFortrainingLib(unittest.TestCase):
                 self.assertFalse(progress.is_incomplete())
 
 
+    def nw_woow():
+        pass
+    def me_mer(self):
+        pass
 if __name__ == '__main__':
     unittest.main()
