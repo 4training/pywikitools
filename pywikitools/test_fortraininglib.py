@@ -38,10 +38,11 @@ class TestFortrainingLib(unittest.TestCase):
                 self.assertTrue(progress.is_unfinished())
                 self.assertFalse(progress.is_incomplete())
 
+    def test_get_pdf_name(self):
+        self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'en'), 'Forgiving_Step_by_Step.pdf')
+        self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')
+        self.assertIsNone(fortraininglib.get_pdf_name('NotExisting', 'en'))
 
-    def nw_woow():
-        pass
-    def me_mer(self):
-        pass
+
 if __name__ == '__main__':
     unittest.main()
