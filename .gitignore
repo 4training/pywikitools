@@ -10,6 +10,8 @@ pywikitools/user-config.py
 pywikitools/pywikibot.lwp
 # pywikibot throttle control
 pywikitools/throttle.ctrl
+# pywikibot caching
+pywikitools/apicache-py3
 
 # worksheet files
 *.pdf

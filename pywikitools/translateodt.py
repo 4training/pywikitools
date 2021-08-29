@@ -142,6 +142,7 @@ LANG_LOCALE = {
         'zh': Lang('zh', 'CN', Lang.FONT_ASIAN),
         'ko': Lang('ko', 'KR', Lang.FONT_ASIAN),
         'ar': Lang('ar', 'EG', Lang.FONT_CTL),
+        'ar-urdun': Lang('ar', 'JO', Lang.FONT_CTL),
         'hi': Lang('hi', 'IN', Lang.FONT_CTL, 'Lohit Devanagari'),
         'kn': Lang('kn', 'IN', Lang.FONT_CTL, 'Gentium'),
         'ml': Lang('ml', 'IN', Lang.FONT_CTL, 'Gentium'),
@@ -149,7 +150,8 @@ LANG_LOCALE = {
         'fa': Lang('fa', 'IR', Lang.FONT_CTL),
         'ta': Lang('ta', 'IN', Lang.FONT_CTL),
         'te': Lang('te', 'IN', Lang.FONT_CTL),
-        'th': Lang('th', 'TH', Lang.FONT_CTL)}
+        'th': Lang('th', 'TH', Lang.FONT_CTL),
+        'ti': Lang('ti', 'ER', Lang.FONT_CTL, 'Abyssinica SIL')}
 
 
 keep_english_file = False   # Delete the English worksheet after we're done (can be changed with the --keep-english-file arg)
