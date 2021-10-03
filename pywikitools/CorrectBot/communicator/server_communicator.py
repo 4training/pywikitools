@@ -1,6 +1,6 @@
-from pywikibot import Site, Page
 import logging
 import sys
+import pywikibot
 
 Logger = logging.getLogger("ServerCommunicator")
 
@@ -11,7 +11,11 @@ class ServerCommunicator:
     __slots__ = ['__global_site']
 
     def __init__(self):
-        self.__global_site = Site()
+        self.__global_site: pywikibot.site.APISite = pywikibot.Site()
+        # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
+        # "No user is logged in on site 4training:en" -> use this as a workaround and test with global_site.logged_in()
+        self.__global_site.login()
+
 
     def request_text_from_server(self, address: str) -> str:
         """Requests text content of given address on 4training.net-server
@@ -23,7 +27,7 @@ class ServerCommunicator:
             str: Text content for given address
         """
         try:
-            page: Page = Page(self.__global_site, address)
+            page: pywikibot.Page = pywikibot.Page(self.__global_site, address)
             if not page.exists():
                 Logger.fatal("Requested page does not exist")
                 sys.exit(1)
@@ -40,7 +44,7 @@ class ServerCommunicator:
             content (str): Text content
         """
         try:
-            page: Page = Page(self.__global_site, address)
+            page: pywikibot.Page = pywikibot.Page(self.__global_site, address)
             if not page.exists():
                 Logger.fatal("Requested page does not exist")
                 sys.exit(1)

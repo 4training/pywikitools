@@ -7,13 +7,13 @@ Created on Fri Mar 19 18:07:17 2021
 """
 import logging
 import re
+from typing import List, Final
+import sys
 from languageSpecificCorrectors.arabic_corrector import ArabicCorrector
 from languageSpecificCorrectors.english_corrector import EnglishCorrector
 from languageSpecificCorrectors.french_corrector import FrenchCorrector
 from languageSpecificCorrectors.german_corrector import GermanCorrector
 from languageSpecificCorrectors.spanish_corrector import SpanishCorrector
-from typing import List, Final
-import sys
 
 
 class Corrector:
@@ -144,18 +144,3 @@ class Corrector:
             ReducedPage: reduced page with fixed content
         """
         return self.__fixed_content
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

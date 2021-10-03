@@ -53,6 +53,12 @@ class PageWrapper:
         """
         return self.__corrected_translations
 
+    def set_corrected_translations(self, trans: List[str]):
+        """
+        TODO is there a better way to do this?
+        """
+        self.__corrected_translations = trans
+
     @property
     def is_modified(self) -> bool:
         """

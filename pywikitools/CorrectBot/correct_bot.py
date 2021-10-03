@@ -51,11 +51,13 @@ def main():
     communicator: Communicator = Communicator(name_of_webpage)
     page_wrapper: PageWrapper = communicator.fetch_content(language)
 
-    # corrector: Corrector = Corrector(page_wrapper.corrected_translations, page_wrapper.language)
-    # corrector.fix_general_typos()
-    # corrector.fix_language_specific_typos()
+    corrector: Corrector = Corrector(page_wrapper.corrected_translations, page_wrapper.language)
+    corrector.fix_general_typos()
+    corrector.fix_language_specific_typos()
 
+    # TODO this doesn't work
     # page_wrapper.corrected_translations = corrector.get_corrected_paragraphs
+    page_wrapper.set_corrected_translations(corrector.get_corrected_paragraphs)
 
     page_wrapper.print_diff()
     # if not simulation_mode:
