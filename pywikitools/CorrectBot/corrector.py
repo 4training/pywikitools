@@ -7,7 +7,7 @@ Created on Fri Mar 19 18:07:17 2021
 """
 import logging
 import re
-from typing import List, Final
+from typing import List, Final, Pattern
 import sys
 from languageSpecificCorrectors.arabic_corrector import ArabicCorrector
 from languageSpecificCorrectors.english_corrector import EnglishCorrector
@@ -39,11 +39,12 @@ class Corrector:
             str: String where the letter following a .!?;: is capitalized
         """
         # TODO: Quotation marks are not yet covered - double check if necessary
-        FIND_WRONG_CAPITALIZATION: Final[str] = re.compile(r'[\.\!\?\:\;]\s*([a-z])')
+        FIND_WRONG_CAPITALIZATION: Final[Pattern[str]] = re.compile(r'[.!?:;]\s*([a-z])')
         matches = re.finditer(FIND_WRONG_CAPITALIZATION, text_to_correct)
         fixed_text: str = text_to_correct
         for match in reversed(list(matches)):
             fixed_text = fixed_text[:match.end() - 1] + match.group(1).upper() + fixed_text[match.end():]
+        fixed_text = fixed_text[0].upper() + fixed_text[1:]
         return fixed_text
 
     @staticmethod
@@ -68,16 +69,18 @@ class Corrector:
         fixed_section = re.sub(check_wrong_spaces, r'\1', fixed_section)
         return fixed_section
 
-    def fix_general_typos(self) -> None:
+    def fix_language_independent_typos(self) -> None:
         """
-        Fixes typos in page translation-sections independent of language, like wrong spacing between words and/or
-        punctuation, wrong capitalization at beginning of sentence
+        Fixes typos in page translation-sections independent of language:
+            * Reduce redundant spaces to one
+            * Insert missing spaces between punctuation and chars
+            * Erase redundant spaces before punctuation
+            * Fix wrong capitalization at the beginning of a sentence or after a colon
         """
-        for paragraph_counter in range(len(self.__fixed_content)):
-            paragraph_to_be_fixed: str = self.__fixed_content[paragraph_counter]
-            paragraph_to_be_fixed = self.__fix_misplaced_spaces(paragraph_to_be_fixed)
-            paragraph_to_be_fixed = self.__fix_capitalization(paragraph_to_be_fixed)
-            self.__fixed_content[paragraph_counter] = paragraph_to_be_fixed
+        for counter, content in enumerate(self.__fixed_content):
+            content = self.__fix_misplaced_spaces(content)
+            content = self.__fix_capitalization(content)
+            self.__fixed_content[counter] = content
 
     @staticmethod
     def fix_file_name(text_to_correct: str) -> str:
