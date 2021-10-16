@@ -52,7 +52,7 @@ def main():
     page_wrapper: PageWrapper = communicator.fetch_content(language)
 
     corrector: Corrector = Corrector(page_wrapper.corrected_translations, page_wrapper.language)
-    corrector.fix_general_typos()
+    corrector.fix_language_independent_typos()
     corrector.fix_language_specific_typos()
 
     # TODO this doesn't work
