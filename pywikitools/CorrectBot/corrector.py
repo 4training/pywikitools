@@ -83,18 +83,23 @@ class Corrector:
             self.__fixed_content[counter] = content
 
     @staticmethod
-    def fix_file_name(text_to_correct: str) -> str:
+    def unify_document_file_name(file_name: str) -> str:
         """
-        This function is only for translation units that are file names.
-        - make sure there are no spaces -> replace them with underscores
+        Unifies document file names (.doc, .odg, .odt, .pdf) and ignores others
+        - limit unification to document files with the following extensions: '.doc', '.odg', '.odt', and '.pdf'
+        - replace spaces with single underscore
+        - replace multiple consecutive underscores with single underscore
         - have file ending in lower case
         """
-        if not text_to_correct.lower().endswith(('.pdf', '.odt', '.doc', '.odg')):
-            # TODO logger.info(f"Translation unit doesn't seem to be a file name: {text_to_correct}")
-            return text_to_correct
-        re.sub(' ', '_', text_to_correct)
-        re.sub('__', '_', text_to_correct)  # Just to make sure: there should be no two underscores side by side
-        return text_to_correct[:-4] + text_to_correct[-4:].lower()
+        if not file_name.lower().endswith(('.doc', '.odg', '.odt',  '.pdf')):
+            logging.info(f"input parameter does not look to be a file: {file_name}")
+            return file_name
+
+        file_name = re.sub(r"( )+", r'_', file_name)
+        file_name = re.sub(r"_+", r'_', file_name)
+        name: str = file_name[:-4]
+        extension: str = file_name[-4:].lower()
+        return name + extension
 
     def fix_language_specific_typos(self) -> None:
         """

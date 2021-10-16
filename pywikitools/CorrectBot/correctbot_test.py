@@ -128,10 +128,11 @@ from typing import Dict, Optional, List, Union
 
 
 class TestCorrector(unittest.TestCase):
+
     # Create corrector object with erroneous test content
     # Fix general typos
     # Assert that all language independent typos are fixed
-    def test_fix_general_typos(self):
+    def test_fix_language_independent_typos_successfully(self):
         # ##### Test Preparation #####
         __ERRONEOUS_CONTENT: List[str] = [
             "This entry   contains     too  many spaces.",
@@ -154,7 +155,56 @@ class TestCorrector(unittest.TestCase):
         corrected_content: List[str] = sut.get_corrected_paragraphs
         self.assertListEqual(corrected_content, __CORRECT_CONTENT)
 
+    # Create string that is no file name
+    # Call unity file name
+    # Assert that output result is the same as input string
+    def test_ignore_unification_of_document_file_name_if_no_document_file(self):
+        # ##### Test Preparation #####
+        __NO_FILE_NAME: str = "this .is no file name of type .pdf or .pdf or .doc or .odg for sure.foobar"
+        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
+        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
 
+        # ##### Test Execution #####
+        result: str = sut.unify_document_file_name(__NO_FILE_NAME)
+
+        # ##### Test Validation #####
+        self.assertEqual(result, __NO_FILE_NAME)
+
+    # Create a unified file names of document type .doc, .odg, .odt, .pdf
+    # Call unity file name
+    # Assert that
+    def test_check_unification_of_document_file_works_for_document_files(self):
+        # ##### Test Preparation #####
+        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
+        __VALID_FILE_EXTENSIONS: List[str] = [".doc", ".odg", ".odt", ".pdf"]
+        __NON_UNIFIED_FILE_NAME: str = "dummy file name"
+        __UNIFIED_FILE_NAME: str = "dummy_file_name"
+        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
+
+        for counter, file_extension in enumerate(__VALID_FILE_EXTENSIONS):
+            file_name_to_test: str = __NON_UNIFIED_FILE_NAME + file_extension.upper()
+
+            # ##### Test Execution #####
+            result: str = sut.unify_document_file_name(file_name_to_test)
+
+            # ##### Test Validation #####
+            self.assertEqual(result, __UNIFIED_FILE_NAME + file_extension.lower())
+
+    # Create a non-unified document file name
+    # Call unity file name
+    # Assert that the unification succeeded
+    def test_unify_non_unified_document_file_name(self):
+        # ##### Test Preparation #####
+        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
+        __INCORRECT_FILE_NAME: str = "this is   a file_name__to____fix.pdf"
+        __CORRECT_FILE_NAME: str = "this_is_a_file_name_to_fix.pdf"
+        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
+
+        # ##### Test Execution #####
+        result: str = sut.unify_document_file_name(__INCORRECT_FILE_NAME)
+
+        # ##### Test Validation #####
+        self.assertEqual(result, __CORRECT_FILE_NAME)
 
 
 if __name__ == '__main__':
