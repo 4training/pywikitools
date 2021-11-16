@@ -8,3 +8,8 @@ coverage==4.5.4
 Sphinx==1.8.5
 twine==1.14.0
 
+
+setuptools~=57.0.0
+pywikibot~=6.3.0
+requests~=2.25.1
+dropbox~=9.4.0
