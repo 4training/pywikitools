@@ -67,7 +67,7 @@ def get_worksheet_list() -> List[str]:
     return [
         "God's_Story_(five_fingers)", "God's_Story_(first_and_last_sacrifice)",
         "Baptism", "Prayer", "Forgiving_Step_by_Step", "Confessing_Sins_and_Repenting",
-        "Time_with_God", "Hearing_from_God", "Church", "Healing",
+        "Time_with_God", "Hearing_from_God", "Church", "Healing", "Dealing_with_Money",
         "My_Story_with_God", "Bible_Reading_Hints",
         "Bible_Reading_Hints_(Seven_Stories_full_of_Hope)",
         "Bible_Reading_Hints_(Starting_with_the_Creation)",
@@ -328,6 +328,7 @@ def title_to_message(title: str) -> str:
     ret = ret.replace(')', '')
     ret = ret.replace("'", '')
     ret = ret.replace("_", '')
+    ret = ret.replace(" ", '')
     ret = ret.replace(':', '')
     ret = ret.lower()
     return 'sidebar-' + ret

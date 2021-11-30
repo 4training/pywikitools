@@ -43,6 +43,10 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')
         self.assertIsNone(fortraininglib.get_pdf_name('NotExisting', 'en'))
 
+    def test_title_to_message(self):
+        self.assertEqual(fortraininglib.title_to_message('Time_with_God'), 'sidebar-timewithgod')
+        self.assertEqual(fortraininglib.title_to_message('Dealing with Money'), 'sidebar-dealingwithmoney')
+
 
 if __name__ == '__main__':
     unittest.main()
