@@ -57,7 +57,7 @@ class Lang:
 # Configuration for each language:
 # - the LibreOffice language configuration counterpart (languagecode, countrycode, category)
 # - potentially a font name that renders this language well
-# 
+#
 # TODO add missing languages -> unfortunately it seems like we always need a country code as well
 # See https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes column alpha-2
 LANG_LOCALE = {
@@ -96,7 +96,7 @@ LANG_LOCALE = {
         'ml': Lang('ml', 'IN', Lang.FONT_CTL, 'Gentium'),
         'ckb': Lang('ckb', 'IQ', Lang.FONT_CTL),
         'fa': Lang('fa', 'IR', Lang.FONT_CTL),
-        'ta': Lang('ta', 'IN', Lang.FONT_CTL),
+        'ta': Lang('ta', 'IN', Lang.FONT_CTL, 'TAMu_Kalyani'),
         'te': Lang('te', 'IN', Lang.FONT_CTL),
         'th': Lang('th', 'TH', Lang.FONT_CTL),
         'ti': Lang('ti', 'ER', Lang.FONT_CTL, 'Abyssinica SIL')}

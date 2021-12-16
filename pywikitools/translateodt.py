@@ -32,10 +32,8 @@ import configparser
 from typing import List, Optional
 import requests
 import uno          # type: ignore
-#import unohelper    # type: ignore
 from com.sun.star.connection import NoConnectException
 from com.sun.star.beans import PropertyValue
-from com.sun.star.style import XStyleFamiliesSupplier
 from com.sun.star.lang import Locale
 #from com.sun.star.lang import IllegalArgumentException #could this be helpful to check oo arguments?
 import fortraininglib
@@ -107,10 +105,8 @@ def open_doc(name: str):
                 raise error
             sleep(2)
 
-    smgr = ctx.ServiceManager
-
     # get the central desktop object
-    desktop = smgr.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
+    desktop = ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
 
     # access the current writer document
     while not model:
@@ -259,22 +255,18 @@ def oo_save_close(oo_data, filename):
     desktop, model, proc = oo_data
 
     uri = 'file://' + filename
+    args = []   # arguments for saving
 
-    # arguments for saving
-    args = []
-
-    # property overwrite
+    # overwrite file if it already exists
     arg0 = PropertyValue()
     arg0.Name = "Overwrite"
     arg0.Value = True
     args.append(arg0)
 
-    # save as odt
-    model.storeAsURL(uri, args)
+    model.storeAsURL(uri, args) # save as ODT
     logger.info(f"Saved translated document with uri {uri}")
 
-    # pdf options
-    opts = []
+    opts = []   # options for PDF export
     # Archive PDF/A
     opt1 = PropertyValue()
     opt1.Name = "SelectPdfVersion"
@@ -296,7 +288,6 @@ def oo_save_close(oo_data, filename):
     opt4.Value = 90
     opts.append(opt4)
 
-    #args = []
     # export to pdf property
     arg1 = PropertyValue()
     arg1.Name = "FilterName"
@@ -311,7 +302,7 @@ def oo_save_close(oo_data, filename):
 
     # export as pdf
     model.storeToURL(uri.replace(".odt", ".pdf"), tuple(args))
-    logger.info(f"Saved translated document with uri {uri.replace('.odt', '.pdf')}")
+    logger.info(f"Exported translated document to PDF with uri {uri.replace('.odt', '.pdf')}")
 
     # close
     if config.getboolean('translateodt', 'closeoffice'):
@@ -562,19 +553,10 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
     if default_style is not None:
         if fortraininglib.get_language_direction(languagecode) == "rtl":
             logger.debug("Setting language direction to RTL")
-            default_style.ParaAdjust = 1 #alignment
-            # 0: left
-            # 1: right
-            # 2: justified
-            # 3: center
-            # change
-            default_style.WritingMode = 1 #writing direction:
-            # 0: left-to-right
-            # 1: right-to-left
-            # 2,3: nothing selected
-            # 4: "use superordinate object settings"
+            default_style.ParaAdjust = 1 # alignment (0: left; 1: right; 2: justified; 3: center)
+            default_style.WritingMode = 1 # writing direction (0: LTR; 1: RTL; 4: "use superordinate object settings")
 
-        #default_style.CharLocale.Language and .Country seem to be read-only
+        # default_style.CharLocale.Language and .Country seem to be read-only
         logger.debug("Setting language locale of Default Style")
         if languagecode in LANG_LOCALE:
             lang = LANG_LOCALE[languagecode]
