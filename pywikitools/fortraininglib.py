@@ -164,7 +164,7 @@ def get_file_url(filename: str):
     return url_json["query"]["pages"][page_number]["imageinfo"][0]["url"]
 
 
-def get_page_content(page: str) -> Optional[str]:
+def get_page_source(page: str) -> Optional[str]:
     """
     Return the wikitext (source) of a page
     @return None on error
@@ -182,13 +182,26 @@ def get_page_content(page: str) -> Optional[str]:
     except KeyError:
         return None
 
+def get_page_html(page: str) -> Optional[str]:
+    """
+    Return the HTML representation of a page
+    @return None on error
+    """
+    response = requests.get(APIURL, params={
+        "action": "parse",
+        "page": page,
+        "format": "json"})
+    try:
+        return response.json()["parse"]["text"]['*']
+    except KeyError:
+        return None
 
 def get_pdf_name(worksheet: str, languagecode: str):
     """ returns the name of the PDF associated with that worksheet translated into a specific language
     @return None in case we didn't find it
     """
     # we need to retrieve the page source of the English original and scan it for the name of the PDF file
-    content = get_page_content(worksheet)
+    content = get_page_source(worksheet)
     if not content:
         return None
     # We have the page source, scan it for the PDF file name now
@@ -209,7 +222,7 @@ def get_pdf_name(worksheet: str, languagecode: str):
         return None
 
     # now we just need to look up the translation of this translation unit
-    return get_page_content(f"Translations:{worksheet}/{translation_unit}/{languagecode}")
+    return get_page_source(f"Translations:{worksheet}/{translation_unit}/{languagecode}")
 
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
