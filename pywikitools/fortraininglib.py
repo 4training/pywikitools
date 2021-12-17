@@ -88,14 +88,14 @@ def get_file_types() -> List[str]:
     return ['pdf', 'odt', 'odg']
 
 
-def get_language_direction(languagecode: str) -> str:
+def get_language_direction(language_code: str) -> str:
     """ Returns language direction 'rtl' or 'ltr'
     This is hard-coded here.
     It is possible to request this from the mediawiki API e.g. with
     https://www.4training.net/mediawiki/api.php?action=query&titles=Prayer/ckb&prop=info
     but this has the cost of an extra API call...
     """
-    if languagecode in RTL_LANGUAGES:
+    if language_code in RTL_LANGUAGES:
         return "rtl"
     return "ltr"
 
@@ -196,12 +196,21 @@ def get_page_html(page: str) -> Optional[str]:
     except KeyError:
         return None
 
-def get_pdf_name(worksheet: str, languagecode: str):
+
+def get_translated_title(page: str, language_code: str) -> Optional[str]:
+    """
+    Returns the translated title of a worksheet
+    @return None on error
+    """
+    return get_page_source(f"Translations:{page}/Page display title/{language_code}")
+
+
+def get_pdf_name(page: str, language_code: str):
     """ returns the name of the PDF associated with that worksheet translated into a specific language
     @return None in case we didn't find it
     """
     # we need to retrieve the page source of the English original and scan it for the name of the PDF file
-    content = get_page_source(worksheet)
+    content = get_page_source(page)
     if not content:
         return None
     # We have the page source, scan it for the PDF file name now
@@ -211,7 +220,7 @@ def get_pdf_name(worksheet: str, languagecode: str):
     pdffile = re.search(r'[^ \n>]+\.pdf', pdfdownload.group())
     if not pdffile:
         return None
-    if languagecode == 'en':    # we're already done
+    if language_code == 'en':    # we're already done
         return pdffile.group()
     translation_unit: int = 0   # the number of the translation unit containing the name of the PDF file
     search_tu = re.search(r'--T:(\d+)--', pdfdownload.group())
@@ -222,7 +231,7 @@ def get_pdf_name(worksheet: str, languagecode: str):
         return None
 
     # now we just need to look up the translation of this translation unit
-    return get_page_source(f"Translations:{worksheet}/{translation_unit}/{languagecode}")
+    return get_page_source(f"Translations:{page}/{translation_unit}/{language_code}")
 
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
@@ -243,7 +252,7 @@ def list_page_translations(page: str, include_unfinished=False) -> Dict[str, Tra
             'action': 'query',
             'meta': 'messagegroupstats',
             'format': 'json',
-            'mgsgroup': 'page-' + page})
+            'mgsgroup': f"page-{page}"})
         logger.info(f"Retrieving translation information of {page}, try #{counter}. Response: {response.status_code}")
         json = response.json()
 
@@ -300,9 +309,9 @@ def list_page_templates(page: str) -> List[str]:
         return []
 
 
-def get_translation_units(worksheet: str, languagecode: str):
+def get_translation_units(page: str, language_code: str):
     """
-    List the translation units of worksheet translated into the language identified by languagecode
+    List the translation units of worksheet translated into the language identified by language_code
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
     @return if successful than returns the structure as is in response.json()["query"]["messagecollection"]
     @return on error: returns string with error message
@@ -311,11 +320,11 @@ def get_translation_units(worksheet: str, languagecode: str):
         "action": "query",
         "format": "json",
         "list": "messagecollection",
-        "mcgroup": "page-" + worksheet,
-        "mclanguage": languagecode,
+        "mcgroup": f"page-{page}",
+        "mclanguage": language_code,
     })
 
-    logger.info(f"Retrieving translation of {worksheet} into language {languagecode}... {response.status_code}")
+    logger.info(f"Retrieving translation of {page} into language {language_code}... {response.status_code}")
     json = response.json()
     if "error" in json:
         if "info" in json["error"]:
@@ -364,15 +373,15 @@ def expand_template(raw_template: str) -> str:
     return ""
 
 
-def get_cc0_notice(version: str, languagecode: str) -> str:
+def get_cc0_notice(version: str, language_code: str) -> str:
     """
     Returns the translated CC0 notice (https://www.4training.net/Template:CC0Notice)
     @param version Version number to put in
-    @param languagecode Which language to translate it
+    @param language_code Which language to translate it
     @return The translated notice (for footers in worksheets)
     @return string with a TODO in case the translation doesn't exist
     """
-    expanded = expand_template("{{CC0Notice/" + languagecode + "|" + version + "}}")
+    expanded = expand_template("{{CC0Notice/" + language_code + "|" + version + "}}")
     if "mw-translate-fuzzy" in expanded:
         logger.warning("Warning: Template:CC0Notice doesn't seem to be correctly translated into this language. "
                        "Please check https://www.4training.net/Template:CC0Notice")
