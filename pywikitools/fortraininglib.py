@@ -205,7 +205,7 @@ def get_translated_title(page: str, language_code: str) -> Optional[str]:
     return get_page_source(f"Translations:{page}/Page display title/{language_code}")
 
 
-def get_pdf_name(page: str, language_code: str):
+def get_pdf_name(page: str, language_code: str) -> Optional[str]:
     """ returns the name of the PDF associated with that worksheet translated into a specific language
     @return None in case we didn't find it
     """
@@ -213,10 +213,12 @@ def get_pdf_name(page: str, language_code: str):
     content = get_page_source(page)
     if not content:
         return None
-    # We have the page source, scan it for the PDF file name now
-    pdfdownload = re.search('{{PdfDownload[^}]*}', content)
+    # We have the page source, scan it for the PDFDownload template
+    # Example: {{PdfDownload|<translate><!--T:4--> Prayer.pdf</translate>}}
+    pdfdownload = re.search(r'{{PdfDownload[^}]*}', content)
     if not pdfdownload:
         return None
+    # Identify the PDF name
     pdffile = re.search(r'[^ \n>]+\.pdf', pdfdownload.group())
     if not pdffile:
         return None
@@ -232,6 +234,36 @@ def get_pdf_name(page: str, language_code: str):
 
     # now we just need to look up the translation of this translation unit
     return get_page_source(f"Translations:{page}/{translation_unit}/{language_code}")
+
+def get_version(page: str, language_code: str) -> Optional[str]:
+    """ Returns the version of the page in the specified language
+    @return None in case we didn't find it
+    """
+    # we need to retrieve the page source of the English original and scan it for the name of the PDF file
+    content = get_page_source(page)
+    if not content:
+        return None
+    # We have the page source, scan it for the version template.
+    # Example: {{Version|<translate><!--T:6--> 1.1</translate>}}
+    version_template = re.search(r'{{Version[^}]*}}', content)
+    if not version_template:
+        return None
+    version = re.search(r'\d\.\d+\w?', version_template.group())
+    if not version:
+        return None
+    if language_code == 'en':    # we're already done
+        return version.group()
+    translation_unit: int = 0   # the number of the translation unit containing the version number
+    search_tu = re.search(r'--T:(\d+)--', version_template.group())
+    if search_tu:
+        translation_unit = int(search_tu.group(1))
+    if translation_unit == 0:
+        logger.warning("Couldn't find number of translation unit containing the version number")
+        return None
+
+    # now we just need to look up the translation of this translation unit
+    return get_page_source(f"Translations:{page}/{translation_unit}/{language_code}")
+
 
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:

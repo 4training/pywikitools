@@ -33,13 +33,25 @@ class Mediawiki2Drupal():
         'Content-Type': 'application/vnd.api+json'
     }
 
-    def __init__(self, endpoint: str, username: str, password: str):
+    def __init__(self, endpoint: str, username: str, password: str,
+                 content_type: str="page", change_hrefs: Dict[str, str]=None,
+                 img_src_rewrite: Dict[str,str]=None):
+        """
+        @param content_type refers to the Drupal content type that we should create articles with.
+        This needs to be the system name of a content type
+        ("page" is the system name of the "basic page" content type, one of the defaults in Drupal)
+        @param change_hrefs: rewrite <a href=""> properties
+        @param img_src_rewrite: dictionary with new href sources
+        """
         self._endpoint = endpoint
         self._username = username
         self._password = password
+        self._content_type = content_type
+        self._change_hrefs = change_hrefs
+        self._img_src_rewrite = img_src_rewrite
         self.logger = logging.getLogger('pywikitools.mediawiki2drupal')
 
-    def _process_html(self, input: str) -> str:
+    def _process_html(self, input: str, custom_fields: Dict[str, str]=None) -> str:
         """
         Take the original HTML coming from mediawiki and remove unnecessary tags or attributes.
 
@@ -52,25 +64,83 @@ class Mediawiki2Drupal():
         # Remove the language overview
         for element in soup.find_all(class_="noprint"):
             element.decompose()
+
         # Removing comments
         for child in soup.children:
             if isinstance(child, Comment):
                 child.extract()
+
         # Changing <h2><span class="mw-headline" id="Headline">Headline</span></h2>
         # to <h2>Headline</h2>
         # TODO: do we need the id tag again to be able to set internal links?
         for element in soup.find_all("span", class_="mw-headline"):
             element.unwrap()
+
         # Remove empty <span> tags (not sure why they're even there)
         for element in soup.find_all("span"):
             if element.string is None:
                 element.extract()
+
+        # Correct image hrefs
+        for element in soup.find_all("img"):
+            del element['srcset']
+            img_src = str(element['src'])
+            last_slash = img_src.rfind('/')
+            if last_slash >= 0:
+                img_src = img_src[last_slash+1:]
+            if img_src in self._img_src_rewrite:
+                self.logger.info(f"Replacing img src {element['src']} with {self._img_src_rewrite[img_src]}")
+                element['src'] = self._img_src_rewrite[img_src]
+                if img_src.startswith('30px-Hand'): # some customizations for the five "hands" images in God's Story
+                    del element['height']
+                    del element['width']
+                    element['style'] = 'height:80px; margin-right:20px'
+                    element['align'] = 'left'
+            else:
+                self.logger.warning(f"Missing img src replacement for {img_src}")
+
+        for element in soup.find_all("a", href=True):
+            if element['href'].startswith("/File:"):
+                # Remove <a> links around <img> tags
+                element.unwrap()
+                continue
+            # Rewrite hrefs
+            if self._change_hrefs is not None:
+                if element['href'] in self._change_hrefs:
+                    self.logger.info(f"Rewriting a href source {element['href']} with {self._change_hrefs[element['href']]}")
+                    element['href'] = self._change_hrefs[element['href']]
+                else:
+                    self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}")
+
         return str(soup)
 
-    def import_page(self, page: str, language_code: str) -> bool:
+    def get_page_id(self, field_name: str, value: str):
+        """
+        Search for a page where the given field matches the given value
+        If at least one page exists, return the ID of the first page
+        This will issue a warning if more than one page was found
+        Example: get_page_id("title", "Gebet") will call /jsonapi/node/page?filter[title][value]=Gebet
+        @return None in case no matching page was found
+        """
+        payload = { f"filter[{field_name}][value]": value }
+        r = requests.get(f"{self._endpoint}/node/{self._content_type}",
+                auth=(self._username, self._password), params=payload)
+        if "data" not in r.json():
+            return None
+        if not isinstance(r.json()["data"], list):
+            return None
+        if len(r.json()["data"]) == 0:
+            return None
+        if len(r.json()["data"]) > 1:
+            self.logger.warning(f"Found more than one page with search criteria {field_name}={value}.")
+        return r.json()["data"][0]["id"]
+
+
+    def import_page(self, page: str, language_code: str, article_id=None, custom_fields: Dict[str, str]=None) -> bool:
         """
         Request the translated page and import it to Drupal
-        TODO: count number of languages the page is translated to and import that also into customized field
+        @param article_id if given, try to patch this existing node. If None, create new node
+        @param custom_fields allows to set more fields of the content type to custom values
         @return False on error
         """
         title = fortraininglib.get_translated_title(page, language_code)
@@ -84,19 +154,43 @@ class Mediawiki2Drupal():
 
         payload = {
             "data": {
-                "type": "node--article",    # TODO: make this configurable
+                "type": f"node--{self._content_type}",
                 "attributes": {
                     "title": title,
                     "body": {
-                        "value": self._process_html(content),
+                        "value": self._process_html(content, custom_fields),
                         "format": "full_html"
                     }
                 }
             }
         }
+        payload["data"]["attributes"].update(custom_fields)
+        self.logger.debug(payload)
 
-        r = requests.post(self._endpoint, headers=self.HEADERS, auth=(self._username, self._password), json=payload)
-        return r.status_code == 201
+        if article_id is None:
+            # Create new article
+            r = requests.post(f"{self._endpoint}/node/{self._content_type}",
+                    headers=self.HEADERS, auth=(self._username, self._password), json=payload)
+            self.logger.debug(r.status_code)
+            self.logger.debug(r.json())
+        else:
+            # Update existing article
+            payload["data"]["id"] = article_id
+            r = requests.patch(f"{self._endpoint}/node/{self._content_type}/{article_id}",
+                    headers=self.HEADERS, auth=(self._username, self._password), json=payload)
+            self.logger.debug(r.status_code)
+            self.logger.debug(r.json())
+
+
+        if r.status_code not in [200, 201]:
+            error = 'No error details given.'
+            if "errors" in r.json() and isinstance(r.json()["errors"], list):
+                if "title" in r.json()["errors"][0]:
+                    error = r.json()["errors"][0]["title"]
+                    if "detail" in r.json()["errors"][0]:
+                        error += f". Details: {r.json()['errors'][0]['detail']}"
+            self.logger.warning(f"Failed to import page {page}/{language_code}. {error}")
+        return r.status_code in [200, 201]
 
 
 if __name__ == "__main__":

@@ -43,9 +43,15 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')
         self.assertIsNone(fortraininglib.get_pdf_name('NotExisting', 'en'))
 
+    def test_get_version(self):
+        self.assertEqual(fortraininglib.get_version('Forgiving_Step_by_Step', 'en'), '1.3')
+        self.assertEqual(fortraininglib.get_version('Forgiving_Step_by_Step', 'de'), '1.3')
+        self.assertIsNone(fortraininglib.get_version('NotExisting', 'en'))
+
     def test_title_to_message(self):
         self.assertEqual(fortraininglib.title_to_message('Time_with_God'), 'sidebar-timewithgod')
         self.assertEqual(fortraininglib.title_to_message('Dealing with Money'), 'sidebar-dealingwithmoney')
+
 
 
 if __name__ == '__main__':
