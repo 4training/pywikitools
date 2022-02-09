@@ -111,18 +111,22 @@ class Mediawiki2Drupal():
                     element['href'] = self._change_hrefs[element['href']]
                 else:
                     self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}")
+            del element['title']
 
         return str(soup)
 
-    def get_page_id(self, field_name: str, value: str):
+    def get_page_id(self, search_criteria: Dict[str, str]):
         """
         Search for a page where the given field matches the given value
         If at least one page exists, return the ID of the first page
         This will issue a warning if more than one page was found
-        Example: get_page_id("title", "Gebet") will call /jsonapi/node/page?filter[title][value]=Gebet
+        @param search_criteria: at least one entry of field_name -> value
+        Example: get_page_id({"title": "Gebet"}) will call /jsonapi/node/page?filter[title][value]=Gebet
         @return None in case no matching page was found
         """
-        payload = { f"filter[{field_name}][value]": value }
+        payload = {}
+        for field_name, value in search_criteria.items():
+            payload[f"filter[{field_name}][value]"] = value
         r = requests.get(f"{self._endpoint}/node/{self._content_type}",
                 auth=(self._username, self._password), params=payload)
         if "data" not in r.json():
