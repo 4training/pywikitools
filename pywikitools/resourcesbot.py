@@ -307,20 +307,6 @@ class ResourcesBot():
         # Stores details on all other languages in a dictionary language code -> information about all worksheets in that language
         self._result: Dict[str, LanguageInfo] = {}
 
-    def _get_translated_unit(self, page: str, lang: str, translation_unit_identifier) -> Optional[str]:
-        """
-        Returns the translation of one translation unit of a page into a give language
-        @param page (str): name of the page
-        @param lang (str): language code
-        @param translation_unit_identifier: can either be number of translation unit or "Page display title"
-        TODO move this function to fortraininglib, make an extra function get_translated_page_title(page, lang)
-        @return the translated string or None if translation doesn't exist
-        """
-        wiki_page = pywikibot.Page(self.site, f"Translations:{page}/{str(translation_unit_identifier)}/{lang}")
-        if wiki_page.pageid == 0:
-            return None
-        return wiki_page.text
-
     def run(self):
         """
         Start the bot
@@ -397,7 +383,7 @@ class ResourcesBot():
 
         # now let's retrieve the translated file names
         for lang in finished_translations:
-            translated_title = self._get_translated_unit(page, lang, "Page display title")
+            translated_title = fortraininglib.get_translated_title(page, lang)
             if translated_title is None:  # apparently this translation doesn't exist
                 self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
                 continue
@@ -405,7 +391,7 @@ class ResourcesBot():
             for file_type in en_file_details:
                 if en_file_details[file_type]['number'] == 0:    # in English original this is not existing, skip it
                     continue
-                translation = self._get_translated_unit(page, lang, en_file_details[file_type]['number'])
+                translation = fortraininglib.get_translated_unit(page, lang, en_file_details[file_type]['number'])
                 self.logger.debug(f"{page}/{en_file_details[file_type]['number']}/{lang} is {translation}")
                 if translation is None:
                     self.logger.warning(f"Warning: translation {page}/{en_file_details[file_type]['number']}/{lang} "

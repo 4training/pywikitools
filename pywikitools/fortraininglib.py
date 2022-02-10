@@ -205,6 +205,16 @@ def get_translated_title(page: str, language_code: str) -> Optional[str]:
     return get_page_source(f"Translations:{page}/Page display title/{language_code}")
 
 
+def get_translated_unit(page: str, language_code: str, identifier: int) -> Optional[str]:
+    """
+    Returns the translation of one translation unit of a page into a give language
+    @param identifier: number of the translation unit
+    (use get_translated_title() for getting the "Page display title" translation unit)
+    @return the translated string or None if translation doesn't exist
+    """
+    return get_page_source(f"Translations:{page}/{identifier}/{language_code}")
+
+
 def get_pdf_name(page: str, language_code: str) -> Optional[str]:
     """ returns the name of the PDF associated with that worksheet translated into a specific language
     @return None in case we didn't find it
