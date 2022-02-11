@@ -4,10 +4,14 @@ TODO Not yet fully functional
 """
 import unittest
 import sys
+import importlib
 
 sys.path.append('../')  # TODO import that without the dirty hack
-from correct_bot import Corrector
-from typing import Dict, Optional, List, Union
+#from correct_bot import Corrector
+from typing import Callable, Dict, Optional, List, Union
+from os import listdir
+from os.path import isfile, join
+
 #
 #
 # def create_reduced_page(language: str, input: List) -> ReducedPage:
@@ -75,18 +79,18 @@ from typing import Dict, Optional, List, Union
 #         execute_test("de", ["“foo„", "„foo„", "“foo“"], "„foo“")
 #
 #
-# class CorrectBotFrench(unittest.TestCase):
-#     def test_false_friends_replacement(self):
-#         execute_test("fr", ["example"], "exemple")
-#
-#     def test_ellipsis_fix(self):
-#         execute_test("fr", ["…"], "...")
-#
-#     def test_quotation_marks_fix(self):
-#         # Verify replacement of non-french quotation marks
-#         execute_test("fr", ["“foo”", "\"foo\""], "«\u00a0foo\u00a0»")
-#         # Verify that french quotation marks are used correctly
-#         execute_test("fr", ["« foo »", "«foo»"], "«\u00a0foo\u00a0»")
+#class CorrectBotFrench(unittest.TestCase):
+#    def test_false_friends_replacement(self):
+#        execute_test("fr", ["example"], "exemple")
+
+#    def test_ellipsis_fix(self):
+#        execute_test("fr", ["…"], "...")
+
+#    def test_quotation_marks_fix(self):
+        # Verify replacement of non-french quotation marks
+#        execute_test("fr", ["“foo”", "\"foo\""], "«\u00a0foo\u00a0»")
+        # Verify that french quotation marks are used correctly
+#        execute_test("fr", ["« foo »", "«foo»"], "«\u00a0foo\u00a0»")
 #
 #
 # class CorrectBotSpain(unittest.TestCase):
@@ -125,9 +129,59 @@ from typing import Dict, Optional, List, Union
 #     # https://www.4training.net/mediawiki/index.php?title=Forgiving_Step_by_Step%2Far&type=revision&diff=29760&oldid=29122
 #
 #
+class LanguageCorrectorTests(unittest.TestCase):
+    def setUp(self):
+        """Load all language-specific corrector classes so that we can afterwards easily run our checks on them"""
+        self.language_correctors: List[Callable] = []
+        # Search for all language-specific files in the correctors/ folder and get the classes in them
+        for corrector_file in [f for f in listdir("./correctors") if isfile(join("./correctors", f))]:
+            if corrector_file in ['__init__.py', 'universal.py']:
+                continue
 
+            language_code = corrector_file[0:-3]
+            module = importlib.import_module(f"correctors.{language_code}", ".")
+            # There should be exactly one class named "XYCorrector" in there - let's get the name of it
+            class_name = next(s for s in dir(module) if "Corrector" in s)
+            # Now let's load it and store it in self.language_correctors
+            self.language_correctors.append(getattr(module, class_name))
+
+        # Now load all classes for correctors used by several languages
+        self.flexible_correctors: List[Callable] = []
+        universal_module = importlib.import_module(f"correctors.universal", ".")
+        for class_name in [s for s in dir(universal_module) if (("Corrector" in s) and (s != "LanguageCorrector"))]:
+            self.flexible_correctors.append(getattr(universal_module, class_name))
+
+    def test_for_meaningful_names(self):
+        """Make sure each function either starts with "correct_" or ends with "_title" or with "_filename"""
+        for language_corrector in self.language_correctors:
+            for function_name in dir(language_corrector):
+                if function_name.startswith('_'):
+                    continue
+                if getattr(language_corrector, function_name).__module__ == "correctors.universal":
+                    continue
+                self.assertTrue(function_name.startswith("correct_")
+                                or function_name.endswith("_title")
+                                or function_name.endswith("_filename"))
+
+    def test_for_unique_function_names(self):
+        """Make sure that there are no functions with the same name in a language-specific corrector
+        and a flexible corrector"""
+        flexible_functions: List[str] = []
+        for flexible_corrector in self.flexible_correctors:
+            for flexible_function in dir(flexible_corrector):
+                if flexible_function.startswith('_'):
+                    continue
+                flexible_functions.append(flexible_function)
+
+        for language_corrector in self.language_correctors:
+            for language_function in dir(language_corrector):
+                if language_function.startswith('_'):
+                    continue
+                if getattr(language_corrector, language_function).__module__ != "correctors.universal":
+                    self.assertNotIn(language_function, flexible_functions)
 
 class TestCorrector(unittest.TestCase):
+    # TODO this needs a lot of refactoring after the old Corrector class doesn't exist anymore
 
     # Create corrector object with erroneous test content
     # Fix general typos

@@ -12,8 +12,10 @@ www.4training.net/mediawiki/api.php?action=query&list=messagecollection&mcgroup=
 
 import argparse
 import logging
+import importlib
+import sys
+from typing import Callable, List
 
-from corrector import Corrector
 from communicator import PageWrapper
 from communicator import Communicator
 
@@ -36,6 +38,21 @@ def parse_arguments() -> argparse.Namespace:
                         help="Debug, Info, Warning, Error, Critical")
     return parser.parse_args()
 
+def load_corrector(language_code: str) -> Callable:
+    """Load the corrector class and return it (None in case of an error)"""
+    try:
+        # Dynamically load e.g. correctors/de.py
+        module = importlib.import_module(f"correctors.{language_code}", ".")
+        # There should be exactly one class named "XYCorrector" in there - let's get the name of it
+        class_name = next(s for s in dir(module) if "Corrector" in s)
+        # Now let's load it
+        corrector_class = getattr(module, class_name)
+
+    except ModuleNotFoundError as err:
+        logging.fatal(f"Couldn't load corrector for language {language_code}: {err}")
+        sys.exit(1)
+
+    return corrector_class
 
 def main():
     """
@@ -51,13 +68,18 @@ def main():
     communicator: Communicator = Communicator(name_of_webpage)
     page_wrapper: PageWrapper = communicator.fetch_content(language)
 
-    corrector: Corrector = Corrector(page_wrapper.corrected_translations, page_wrapper.language)
-    corrector.fix_language_independent_typos()
-    corrector.fix_language_specific_typos()
+    corrector_class = load_corrector(page_wrapper.language)
+    corrector_class_instance = corrector_class()
 
-    # TODO this doesn't work
-    # page_wrapper.corrected_translations = corrector.get_corrected_paragraphs
-    page_wrapper.set_corrected_translations(corrector.get_corrected_paragraphs)
+    corrected_translations: List[str] = []
+    for counter in range(len(page_wrapper.original_translations)):
+        # TODO simplify this a bit
+        text = page_wrapper.original_translations[counter]
+        corrected_translations.append(corrector_class_instance.correct(text))
+
+    print(corrector_class_instance.print_stats())
+
+    page_wrapper.set_corrected_translations(corrected_translations)
 
     page_wrapper.print_diff()
     # if not simulation_mode:
