@@ -52,7 +52,18 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(fortraininglib.title_to_message('Time_with_God'), 'sidebar-timewithgod')
         self.assertEqual(fortraininglib.title_to_message('Dealing with Money'), 'sidebar-dealingwithmoney')
 
+    def test_get_worksheet_list(self):
+        for worksheet in fortraininglib.get_worksheet_list():
+            page_source = fortraininglib.get_page_source(worksheet)
+            self.assertIsNotNone(page_source)
+            self.assertGreater(len(page_source), 100)
 
+    def test_get_file_url(self):
+        test_file = 'Forgiving_Step_by_Step.pdf'
+        self.assertIsNone(fortraininglib.get_file_url('NotExisting'))
+        self.assertTrue(fortraininglib.get_file_url(test_file).startswith('https://www.4training.net'))
+        self.assertTrue(fortraininglib.get_file_url(test_file).endswith(test_file))
+        
 
 if __name__ == '__main__':
     unittest.main()
