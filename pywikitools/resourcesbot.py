@@ -288,11 +288,9 @@ class ResourcesBot():
         self._changelog: Dict[str, ChangeLog] = {}
 
     def run(self):
-        """
-        Start the bot
-        """
-        for page in fortraininglib.get_worksheet_list():
-            self.process_page(page)
+        # Gather all data (this takes quite some time!)
+        for worksheet in fortraininglib.get_worksheet_list():
+            self.query_translations(worksheet)
 
         if not self.site.logged_in():
             self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
@@ -300,19 +298,21 @@ class ResourcesBot():
             self.logger.warning(f"userinfo: {self.site.userinfo}")
             sys.exit(2)
 
+        # Find out what has been changed since our last run
         for lang in self._result:
             if lang != 'en':
-                self.process_language(lang)
+                self._changelog[lang] = self.sync_and_compare(lang)
 
+        # Now do some useful stuff with the information we gathered
         if self._limit_to_lang is not None:
             self.create_summary(self._limit_to_lang)
         else:
             self.total_summary()
 
-    def process_page(self, page: str):
+    def query_translations(self, page: str):
         """
         Go through one worksheet, check all existing translations and gather information into self._result
-        @param: page (str): Name of the page
+        @param: page: Name of the worksheet
         """
         p = pywikibot.Page(self.site, page)
         if not p.exists():
@@ -507,54 +507,53 @@ class ResourcesBot():
         else:
             self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
 
-    def process_language(self, lang: str):
+    def sync_and_compare(self, lang: str) -> ChangeLog:
         """
-        Process the specified language, re-writing the list of available training resources if necessary
-            - Reads and compares with the last list of available training resources
+        Synchronize our generated data on this language with our "database" and return the changes.
+
+        The "database" is the JSON representation of LanguageInfo and is stored in a mediawiki page.
+
+        Returns the comparison to what was previously stored in our database
+
         @param lang language code
         """
         self.logger.debug(f"Processing language {lang}...")
         if lang not in self._result:
             self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
-            return
+            return ChangeLog()
 
+        encoded_json = LanguageInfoEncoder().encode(self._result[lang])
         language_info: LanguageInfo = LanguageInfo(lang)
-        rewrite_language: Bool = self._rewrite_all
         rewrite_json: Bool = self._rewrite_all
+
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
         page = pywikibot.Page(self.site, f"4training:{lang}.json")
         if not page.exists():
             # There doesn't seem to be any information on this language stored yet!
             self.logger.warning(f"{page.full_url()} doesn't seem to exist yet. Creating...")
-            page.text = LanguageInfoEncoder().encode(self._result[lang])
+            page.text = encoded_json
             page.save("Created JSON data structure")
             rewrite_json = False
         else:
-            # compare and find out if new worksheets have been added
+            # Load "old" data structure of this language (from previous resourcesbot run)
             language_info.deserialize(json.loads(page.text))
-            self.logger.debug(language_info)
-            if LanguageInfoEncoder().encode(self._result[lang]) != page.text:
+            if encoded_json != page.text:
                 rewrite_json = True
 
+        # compare and find out if new worksheets have been added
         changes: ChangeLog = self._result[lang].compare(language_info)
         if changes.is_empty():
             self.logger.info(f"No changes in language {lang} since last run.")
         else:
             self.logger.info(f"Changes in language {lang} since last run:\n{changes}")
+
         if rewrite_json:
             # Write the updated JSON structure
-            page.text = LanguageInfoEncoder().encode(self._result[lang])
+            page.text = encoded_json
             page.save("Updated JSON data structure")
-            self.logger.info(f"Updated {lang}.json")
+            self.logger.info(f"Updated 4training:{lang}.json")
 
-
-        # TODO: make the writing of the list of available resources a post-processing functionality
-        #if rewrite_language:
-        #    self.logger.info(f"List of available training resources in language {lang} needs to be re-written.")
-        #    self.write_available_resources(lang)
-        #else:
-        #    self.logger.info(f"List of available training resources in language {lang} doesn't need to be re-written.")
-
+        return changes
 
     def set_loglevel(self, loglevel=None):
         """

@@ -118,7 +118,7 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertFalse(self.language_info.has_worksheet("Prayer"))
 
     def test_compare(self):
-        # Have 2-3 real (more complex) examples that should cover all cases and test with them
+        # TODO: Have 2-3 real (more complex) examples that should cover all cases and test with them
         self.test_basic_functionality()
         basic_json = LanguageInfoEncoder().encode(self.language_info)
         self.assertTrue(self.language_info.compare(self.language_info).is_empty())
