@@ -61,6 +61,7 @@ from uno import Bool
 import fortraininglib
 from fortraininglib import TranslationProgress
 from pywikitools.ResourcesBot.changes import ChangeItem, ChangeLog, ChangeType
+from pywikitools.ResourcesBot.write_lists import WriteList
 
 class FileInfo:
     """
@@ -170,6 +171,9 @@ class LanguageInfo:
         else:
             logger.warning("Unexpected data structure. Couldn't deserialize LanguageInfo object.")
 
+    def get_language_code(self) -> str:
+        return self._language_code
+
     def add_worksheet_info(self, name: str, worksheet_info: WorksheetInfo):
         self.worksheets[name] = worksheet_info
 
@@ -180,6 +184,12 @@ class LanguageInfo:
         if name in self.worksheets:
             return self.worksheets[name]
         return None
+
+    def worksheet_has_type(self, name: str, file_type: str) -> Bool:
+        """Convienence method combining LanguageInfo.has_worksheet() and WorksheetInfo.has_file_type()"""
+        if name in self.worksheets:
+            return self.worksheets[name].has_file_type(file_type)
+        return False
 
     def compare(self, old) -> ChangeLog:
         """
@@ -298,12 +308,16 @@ class ResourcesBot():
             self.logger.warning(f"userinfo: {self.site.userinfo}")
             sys.exit(2)
 
-        # Find out what has been changed since our last run
+        # Find out what has been changed since our last run and run all LanguagePostProcessors
+        write_list = WriteList(self.site, self._config.get("resourcesbot", "username"),
+            self._config.get("resourcesbot", "password"), self._rewrite_all)
         for lang in self._result:
             if lang != 'en':
                 self._changelog[lang] = self.sync_and_compare(lang)
+                write_list.run(self._result[lang], self._changelog[lang])
 
-        # Now do some useful stuff with the information we gathered
+        # Now run all GlobalPostProcessors
+        # TODO move the following into a GlobalPostProcessor
         if self._limit_to_lang is not None:
             self.create_summary(self._limit_to_lang)
         else:
@@ -405,119 +419,15 @@ class ResourcesBot():
             self.logger.debug(self._result)
 
 
-    def write_available_resources(self, lang: str):
-        """
-        TODO Some refactoring: Create a method LanguageInfo.create_mediawiki() that takes the code for putting the list together
-        Writes the list of available training resources for this language
-        Reads from self._result
-        Output should look like the following line:
-        * [[God's_Story_(five_fingers)/de|{{int:sidebar-godsstory-fivefingers}}]] [[File:pdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] [[File:odticon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).odt}}]]
-        """
-        self.logger.debug(f"Writing list of available resources in {lang}...")
-        if lang not in self._result:
-            self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
-            return
-
-        # Creating the mediawiki string for the list of available training resources
-        content = ''
-        for worksheet, worksheet_info in self._result[lang].worksheets.items():
-            if not worksheet_info.has_file_type('pdf'):
-                # Only show worksheets where we have a PDF file in the list
-                self.logger.warning(f"Language {lang}: worksheet {worksheet} doesn't have PDF, not including in list.")
-                continue
-
-            content += f"* [[{worksheet}/{lang}|"
-            content += "{{int:" + fortraininglib.title_to_message(worksheet) + "}}]]"
-            if worksheet_info.has_file_type('pdf'):
-                pdfname = worksheet_info.get_file_type_info('pdf').url
-                pos = pdfname.rfind('/')
-                if pos > -1:
-                    pdfname = pdfname[pos+1:]
-                else:
-                    self.logger.warning(f"Couldn't find / in {pdfname}")
-                content += " [[File:pdficon_small.png|link={{filepath:"
-                content += pdfname
-                content += "}}]]"
-
-            if worksheet_info.has_file_type('odt'):
-                odtname = worksheet_info.get_file_type_info('odt').url
-                pos = odtname.rfind('/')
-                if pos > -1:
-                    odtname = odtname[pos+1:]
-                else:
-                    self.logger.warning(f"Couldn't find / in {odtname}")
-                content += " [[File:odticon_small.png|link={{filepath:"
-                content += odtname
-                content += "}}]]"
-            content += "\n"
-        self.logger.debug(content)
-
-        # Saving this to the language information page, e.g. https://www.4training.net/German
-        language = fortraininglib.get_language_name(lang, 'en')
-        if language is None:
-            self.logger.warning(f"Error while trying to get language name of {lang}! Skipping")
-            return
-        page = pywikibot.Page(self.site, language)
-        if not page.exists():
-            self.logger.warning(f"Language information page {language} doesn't exist!")
-            return
-        if page.isRedirectPage():
-            self.logger.info(f"Language information page {language} is a redirect. Following the redirect...")
-            page = page.getRedirectTarget()
-            if not page.exists():
-                self.logger.warning(f"Redirect target for language {language} doesn't exist!")
-                return
-
-        # Finding the exact positions of the existing list so that we know what to replace
-        language_re = language.replace('(', r'\(')    # in case language name contains brackets, we need to escape them
-        language_re = language_re.replace(')', r'\)') # Example would be language Turkish (secular)
-        match = re.search(f"Available training resources in {language_re}\\s*?</translate>\\s*?==", page.text)
-        if not match:
-            self.logger.warning(f"Didn't find available training resources list in page {language}! Doing nothing.")
-            self.logger.warning(f"Available training resources in {language_re}\\s*?</translate>\\s*?==")
-            self.logger.warning(page.text)
-            return
-        list_start = 0
-        list_end = 0
-        # Find all following list entries
-        pattern = re.compile(r'^\*.*$', re.MULTILINE)
-        for m in pattern.finditer(page.text, match.end()):
-            if list_start == 0:
-                list_start = m.start()
-            else:
-                # Make sure there is no other line in between: We only want to find lines directly following each other
-                if m.start() > (list_end + 1):
-                    self.logger.info(f"Looks like there is another list later in page {language}. Ignoring it.")
-                    break
-            list_end = m.end()
-            self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
-        if (list_start == 0) or (list_end == 0):
-            self.logger.warning(f"Couldn't find list entries of available training resources in {language}! Doing nothing.")
-            return
-        self.logger.debug(f"Found existing list of available training resources @{list_start}-{list_end}. Replacing...")
-        new_page_content = page.text[0:list_start] + content + page.text[list_end+1:]
-        self.logger.debug(new_page_content)
-        page.text = new_page_content
-        page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
-        user_name = self._config.get("resourcesbot", "username")
-        password = self._config.get("resourcesbot", "password")
-        if user_name != '' and password != '':
-            fortraininglib.mark_for_translation(page.title(), user_name, password)
-            self.logger.info(f"Updated language information page {language} and marked it for translation.")
-        else:
-            self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
-
     def sync_and_compare(self, lang: str) -> ChangeLog:
         """
         Synchronize our generated data on this language with our "database" and return the changes.
 
         The "database" is the JSON representation of LanguageInfo and is stored in a mediawiki page.
 
-        Returns the comparison to what was previously stored in our database
-
         @param lang language code
+        @return comparison to what was previously stored in our database
         """
-        self.logger.debug(f"Processing language {lang}...")
         if lang not in self._result:
             self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
             return ChangeLog()

@@ -3,7 +3,7 @@ Contains the classes ChangeType, ChangeItem and ChangeLog that describe the list
 since the last run of the resourcesbot.
 """
 from enum import Enum
-from typing import List, Set
+from typing import List
 
 class ChangeType(Enum):
     """
@@ -26,6 +26,7 @@ class ChangeItem:
     This shouldn't be modified after creation (is there a way to enforce that?)
     """
     __slots__ = ['worksheet', 'change_type']
+
     def __init__(self, worksheet: str, change_type: ChangeType):
         self.worksheet = worksheet
         self.change_type = change_type
@@ -37,6 +38,8 @@ class ChangeLog:
     """
     Holds all changes that happened in one language since the last resourcesbot run
     """
+    __slots__ = ['_changes']
+
     def __init__(self):
         self._changes: List[ChangeItem] = []
 
