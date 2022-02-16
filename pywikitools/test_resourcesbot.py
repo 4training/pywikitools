@@ -11,6 +11,7 @@ import unittest
 import logging
 import json
 import fortraininglib
+from pywikitools.ResourcesBot.changes import ChangeType
 from resourcesbot import FileInfo, WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
@@ -96,42 +97,51 @@ class TestLanguageInfo(unittest.TestCase):
         then deserialize from this JSON representation and check that the result is the same again
         """
         self.test_basic_functionality()
+        basic_json = LanguageInfoEncoder().encode(self.language_info)
         self.language_info.get_worksheet(TEST_EN_NAME).add_file_info("pdf", TEST_URL, TEST_TIME)
         self.language_info.get_worksheet(TEST_EN_NAME).add_file_info("odt", TEST_URL2, TEST_TIME)
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
         self.language_info.add_worksheet_info("Prayer", worksheet_info)
-        text = LanguageInfoEncoder().encode(self.language_info)
+        json_text = LanguageInfoEncoder().encode(self.language_info)
 
         # Now deserialize again and check results
         decoded_language_info: LanguageInfo = LanguageInfo(TEST_LANG)
-        decoded_language_info.deserialize(json.loads(text))
+        decoded_language_info.deserialize(json.loads(json_text))
         self.assertIsNotNone(decoded_language_info)
-        self.assertEqual(LanguageInfoEncoder().encode(decoded_language_info), text)
+        self.assertEqual(LanguageInfoEncoder().encode(decoded_language_info), json_text)
         self.assertIsInstance(decoded_language_info, LanguageInfo)
         self.assertTrue(decoded_language_info.has_worksheet(TEST_EN_NAME))
 
+        # Make sure data structure is reset completely when deserializing a second time
+        self.language_info.deserialize(json.loads(basic_json))
+        self.assertFalse(self.language_info.has_worksheet("Prayer"))
+
     def test_compare(self):
+        # Have 2-3 real (more complex) examples that should cover all cases and test with them
         self.test_basic_functionality()
-        self.assertFalse(self.language_info.compare(self.language_info))
-        second_language_info = LanguageInfo(TEST_LANG)
-        second_language_info.deserialize(json.loads(LanguageInfoEncoder().encode(self.language_info)))
-        self.assertFalse(self.language_info.compare(second_language_info))
-        self.assertTrue(second_language_info.has_worksheet(TEST_EN_NAME))
+        basic_json = LanguageInfoEncoder().encode(self.language_info)
+        self.assertTrue(self.language_info.compare(self.language_info).is_empty())
+        old_language_info = LanguageInfo(TEST_LANG)
+        old_language_info.deserialize(json.loads(LanguageInfoEncoder().encode(self.language_info)))
+        self.assertTrue(self.language_info.compare(old_language_info).is_empty())
 
-        # First the change isn't relevant as we didn't have a PDF yet
-        second_language_info.worksheets[TEST_EN_NAME].add_file_info('odt', TEST_URL2, TEST_TIME)
-        self.assertFalse(self.language_info.compare(second_language_info))
+        # Add an ODT file
+        self.language_info.worksheets[TEST_EN_NAME].add_file_info('odt', TEST_URL2, TEST_TIME)
+        comparison = self.language_info.compare(old_language_info)
+        self.assertFalse(comparison.is_empty())
+        self.assertEqual(len(comparison.get_all_changes()), 1)
+        self.assertEqual(comparison.get_all_changes().pop().change_type, ChangeType.NEW_ODT)
 
-        # This is still not relevant as there is a new worksheet but it has no PDF
+        # Add a worksheet
+        self.language_info.deserialize(json.loads(basic_json))
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
-        second_language_info.add_worksheet_info("Prayer", worksheet_info)
-        self.assertFalse(self.language_info.compare(second_language_info))
+        self.language_info.add_worksheet_info("Prayer", worksheet_info)
+        comparison = self.language_info.compare(old_language_info)
+        self.assertEqual(len(comparison.get_all_changes()), 1)
+        self.assertEqual(comparison.get_all_changes().pop().change_type, ChangeType.NEW_WORKSHEET)
 
-        # Now the change is relevant as we finally have a PDF
-        second_language_info.worksheets[TEST_EN_NAME].add_file_info('pdf', TEST_URL, TEST_TIME)
-        self.assertTrue(self.language_info.compare(second_language_info))
 
 class TestResourcesBot(unittest.TestCase):
     # use this to see logging messages (can be increased to logging.DEBUG)

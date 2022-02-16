@@ -60,30 +60,7 @@ from uno import Bool
 
 import fortraininglib
 from fortraininglib import TranslationProgress
-
-# Result dictionary: contains information about existing translations and the downloadable file names if existing
-""" TODO delete this
-dictionary with language codes
-    of a dictionary with worksheet names
-        of a dictionary with properties
-Example for German with two worksheets:
-global_result['de'] = {
-    'Church': {
-        'title' : 'Gemeinde',
-        'pdf-timestamp' : '2019-01-28T16:00:11Z'
-        'pdf' : 'https://www.4training.net/mediawiki/images/5/51/Gemeinde.pdf',
-        'odt-timestamp' : '2019-01-28T16:00:40Z'
-        'odt' : 'https://www.4training.net/mediawiki/images/9/97/Gemeinde.odt'
-    },
-    'Baptism': {
-        'title' : 'Taufe',
-        'pdf-timestamp' : "2020-07-10T09:46:24Z"
-        'pdf' : 'https://www.4training.net/mediawiki/images/f/f3/Taufe.pdf',
-        'odt-timestamp' : "2020-07-10T09:46:04Z"
-        'odt' : 'https://www.4training.net/mediawiki/images/9/9f/Taufe.odt'
-    }
-}
-"""
+from pywikitools.ResourcesBot.changes import ChangeItem, ChangeLog, ChangeType
 
 class FileInfo:
     """
@@ -165,13 +142,15 @@ class LanguageInfo:
         self.worksheets: Dict[str, WorksheetInfo] = {}
 
     def deserialize(self, obj):
-        """Reads a JSON object of a data structure into this LanguageInfo object
-        This is a top-down approach
+        """Reads a JSON object of a data structure into this LanguageInfo object.
+        Any previously stored data is discarded.
 
+        This is a top-down approach
         TODO: The JSON data structure isn't very good - improve it to make bottom-up approach possible
         Then we could use json.JSONDecoder() which would be a bit more elegant
         For that WorksheetInfo and FileInfo should also be well serializable / deserializable
         """
+        self.worksheets = {}
         logger = logging.getLogger('4training.resourcesbot.languageinfo')
         if isinstance(obj, Dict):
             for worksheet, details in obj.items():
@@ -202,46 +181,44 @@ class LanguageInfo:
             return self.worksheets[name]
         return None
 
-    def compare(self, other) -> bool:
+    def compare(self, old) -> ChangeLog:
         """
-        Compares to another LanguageInfo object: have there been relevant changes / updates?
-        In other words: Does the list of available training resources for this language need to be re-written?
+        Compare ourselves to another (older) LanguageInfo object: have there been changes / updates?
 
-        Only worksheets with PDF are shown in the lists of available training resources,
-        that's why not all changes are considered relevant
-        @return true if list with available training resources needs to be re-written
+        @return data structure with all changes
         """
-        needs_rewrite = False
+        change_log = ChangeLog()
         logger = logging.getLogger('4training.resourcesbot.languageinfo')
-        if not isinstance(other, LanguageInfo):
+        if not isinstance(old, LanguageInfo):
             logger.warning("Comparison failed: expected LanguageInfo object.")
-            return False
-        for new_worksheet, new_worksheet_info in other.worksheets.items():
-            if new_worksheet in self.worksheets:
-                if (new_worksheet_info.has_file_type('pdf') and not self.worksheets[new_worksheet].has_file_type('pdf')):
-                    logger.info(f"Comparison result: Added PDF for {new_worksheet}")
-                    needs_rewrite = True
-                if (new_worksheet_info.has_file_type('odt') and not self.worksheets[new_worksheet].has_file_type('odt')):
-                    logger.info(f"Comparison result: Added ODT for {new_worksheet}")
-                    # This is relevant if we have a PDF, otherwise it's anyway not listed in the available training resources
-                    if not needs_rewrite:
-                        needs_rewrite = self.worksheets[new_worksheet].has_file_type('pdf')
-                if (not new_worksheet_info.has_file_type('pdf') and self.worksheets[new_worksheet].has_file_type('pdf')):
-                    logger.warning(f"Comparison inconsistency for worksheet {new_worksheet}: PDF vanished.")
-                    needs_rewrite = True
-                if (not new_worksheet_info.has_file_type('odt') and self.worksheets[new_worksheet].has_file_type('odt')):
-                    logger.warning(f"Comparison inconsistency for worksheet {new_worksheet}: ODT vanished.")
-                    needs_rewrite = True
-            else:
-                logger.info(f"Comparison result: Added worksheet {new_worksheet}")
-                if new_worksheet_info.has_file_type('pdf'):
-                    needs_rewrite = True
-        for worksheet in self.worksheets:
-            if worksheet not in other.worksheets.keys():
-                logger.warning(f"Comparison inconsistency: Worksheet {worksheet} vanished.")
-                needs_rewrite = True
+            return change_log
+        for title, info in self.worksheets.items():
+            if title in old.worksheets:
+                if info.has_file_type('pdf'):
+                    if not old.worksheets[title].has_file_type('pdf'):
+                        change_log.add_change(title, ChangeType.NEW_PDF)
+                    # TODO resolve TypeError: can't compare offset-naive and offset-aware datetimes
+#                    elif old.worksheets[title].get_file_type_info('pdf').timestamp < info.get_file_type_info('pdf').timestamp:
+#                        change_log.add_change(title, ChangeType.UPDATED_PDF)
+                elif old.worksheets[title].has_file_type('pdf'):
+                    change_log.add_change(title, ChangeType.DELETED_PDF)
 
-        return needs_rewrite
+                if info.has_file_type('odt'):
+                    if not old.worksheets[title].has_file_type('odt'):
+                        change_log.add_change(title, ChangeType.NEW_ODT)
+                    # TODO resolve TypeError: can't compare offset-naive and offset-aware datetimes
+#                    elif old.worksheets[title].get_file_type_info('odt').timestamp < info.get_file_type_info('odt').timestamp:
+#                        change_log.add_change(title, ChangeType.UPDATED_ODT)
+                elif old.worksheets[title].has_file_type('odt'):
+                    change_log.add_change(title, ChangeType.DELETED_ODT)
+            else:
+                change_log.add_change(title, ChangeType.NEW_WORKSHEET)
+        for worksheet in old.worksheets:
+            if worksheet not in self.worksheets:
+                change_log.add_change(worksheet, ChangeType.DELETED_WORKSHEET)
+
+        # TODO Emit also ChangeType.UPDATED_WORKSHEET by saving and comparing version number
+        return change_log
 
     def list_worksheets_with_missing_pdf(self) -> List[str]:
         """ Returns a list of worksheets which are translated but are missing the PDF
@@ -291,7 +268,7 @@ class ResourcesBot():
 
         self.site: pywikibot.site.APISite = pywikibot.Site()
         # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
-        # "No user is logged in on site 4training:en" -> use this as a workaround and test with global_site.logged_in()
+        # "No user is logged in on site 4training:en" -> use this as a workaround and test with self.site.logged_in()
         self.site.login()
         self._limit_to_lang = limit_to_lang
         self._rewrite_all = rewrite_all
@@ -306,6 +283,9 @@ class ResourcesBot():
 
         # Stores details on all other languages in a dictionary language code -> information about all worksheets in that language
         self._result: Dict[str, LanguageInfo] = {}
+
+        # Changes since the last run (will be filled after gathering of all information is done)
+        self._changelog: Dict[str, ChangeLog] = {}
 
     def run(self):
         """
@@ -538,6 +518,7 @@ class ResourcesBot():
             self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
             return
 
+        language_info: LanguageInfo = LanguageInfo(lang)
         rewrite_language: Bool = self._rewrite_all
         rewrite_json: Bool = self._rewrite_all
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
@@ -548,25 +529,31 @@ class ResourcesBot():
             page.text = LanguageInfoEncoder().encode(self._result[lang])
             page.save("Created JSON data structure")
             rewrite_json = False
-            rewrite_language = True
         else:
             # compare and find out if new worksheets have been added
-            language_info: LanguageInfo = LanguageInfo(lang)
             language_info.deserialize(json.loads(page.text))
             self.logger.debug(language_info)
             if LanguageInfoEncoder().encode(self._result[lang]) != page.text:
                 rewrite_json = True
-                rewrite_language = self._result[lang].compare(language_info)
+
+        changes: ChangeLog = self._result[lang].compare(language_info)
+        if changes.is_empty():
+            self.logger.info(f"No changes in language {lang} since last run.")
+        else:
+            self.logger.info(f"Changes in language {lang} since last run:\n{changes}")
         if rewrite_json:
             # Write the updated JSON structure
             page.text = LanguageInfoEncoder().encode(self._result[lang])
             page.save("Updated JSON data structure")
             self.logger.info(f"Updated {lang}.json")
-        if rewrite_language:
-            self.logger.info(f"List of available training resources in language {lang} needs to be re-written.")
-            self.write_available_resources(lang)
-        else:
-            self.logger.info(f"List of available training resources in language {lang} doesn't need to be re-written.")
+
+
+        # TODO: make the writing of the list of available resources a post-processing functionality
+        #if rewrite_language:
+        #    self.logger.info(f"List of available training resources in language {lang} needs to be re-written.")
+        #    self.write_available_resources(lang)
+        #else:
+        #    self.logger.info(f"List of available training resources in language {lang} doesn't need to be re-written.")
 
 
     def set_loglevel(self, loglevel=None):
