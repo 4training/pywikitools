@@ -9,7 +9,7 @@ afterwards call any GlobalPostProcessor
 from abc import ABC, abstractmethod
 from typing import Dict
 from pywikitools.ResourcesBot.changes import ChangeLog
-from pywikitools.resourcesbot import LanguageInfo
+from pywikitools.ResourcesBot.data_structures import LanguageInfo
 
 
 class LanguagePostProcessor(ABC):

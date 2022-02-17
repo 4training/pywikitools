@@ -5,7 +5,7 @@ from typing import Dict
 import pywikibot
 from pywikitools.ResourcesBot.changes import ChangeLog, ChangeType
 from pywikitools.ResourcesBot.post_processing import LanguagePostProcessor
-from pywikitools.ResourcesBot import LanguageInfo
+from pywikitools.ResourcesBot.data_structures import LanguageInfo
 from pywikitools import fortraininglib
 
 
@@ -92,8 +92,8 @@ class WriteList(LanguagePostProcessor):
         return content
 
     def run(self, language_info: LanguageInfo, change_log: ChangeLog):
-        """
-        """
+        if not self.needs_rewrite(language_info, change_log):
+            return
         lang = language_info.get_language_code()
         self.logger.debug(f"Writing list of available resources in {lang}...")
 
