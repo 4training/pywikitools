@@ -12,7 +12,7 @@ import logging
 import json
 import fortraininglib
 from pywikitools.ResourcesBot.changes import ChangeType
-from resourcesbot import FileInfo, WorksheetInfo, LanguageInfo, LanguageInfoEncoder
+from ResourcesBot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
 # but datetime.fromisoformat() can't handle the "Z" in the end
@@ -79,6 +79,7 @@ class TestWorksheetInfo(unittest.TestCase):
         self.assertEqual(list(self.worksheet_info.get_file_infos().keys()), expected_file_types)
         for file_type in expected_file_types:
             self.assertTrue(self.worksheet_info.has_file_type(file_type))
+
 
 class TestLanguageInfo(unittest.TestCase):
     def setUp(self):

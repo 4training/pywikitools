@@ -40,19 +40,19 @@ def parse_arguments() -> argparse.Namespace:
 
 def load_corrector(language_code: str) -> Callable:
     """Load the corrector class and return it (None in case of an error)"""
-    try:
-        # Dynamically load e.g. correctors/de.py
-        module = importlib.import_module(f"correctors.{language_code}", ".")
-        # There should be exactly one class named "XYCorrector" in there - let's get the name of it
-        class_name = next(s for s in dir(module) if "Corrector" in s)
-        # Now let's load it
-        corrector_class = getattr(module, class_name)
+    # Dynamically load e.g. correctors/de.py
+    module_name = f"correctors.{language_code}"
+    module = importlib.import_module(module_name, ".")
+    # There should be exactly one class named "XYCorrector" in there - let's get it
+    for class_name in dir(module):
+        if "Corrector" in class_name:
+            corrector_class = getattr(module, class_name)
+            # Filter out CorrectorBase (in module correctors.base) and classes from correctors.universal
+            if corrector_class.__module__ == module_name:
+                return corrector_class
 
-    except ModuleNotFoundError as err:
-        logging.fatal(f"Couldn't load corrector for language {language_code}: {err}")
-        sys.exit(1)
-
-    return corrector_class
+    logging.fatal(f"Couldn't load corrector for language {language_code}. Giving up")
+    sys.exit(1)
 
 def main():
     """
@@ -68,16 +68,16 @@ def main():
     communicator: Communicator = Communicator(name_of_webpage)
     page_wrapper: PageWrapper = communicator.fetch_content(language)
 
-    corrector_class = load_corrector(page_wrapper.language)
-    corrector_class_instance = corrector_class()
+    # Load corrector class and instantiate it
+    corrector = load_corrector(page_wrapper.language)()
 
     corrected_translations: List[str] = []
     for counter in range(len(page_wrapper.original_translations)):
         # TODO simplify this a bit
         text = page_wrapper.original_translations[counter]
-        corrected_translations.append(corrector_class_instance.correct(text))
+        corrected_translations.append(corrector.correct(text))
 
-    print(corrector_class_instance.print_stats())
+    print(corrector.print_stats())
 
     page_wrapper.set_corrected_translations(corrected_translations)
 

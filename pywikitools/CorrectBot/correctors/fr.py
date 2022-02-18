@@ -1,7 +1,8 @@
 import re
-from . import universal
+from .base import CorrectorBase
+from .universal import UniversalCorrector
 
-class FrenchCorrector(universal.LanguageCorrector, universal.UniversalCorrector):
+class FrenchCorrector(CorrectorBase, UniversalCorrector):
     """
     Corrects typical French typos to follow the following rules:
     * Instead of ellipsis, use "..."

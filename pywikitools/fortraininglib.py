@@ -180,7 +180,7 @@ def get_page_source(page: str, revision_id: Optional[int] = None) -> Optional[st
         "titles": page
     }
     if revision_id is not None:
-        params['rvstartid'] = revision_id
+        params['rvstartid'] = str(revision_id)
     response = requests.get(APIURL, params=params)
     try:
         pageid = next(iter(response.json()["query"]["pages"]))

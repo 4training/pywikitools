@@ -6,6 +6,8 @@ import unittest
 import sys
 import importlib
 
+from pywikitools.CorrectBot.correctors.universal import UniversalCorrector
+
 sys.path.append('../')  # TODO import that without the dirty hack
 #from correct_bot import Corrector
 from typing import Callable, Dict, Optional, List, Union
@@ -135,20 +137,30 @@ class LanguageCorrectorTests(unittest.TestCase):
         self.language_correctors: List[Callable] = []
         # Search for all language-specific files in the correctors/ folder and get the classes in them
         for corrector_file in [f for f in listdir("./correctors") if isfile(join("./correctors", f))]:
-            if corrector_file in ['__init__.py', 'universal.py']:
+            if not corrector_file.endswith(".py"):
+                continue
+            if corrector_file in ['__init__.py', 'universal.py', 'base.py']:
                 continue
 
             language_code = corrector_file[0:-3]
-            module = importlib.import_module(f"correctors.{language_code}", ".")
-            # There should be exactly one class named "XYCorrector" in there - let's get the name of it
-            class_name = next(s for s in dir(module) if "Corrector" in s)
-            # Now let's load it and store it in self.language_correctors
-            self.language_correctors.append(getattr(module, class_name))
+            module_name = f"correctors.{language_code}"
+            module = importlib.import_module(module_name, ".")
+            # There should be exactly one class named "XYCorrector" in there - let's get it
+            class_counter = 0
+            for class_name in dir(module):
+                if "Corrector" in class_name:
+                    corrector_class = getattr(module, class_name)
+                    # Filter out CorrectorBase (in module correctors.base) and classes from correctors.universal
+                    if corrector_class.__module__ == module_name:
+                        class_counter += 1
+                        # Let's load it and store it in self.language_correctors
+                        self.language_correctors.append(getattr(module, class_name))
+            self.assertEqual(class_counter, 1)
 
         # Now load all classes for correctors used by several languages
         self.flexible_correctors: List[Callable] = []
         universal_module = importlib.import_module(f"correctors.universal", ".")
-        for class_name in [s for s in dir(universal_module) if (("Corrector" in s) and (s != "LanguageCorrector"))]:
+        for class_name in [s for s in dir(universal_module) if ("Corrector" in s)]:
             self.flexible_correctors.append(getattr(universal_module, class_name))
 
     def test_for_meaningful_names(self):
@@ -179,6 +191,7 @@ class LanguageCorrectorTests(unittest.TestCase):
                     continue
                 if getattr(language_corrector, language_function).__module__ != "correctors.universal":
                     self.assertNotIn(language_function, flexible_functions)
+
 
 class TestCorrector(unittest.TestCase):
     # TODO this needs a lot of refactoring after the old Corrector class doesn't exist anymore

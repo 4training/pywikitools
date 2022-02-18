@@ -1,8 +1,9 @@
 import re
-from . import universal
+from .base import CorrectorBase
+from .universal import UniversalCorrector
 
 
-class EnglishCorrector(universal.LanguageCorrector, universal.UniversalCorrector):
+class EnglishCorrector(CorrectorBase, UniversalCorrector):
     """
     Corrects typical English typos to follow the following rules:
     * TODO: No plain quotation marks: instead of "Foo" use “Foo”

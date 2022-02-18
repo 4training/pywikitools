@@ -1,6 +1,7 @@
-from . import universal
+from .base import CorrectorBase
+from .universal import UniversalCorrector
 
-class GermanCorrector(universal.LanguageCorrector, universal.UniversalCorrector):
+class GermanCorrector(CorrectorBase, UniversalCorrector):
     """
     Corrects typical German typos to follow the following rules:
     * TODO: no plain quotation marks like "

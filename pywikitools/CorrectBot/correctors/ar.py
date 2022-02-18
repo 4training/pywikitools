@@ -1,4 +1,5 @@
-from . import universal
+from .base import CorrectorBase
+from .universal import UniversalCorrector, RTLCorrector
 
-class ArabicCorrector(universal.LanguageCorrector, universal.RTLCorrector):
+class ArabicCorrector(CorrectorBase, UniversalCorrector, RTLCorrector):
     pass
