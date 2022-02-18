@@ -164,21 +164,27 @@ def get_file_url(filename: str):
     return url_json["query"]["pages"][page_number]["imageinfo"][0]["url"]
 
 
-def get_page_source(page: str) -> Optional[str]:
+def get_page_source(page: str, revision_id: Optional[int] = None) -> Optional[str]:
     """
-    Return the wikitext (source) of a page
+    Return the wikitext (source) of a page.
+    @param revision_id Specify this to retrieve an older revision (default: retrieve current revision)
     @return None on error
     """
-    response = requests.get(APIURL, params={
+    params = {
         "action": "query",
         "prop": "revisions",
         "rvlimit": "1",
         "rvprop": "content",
+        "rvslots": "main",
         "format": "json",
-        "titles": page})
+        "titles": page
+    }
+    if revision_id is not None:
+        params['rvstartid'] = revision_id
+    response = requests.get(APIURL, params=params)
     try:
         pageid = next(iter(response.json()["query"]["pages"]))
-        return response.json()["query"]["pages"][pageid]['revisions'][0]['*']
+        return response.json()["query"]["pages"][pageid]['revisions'][0]['slots']['main']['*']
     except KeyError:
         return None
 
@@ -205,14 +211,16 @@ def get_translated_title(page: str, language_code: str) -> Optional[str]:
     return get_page_source(f"Translations:{page}/Page display title/{language_code}")
 
 
-def get_translated_unit(page: str, language_code: str, identifier: int) -> Optional[str]:
+def get_translated_unit(page: str, language_code: str, identifier: int,
+                        revision_id: Optional[int] = None) -> Optional[str]:
     """
     Returns the translation of one translation unit of a page into a give language
     @param identifier: number of the translation unit
     (use get_translated_title() for getting the "Page display title" translation unit)
+    @param revision_id Specify this to retrieve an older revision (default: retrieve current revision)
     @return the translated string or None if translation doesn't exist
     """
-    return get_page_source(f"Translations:{page}/{identifier}/{language_code}")
+    return get_page_source(f"Translations:{page}/{identifier}/{language_code}", revision_id)
 
 
 def get_pdf_name(page: str, language_code: str) -> Optional[str]:
