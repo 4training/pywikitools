@@ -21,14 +21,8 @@ jobs:
       - name: Install Python uno module (LibreOffice UNO Bridge)
         run: sudo apt-get install python3-uno
         
-      - name: Show pip version
-        run: pip --version
-        
       - name: Install python packages
         run: pip install -r requirements.txt
-        
-      - name: Debug pywikibot package
-        run: pip show pywikibot
         
       - name: Run all tests
         run: python -m unittest discover -s pywikitools/test
