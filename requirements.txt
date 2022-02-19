@@ -1,0 +1,4 @@
+setuptools~=60.9.3
+pywikibot~=6.6.5
+requests~=2.27.1
+dropbox~=11.27.0
