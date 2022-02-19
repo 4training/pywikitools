@@ -2,7 +2,7 @@ import logging
 import sys
 import pywikibot
 
-Logger = logging.getLogger("ServerCommunicator")
+Logger = logging.getLogger("pywikitools.correctbot.ServerCommunicator")
 
 
 class ServerCommunicator:
@@ -29,7 +29,7 @@ class ServerCommunicator:
         try:
             page: pywikibot.Page = pywikibot.Page(self.__global_site, address)
             if not page.exists():
-                Logger.fatal("Requested page does not exist")
+                Logger.fatal(f"Requested page {address} does not exist")
                 sys.exit(1)
             return page.text
         except Exception:

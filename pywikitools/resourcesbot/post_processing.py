@@ -8,8 +8,8 @@ afterwards call any GlobalPostProcessor
 """
 from abc import ABC, abstractmethod
 from typing import Dict
-from pywikitools.ResourcesBot.changes import ChangeLog
-from pywikitools.ResourcesBot.data_structures import LanguageInfo
+from pywikitools.resourcesbot.changes import ChangeLog
+from pywikitools.resourcesbot.data_structures import LanguageInfo
 
 
 class LanguagePostProcessor(ABC):

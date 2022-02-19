@@ -57,9 +57,9 @@ from uno import Bool
 
 from pywikitools import fortraininglib
 from pywikitools.fortraininglib import TranslationProgress
-from pywikitools.ResourcesBot.changes import ChangeLog
-from pywikitools.ResourcesBot.write_lists import WriteList
-from pywikitools.ResourcesBot.data_structures import WorksheetInfo, LanguageInfo, LanguageInfoEncoder
+from pywikitools.resourcesbot.changes import ChangeLog
+from pywikitools.resourcesbot.write_lists import WriteList
+from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
 
 class ResourcesBot():
@@ -77,7 +77,7 @@ class ResourcesBot():
         # Read the configuration from config.ini in the same directory
         self._config = configparser.ConfigParser()
         self._config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-        self.logger = logging.getLogger('4training.resourcesbot')
+        self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.set_loglevel(loglevel)
         if not self._config.has_option("resourcesbot", "username") or \
             not self._config.has_option("resourcesbot", "password"):

@@ -7,7 +7,7 @@ Run tests:
 import unittest
 import uno
 from com.sun.star.lang import Locale
-from lang.libreoffice_lang import FontType, Lang
+from pywikitools.lang.libreoffice_lang import FontType, Lang
 
 
 class TestLang(unittest.TestCase):

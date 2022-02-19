@@ -19,7 +19,7 @@ from typing import Callable, List
 from communicator import PageWrapper
 from communicator import Communicator
 
-Logger = logging.getLogger("CorrectBot")
+Logger = logging.getLogger("pywikitools.correctbot")
 
 
 def parse_arguments() -> argparse.Namespace:

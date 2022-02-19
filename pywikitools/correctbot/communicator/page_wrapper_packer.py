@@ -12,7 +12,7 @@ from typing import Final, List
 import re
 import sys
 
-Logger = logging.getLogger("PageContentWrapper")
+Logger = logging.getLogger("pywikitools.correctbot.PageContentWrapper")
 
 
 class PageContentWrapper:
@@ -87,7 +87,7 @@ class PageContentWrapper:
         return page_of_units
 
     def fetch_page_content_from_wiki(self, language: str) -> PageWrapper:
-        """Fetches content from 4training.net-wiki and wraps its content to a PageContent. 
+        """Fetches content from 4training.net-wiki and wraps its content to a PageContent.
         Distinguishes between translations and original version (english)
 
         Args:

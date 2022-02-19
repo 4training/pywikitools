@@ -29,7 +29,7 @@ global_site = pywikibot.Site()
 config = configparser.ConfigParser()
 config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
-logger = logging.getLogger('4training')
+logger = logging.getLogger('pywikitools.generateodtbot')
 logger.setLevel(logging.DEBUG)
 fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
 log_path = config.get('Paths', 'logs', fallback = '')

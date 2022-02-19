@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 import pywikibot
 import urllib
 from pywikitools import fortraininglib
-from pywikitools.ResourcesBot.changes import ChangeLog, ChangeType
+from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.fortraininglib import TranslationProgress
 
@@ -51,7 +51,7 @@ class WorksheetInfo:
         @return FileInfo or None if it wasn't successful
         """
         new_file_info = None
-        logger = logging.getLogger('4training.resourcesbot.worksheetinfo')
+        logger = logging.getLogger('pywikitools.resourcesbot.worksheetinfo')
         if url is not None and timestamp is not None:
             if isinstance(timestamp, str):
                 try:
@@ -100,7 +100,7 @@ class LanguageInfo:
         For that WorksheetInfo and FileInfo should also be well serializable / deserializable
         """
         self.worksheets = {}
-        logger = logging.getLogger('4training.resourcesbot.languageinfo')
+        logger = logging.getLogger('pywikitools.resourcesbot.languageinfo')
         if isinstance(obj, Dict):
             for worksheet, details in obj.items():
                 if isinstance(worksheet, str) and isinstance(details, Dict):
@@ -146,7 +146,7 @@ class LanguageInfo:
         @return data structure with all changes
         """
         change_log = ChangeLog()
-        logger = logging.getLogger('4training.resourcesbot.languageinfo')
+        logger = logging.getLogger('pywikitools.resourcesbot.languageinfo')
         if not isinstance(old, LanguageInfo):
             logger.warning("Comparison failed: expected LanguageInfo object.")
             return change_log

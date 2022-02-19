@@ -12,7 +12,7 @@ import requests
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
-logger = logging.getLogger('4training.lib')
+logger = logging.getLogger('pywikitools.lib')
 # Language codes of all right-to-left languages we currently have
 RTL_LANGUAGES = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"]
 

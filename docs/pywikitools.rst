@@ -1,6 +1,15 @@
 pywikitools package
 ===================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pywikitools.lang
+   pywikitools.resourcesbot
+
 Submodules
 ----------
 
@@ -36,10 +45,10 @@ pywikitools.generateodtbot module
    :undoc-members:
    :show-inheritance:
 
-pywikitools.pywikitools module
-------------------------------
+pywikitools.mediawiki2drupal module
+-----------------------------------
 
-.. automodule:: pywikitools.pywikitools
+.. automodule:: pywikitools.mediawiki2drupal
    :members:
    :undoc-members:
    :show-inheritance:

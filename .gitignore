@@ -5,13 +5,16 @@ worksheets/
 generateodtbot.lock
 
 # Contains (potentially sensitive) details to log into a specific mediawiki instance
-pywikitools/user-config.py
+user-config.py
 # Holds the cookie after successful login - sensitive
-pywikitools/pywikibot.lwp
+pywikibot.lwp
 # pywikibot throttle control
-pywikitools/throttle.ctrl
+throttle.ctrl
 # pywikibot caching
-pywikitools/apicache-py3
+apicache-py3
+
+# pywikibot family file for correctbot
+pywikitools/correctbot/families/
 
 # worksheet files
 *.pdf

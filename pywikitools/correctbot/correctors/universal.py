@@ -8,17 +8,18 @@ one of the functions here (otherwise only one of it gets called in the case of m
 
 Each function should have a documentation string which will be used for print_stats()
 """
+import logging
 import re
-from typing import List, Generator
+from typing import List
 
 class UniversalCorrector():
     """Has language-independent correction functions"""
     # TODO: Instead of ellipsis (…), use "..." - write a function for it.
     # Should we have that in this class, e.g. do we want this for all languages?
 
-    def correct_replace_e_with_i(self, text: str) -> str:
-        """TODO for testing only: Replace e with i"""
-        return text.replace("e", "i")
+#    def correct_replace_e_with_i(self, text: str) -> str:
+#        """TODO for testing only: Replace e with i"""
+#        return text.replace("e", "i")
 
     def correct_wrong_capitalization(self, text: str) -> str:
         """Fix wrong capitalization at the beginning of a sentence or after a colon"""
@@ -28,7 +29,7 @@ class UniversalCorrector():
         # because there may be languages where this doesn't work
 
         # TODO: Quotation marks are not yet covered - double check if necessary
-        find_wrong_capitalization = re.compile(r'[.!?:;]\s*([a-z])')
+        find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
         matches = re.finditer(find_wrong_capitalization, text)
         for match in reversed(list(matches)):
             text = text[:match.end() - 1] + match.group(1).upper() + text[match.end():]
@@ -53,7 +54,7 @@ class UniversalCorrector():
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""
         if len(text) <= 4:
-            print(f"WARNING: File name too short: {text}")
+            logging.warning(f"File name too short: {text}")
             return text
         return text[:-4] + text[-4:].lower()
 

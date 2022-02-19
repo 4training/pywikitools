@@ -94,21 +94,21 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
 
 Coding conventions
 ------------------
-  
+
 * Please write good and readable code with meaningful documentation.
 * We try to follow the PEP 8 style guide ( https://pep8.org/ ) with the
   exception that lines can have up to 120 spaces.
 * Every script should print documentation on arguments when run without
   or with incorrect arguments
-   
-Logging 
+
+Logging
 ~~~~~~~
 
 Every script should implement good logging (see https://docs.python.org/3/howto/logging.html ).
 Look at translateodt.py for examples. Details:
 
 * Create a named logger object (and only use this object for logging)
-  ``logger = logging.getLogger('4training.scriptname')``
+  ``logger = logging.getLogger('pywikitools.scriptname')``
 * Implement -l / --loglevel argument
 * Standard log level is WARNING. INFO adds relevant information. DEBUG is for verbose debugging.
 * ERROR means script couldn’t finish as expected

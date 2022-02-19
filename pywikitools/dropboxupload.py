@@ -1,4 +1,4 @@
-""" 
+"""
 Upload created files to a shared Dropbox folder
 
 Dropbox account credentials are stored in a separate file
@@ -12,7 +12,7 @@ from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
 import configparser
 
-logger = logging.getLogger('4training.dropboxupload')
+logger = logging.getLogger('pywikitools.dropboxupload')
 config = configparser.ConfigParser()
 config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 

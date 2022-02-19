@@ -1,20 +1,17 @@
 """
-Testcases for CorrectBot
-TODO Not yet fully functional
+Test cases for CorrectBot
 """
 import unittest
-import sys
 import importlib
+import os
+from pywikitools.correctbot.correctors.base import CorrectorBase
+from pywikitools.correctbot.correctors.universal import UniversalCorrector
 
-from pywikitools.CorrectBot.correctors.universal import UniversalCorrector
-
-sys.path.append('../')  # TODO import that without the dirty hack
-#from correct_bot import Corrector
-from typing import Callable, Dict, Optional, List, Union
+from typing import Callable, List
 from os import listdir
 from os.path import isfile, join
 
-#
+# lots of TODOS here
 #
 # def create_reduced_page(language: str, input: List) -> ReducedPage:
 #     pass
@@ -130,21 +127,31 @@ from os.path import isfile, join
 #     # TODO research which of these changes to improve Arabic language quality could be automated:
 #     # https://www.4training.net/mediawiki/index.php?title=Forgiving_Step_by_Step%2Far&type=revision&diff=29760&oldid=29122
 #
-#
-class LanguageCorrectorTests(unittest.TestCase):
+
+# Package and module names
+PKG_CORRECTORS = "pywikitools.correctbot.correctors"
+MOD_UNIVERSAL = f"{PKG_CORRECTORS}.universal"
+MOD_BASE = f"{PKG_CORRECTORS}.base"
+
+# Caution: This needs to be converted to an absolute path so that tests can be run safely from any folder
+CORRECTORS_FOLDER = "../correctbot/correctors"
+
+class TestLanguageCorrectors(unittest.TestCase):
     def setUp(self):
         """Load all language-specific corrector classes so that we can afterwards easily run our checks on them"""
         self.language_correctors: List[Callable] = []
+        folder = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), CORRECTORS_FOLDER))
+
         # Search for all language-specific files in the correctors/ folder and get the classes in them
-        for corrector_file in [f for f in listdir("./correctors") if isfile(join("./correctors", f))]:
+        for corrector_file in [f for f in listdir(folder) if isfile(join(folder, f))]:
             if not corrector_file.endswith(".py"):
                 continue
             if corrector_file in ['__init__.py', 'universal.py', 'base.py']:
                 continue
 
             language_code = corrector_file[0:-3]
-            module_name = f"correctors.{language_code}"
-            module = importlib.import_module(module_name, ".")
+            module_name = f"{PKG_CORRECTORS}.{language_code}"
+            module = importlib.import_module(module_name)
             # There should be exactly one class named "XYCorrector" in there - let's get it
             class_counter = 0
             for class_name in dir(module):
@@ -159,17 +166,19 @@ class LanguageCorrectorTests(unittest.TestCase):
 
         # Now load all classes for correctors used by several languages
         self.flexible_correctors: List[Callable] = []
-        universal_module = importlib.import_module(f"correctors.universal", ".")
-        for class_name in [s for s in dir(universal_module) if ("Corrector" in s)]:
+        universal_module = importlib.import_module(MOD_UNIVERSAL)
+        for class_name in [s for s in dir(universal_module) if "Corrector" in s]:
             self.flexible_correctors.append(getattr(universal_module, class_name))
 
     def test_for_meaningful_names(self):
         """Make sure each function either starts with "correct_" or ends with "_title" or with "_filename"""
         for language_corrector in self.language_correctors:
             for function_name in dir(language_corrector):
+                # Ignore private functions
                 if function_name.startswith('_'):
                     continue
-                if getattr(language_corrector, function_name).__module__ == "correctors.universal":
+                # Ignore everything inherited from CorrectorBase
+                if getattr(language_corrector, function_name).__module__ == MOD_BASE:
                     continue
                 self.assertTrue(function_name.startswith("correct_")
                                 or function_name.endswith("_title")
@@ -189,90 +198,41 @@ class LanguageCorrectorTests(unittest.TestCase):
             for language_function in dir(language_corrector):
                 if language_function.startswith('_'):
                     continue
-                if getattr(language_corrector, language_function).__module__ != "correctors.universal":
+                if getattr(language_corrector, language_function).__module__ != MOD_UNIVERSAL:
                     self.assertNotIn(language_function, flexible_functions)
 
+class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
+    """With this class we can test the rules of UniversalCorrector"""
+    pass
 
-class TestCorrector(unittest.TestCase):
-    # TODO this needs a lot of refactoring after the old Corrector class doesn't exist anymore
+class TestUniversalCorrector(unittest.TestCase):
+    def test_spaces(self):
+        corrector = UniversalCorrectorTester()
+        self.assertEqual(corrector.correct("This entry   contains     too  many spaces."),
+                                        "This entry contains too many spaces.")
+        self.assertEqual(corrector.correct("This entry.Contains.Missing.Spaces.Between.Punctuation.And.Chars."),
+                                           "This entry. Contains. Missing. Spaces. Between. Punctuation. And. Chars.")
+        self.assertEqual(corrector.correct("This entry contains redundant spaces.  Before.   Punctuation."),
+                                           "This entry contains redundant spaces. Before. Punctuation.")
 
-    # Create corrector object with erroneous test content
-    # Fix general typos
-    # Assert that all language independent typos are fixed
-    def test_fix_language_independent_typos_successfully(self):
-        # ##### Test Preparation #####
-        __ERRONEOUS_CONTENT: List[str] = [
-            "This entry   contains     too  many spaces.",
-            "This entry.Contains.Missing.Spaces.Between.Punctuation.And.Chars.",
-            "This entry contains redundant spaces.  Before.   Punctuation.",
-            "this entry contains wrong capitalization. at beginning of a sentence or: after a colon."
-        ]
-        __CORRECT_CONTENT: List[str] = [
-            "This entry contains too many spaces.",
-            "This entry. Contains. Missing. Spaces. Between. Punctuation. And. Chars.",
-            "This entry contains redundant spaces. Before. Punctuation.",
-            "This entry contains wrong capitalization. At beginning of a sentence or: After a colon."
-        ]
-        sut: Corrector = Corrector(__ERRONEOUS_CONTENT, "en")
+    def test_capitalization(self):
+        corrector = UniversalCorrectorTester()
+        self.assertEqual(corrector.correct("lowercase start. and lowercase after full stop."),
+                                           "Lowercase start. And lowercase after full stop.")
+        self.assertEqual(corrector.correct("Question? answer! more lowercase. why? didn't check."),
+                                           "Question? Answer! More lowercase. Why? Didn't check.")
+        self.assertEqual(corrector.correct("After colons: and semicolons; we don't correct."),
+                                           "After colons: and semicolons; we don't correct.")
 
-        # ##### Test Execution #####
-        sut.fix_language_independent_typos()
-
-        # ##### Test Validation #####
-        corrected_content: List[str] = sut.get_corrected_paragraphs
-        self.assertListEqual(corrected_content, __CORRECT_CONTENT)
-
-    # Create string that is no file name
-    # Call unity file name
-    # Assert that output result is the same as input string
-    def test_ignore_unification_of_document_file_name_if_no_document_file(self):
-        # ##### Test Preparation #####
-        __NO_FILE_NAME: str = "this .is no file name of type .pdf or .pdf or .doc or .odg for sure.foobar"
-        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
-        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
-
-        # ##### Test Execution #####
-        result: str = sut.unify_document_file_name(__NO_FILE_NAME)
-
-        # ##### Test Validation #####
-        self.assertEqual(result, __NO_FILE_NAME)
-
-    # Create a unified file names of document type .doc, .odg, .odt, .pdf
-    # Call unity file name
-    # Assert that
-    def test_check_unification_of_document_file_works_for_document_files(self):
-        # ##### Test Preparation #####
-        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
-        __VALID_FILE_EXTENSIONS: List[str] = [".doc", ".odg", ".odt", ".pdf"]
-        __NON_UNIFIED_FILE_NAME: str = "dummy file name"
-        __UNIFIED_FILE_NAME: str = "dummy_file_name"
-        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
-
-        for counter, file_extension in enumerate(__VALID_FILE_EXTENSIONS):
-            file_name_to_test: str = __NON_UNIFIED_FILE_NAME + file_extension.upper()
-
-            # ##### Test Execution #####
-            result: str = sut.unify_document_file_name(file_name_to_test)
-
-            # ##### Test Validation #####
-            self.assertEqual(result, __UNIFIED_FILE_NAME + file_extension.lower())
-
-    # Create a non-unified document file name
-    # Call unity file name
-    # Assert that the unification succeeded
-    def test_unify_non_unified_document_file_name(self):
-        # ##### Test Preparation #####
-        __EMPTY_CONTENT: List[str] = ["foo", "bar"]
-        __INCORRECT_FILE_NAME: str = "this is   a file_name__to____fix.pdf"
-        __CORRECT_FILE_NAME: str = "this_is_a_file_name_to_fix.pdf"
-        sut: Corrector = Corrector(__EMPTY_CONTENT, "en")
-
-        # ##### Test Execution #####
-        result: str = sut.unify_document_file_name(__INCORRECT_FILE_NAME)
-
-        # ##### Test Validation #####
-        self.assertEqual(result, __CORRECT_FILE_NAME)
-
+    def test_filename_corrections(self):
+        corrector = UniversalCorrectorTester()
+        self.assertEqual(corrector.filename_correct("dummy file name.pdf"), "dummy_file_name.pdf")
+        self.assertEqual(corrector.filename_correct("too__many___underscores.odt"), "too_many_underscores.odt")
+        self.assertEqual(corrector.filename_correct("capitalized_extension.PDF"), "capitalized_extension.pdf")
+        with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
+            self.assertEqual(corrector.filename_correct("Not a filename"), "Not a filename")
+        with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
+            self.assertEqual(corrector.filename_correct("other extension.exe"), "other extension.exe")
 
 if __name__ == '__main__':
     unittest.main()

@@ -70,7 +70,7 @@ translateodt.py
 cgi-bin/generateodt.py
     CGI-Handler that receives the request (coming from outside like https://www.example.net/cgi-bin/generateodt.py)
     and calls generateodtbot.py
-CorrectBot/
+correctbot/
     Can automatically correct simple mistakes in texts of different languages (not yet operational)
 
 License
@@ -94,7 +94,7 @@ Communication
 ~~~~~~~~~~~~~
 
 Please subscribe to the repository to get informed on changes.
-We use github issues for specific tasks, wishes, bugs etc. 
+We use github issues for specific tasks, wishes, bugs etc.
 Please don’t hesitate to open a new one! Assign yourself on the issues that
 you plan to work on.
 

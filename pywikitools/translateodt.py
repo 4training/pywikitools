@@ -56,7 +56,7 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
 
 keep_english_file = False   # Delete the English worksheet after we're done (can be changed with the --keep-english-file arg)
-logger = logging.getLogger('4training.translateodt')
+logger = logging.getLogger('pywikitools.translateodt')
 
 # Read configuration from config.ini in this folder; set default values in case it doesn't exist
 config = configparser.ConfigParser()

@@ -10,9 +10,9 @@ from datetime import datetime
 import unittest
 import logging
 import json
-import fortraininglib
-from pywikitools.ResourcesBot.changes import ChangeType
-from ResourcesBot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, LanguageInfoEncoder
+from pywikitools import fortraininglib
+from pywikitools.resourcesbot.changes import ChangeType
+from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
 # but datetime.fromisoformat() can't handle the "Z" in the end
@@ -67,7 +67,7 @@ class TestWorksheetInfo(unittest.TestCase):
         # TODO add tests for call with file_info= (pywikibot.page.FileInfo)
 
     def test_add_file_info_errors(self):
-        with self.assertLogs('4training.resourcesbot.worksheetinfo', level='WARNING'):
+        with self.assertLogs('pywikitools.resourcesbot.worksheetinfo', level='WARNING'):
             self.worksheet_info.add_file_info("odg", TEST_URL, "2018-12-20-12-58-57")
         self.assertFalse(self.worksheet_info.has_file_type("odg"))
         # TODO add tests for call with file_info= (pywikibot.page.FileInfo)

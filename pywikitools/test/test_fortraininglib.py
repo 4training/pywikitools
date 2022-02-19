@@ -6,11 +6,9 @@ Run tests:
     python3 -m unittest test_fortraininglib.py
 """
 import unittest
-import logging
-import sys
-sys.path.append('../')
-# TODO import that without the dirty hack above
-import fortraininglib
+#import logging
+
+from pywikitools import fortraininglib
 
 class TestFortrainingLib(unittest.TestCase):
 # use this to see logging messages (can be increased to logging.DEBUG)
@@ -25,9 +23,9 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(fortraininglib.get_language_name('tr', 'de'), 'Türkisch')
 
     def test_list_page_translations(self):
-        with self.assertLogs('4training.lib', level='INFO'):
+        with self.assertLogs('pywikitools.lib', level='INFO'):
             result = fortraininglib.list_page_translations('Prayer')
-        with self.assertLogs('4training.lib', level='INFO'):
+        with self.assertLogs('pywikitools.lib', level='INFO'):
             result_with_incomplete = fortraininglib.list_page_translations('Prayer', include_unfinished=True)
         self.assertTrue(len(result) >= 5)
         self.assertTrue(len(result) <= len(result_with_incomplete))
@@ -63,7 +61,7 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertIsNone(fortraininglib.get_file_url('NotExisting'))
         self.assertTrue(fortraininglib.get_file_url(test_file).startswith('https://www.4training.net'))
         self.assertTrue(fortraininglib.get_file_url(test_file).endswith(test_file))
-        
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -45,7 +45,7 @@ setup(
     name='pywikitools',
     packages=find_packages(include=['pywikitools', 'pywikitools.*']),
     setup_requires=setup_requirements,
-    test_suite='tests',
+    test_suite='pywikitools.test',
     tests_require=test_requirements,
     url='https://github.com/4training/pywikitools',
     version='0.1.0',

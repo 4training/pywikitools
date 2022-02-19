@@ -3,9 +3,9 @@ import logging
 from typing import Dict
 
 import pywikibot
-from pywikitools.ResourcesBot.changes import ChangeLog, ChangeType
-from pywikitools.ResourcesBot.post_processing import LanguagePostProcessor
-from pywikitools.ResourcesBot.data_structures import LanguageInfo
+from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
+from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools import fortraininglib
 
 
@@ -28,7 +28,7 @@ class WriteList(LanguagePostProcessor):
         self._user_name = user_name
         self._password = password
         self._force_rewrite = force_rewrite
-        self.logger = logging.getLogger('4training.resourcesbot.write_lists')
+        self.logger = logging.getLogger('pywikitools.resourcesbot.write_lists')
 
     def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
         """Determine whether the list of available training resources needs to be rewritten."""

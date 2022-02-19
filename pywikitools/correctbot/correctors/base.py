@@ -18,6 +18,7 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+import logging
 from typing import Generator
 from collections import defaultdict
 
@@ -48,8 +49,8 @@ class CorrectorBase:
         Only correct if we have a file name with one of the following extensions: '.doc', '.odg', '.odt', '.pdf'
         """
         if not text.lower().endswith(('.doc', '.odg', '.odt', '.pdf')):
-            # TODO better logging?
-            print(f"WARNING: input parameter does not seem to be a file name: {text}")
+            logger = logging.getLogger("pywikitools.correctbot.base")
+            logger.warning(f"Input parameter does not seem to be a file name: {text}")
             return text
 
         return self._run_correction_functions(text, (s for s in dir(self) if s.endswith("_filename")))
