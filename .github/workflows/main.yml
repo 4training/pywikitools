@@ -17,6 +17,13 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+      
+      - name: Install Python uno module (LibreOffice UNO Bridge)
+        run: sudo apt-get install python3-uno
+        
+      - name: Install python packages
+        run: pip install -r requirements.txt
+        
       - name: Run all tests
         run: python -m unittest discover -s pywikitools/test
 
