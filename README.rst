@@ -1,3 +1,11 @@
+|Run tests| |GPLv3 license| |Open Source? Yes!|
+
+.. |Run tests| image:: https://github.com/4training/pywikitools/actions/workflows/main.yml/badge.svg
+   :target: https://github.com/4training/pywikitools/actions/workflows/main.yml
+.. |GPLv3 license| image:: https://img.shields.io/badge/License-GPLv3-blue.svg
+   :target: http://perso.crans.org/besson/LICENSE.html
+.. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
+   :target: https://github.com/Naereen/badges/
 ======================
 Python Mediawiki Tools
 ======================
