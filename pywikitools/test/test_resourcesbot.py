@@ -24,7 +24,7 @@ TEST_URL: str = "https://www.4training.net/mediawiki/images/7/70/Gottes_Reden_wa
 TEST_URL2: str = "https://www.4training.net/mediawiki/images/1/15/Gottes_Reden_wahrnehmen.pdf"
 
 # An example translation progress (in the dict form returned by the mediawiki API)
-TEST_PROGRESS: dict = { "total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de" }
+TEST_PROGRESS: dict = {"total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de"}
 
 TEST_EN_NAME: str = "Hearing from God"
 TEST_LANG: str = "de"
@@ -80,6 +80,24 @@ class TestWorksheetInfo(unittest.TestCase):
         for file_type in expected_file_types:
             self.assertTrue(self.worksheet_info.has_file_type(file_type))
 
+    def test_is_incomplete(self):
+        self.assertFalse(self.worksheet_info.is_incomplete())
+
+        # An incomplete translation (= almost finished)
+        incomplete_raw_dict: dict = \
+            {"total": 44, "translated": 40, "fuzzy": 2, "proofread": 0, "code": "ro", "language": "ro"}
+        incomplete_progress = fortraininglib.TranslationProgress(**incomplete_raw_dict)
+        incomplete_worksheet = WorksheetInfo(TEST_EN_NAME, "ro", "random", incomplete_progress)
+        self.assertTrue(incomplete_worksheet.is_incomplete())
+
+        # An unfinished translation: does not even count as incomplete and will be ignored by resourcesbot
+        unfinished_raw_dict: dict = \
+            {"total": 44, "translated": 20, "fuzzy": 2, "proofread": 0, "code": "ru", "language": "ru"}
+        unfinished_progress = fortraininglib.TranslationProgress(**unfinished_raw_dict)
+        unfinished_worksheet = WorksheetInfo(TEST_EN_NAME, "ru", "random", unfinished_progress)
+        self.assertFalse(unfinished_worksheet.is_incomplete())
+
+
 
 class TestLanguageInfo(unittest.TestCase):
     def setUp(self):
@@ -88,9 +106,16 @@ class TestLanguageInfo(unittest.TestCase):
     def test_basic_functionality(self):
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress)
+        self.assertEqual(self.language_info.get_language_code(), TEST_LANG)
         self.language_info.add_worksheet_info(TEST_EN_NAME, worksheet_info)
         self.assertTrue(self.language_info.has_worksheet(TEST_EN_NAME))
         self.assertIsNotNone(self.language_info.get_worksheet(TEST_EN_NAME))
+
+    def test_worksheet_has_type(self):
+        self.test_basic_functionality()
+        self.language_info.get_worksheet(TEST_EN_NAME).add_file_info("pdf", TEST_URL, TEST_TIME)
+        self.assertTrue(self.language_info.worksheet_has_type(TEST_EN_NAME, 'pdf'))
+        self.assertFalse(self.language_info.worksheet_has_type(TEST_EN_NAME, 'odt'))
 
     def test_serialization(self):
         """Testing the import/export functionality into JSON representation
@@ -143,6 +168,10 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertEqual(len(comparison.get_all_changes()), 1)
         self.assertEqual(comparison.get_all_changes().pop().change_type, ChangeType.NEW_WORKSHEET)
 
+    # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
+    # and count_finished_translations()
+    # For meaningful tests we would need more complex examples as well (see compare())
+    # TODO: add several json files with complex examples to repo and deserialize them here to run tests
 
 class TestResourcesBot(unittest.TestCase):
     # use this to see logging messages (can be increased to logging.DEBUG)

@@ -197,6 +197,7 @@ class LanguageInfo:
                 count += 1
         return count
 
+
 class LanguageInfoEncoder(json.JSONEncoder):
     """serialize the data structure stored in ResourcesBot._result
     TODO: This currently uses the legacy dictionary data structure that was stored in global_result before,
