@@ -81,6 +81,10 @@ class WorksheetInfo:
             return self._files[file_type]
         return None
 
+    def is_incomplete(self) -> bool:
+        """A translation is incomplete if most units are translated but at least one is not translated or fuzzy"""
+        return self.progress.is_incomplete()
+
 
 class LanguageInfo:
     """Holds information on all available worksheets in one specific language"""
@@ -182,6 +186,16 @@ class LanguageInfo:
         """ Returns a list of worksheets which are translated but are missing the PDF
         """
         return [worksheet for worksheet in self.worksheets if not self.worksheets[worksheet].has_file_type('pdf')]
+
+    def list_incomplete_translations(self) -> List[WorksheetInfo]:
+        return [worksheet for worksheet in self.worksheets if self.worksheets[worksheet].is_incomplete()]
+
+    def count_finished_translations(self) -> int:
+        count: int = 0
+        for worksheet_info in self.worksheets.values():
+            if worksheet_info.has_file_type('pdf'):
+                count += 1
+        return count
 
 class LanguageInfoEncoder(json.JSONEncoder):
     """serialize the data structure stored in ResourcesBot._result

@@ -52,8 +52,8 @@ import json
 import argparse # For CLI arguments
 import configparser
 from typing import Optional, Dict, Any
-import pywikibot
 from uno import Bool
+import pywikibot
 
 from pywikitools import fortraininglib
 from pywikitools.fortraininglib import TranslationProgress
@@ -64,7 +64,6 @@ from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo
 
 class ResourcesBot():
     """Contains all the logic of our bot"""
-    # TODO subclass pywikibot.SingleSiteBot
 
     def __init__(self, limit_to_lang:Optional[str]=None, rewrite_all:Bool=False, loglevel:Optional[str]=None):
         """
