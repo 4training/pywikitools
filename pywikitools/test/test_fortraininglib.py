@@ -50,11 +50,12 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(fortraininglib.title_to_message('Time_with_God'), 'sidebar-timewithgod')
         self.assertEqual(fortraininglib.title_to_message('Dealing with Money'), 'sidebar-dealingwithmoney')
 
-    def test_get_worksheet_list(self):
-        for worksheet in fortraininglib.get_worksheet_list():
-            page_source = fortraininglib.get_page_source(worksheet)
-            self.assertIsNotNone(page_source)
-            self.assertGreater(len(page_source), 100)
+# Disabled because this test takes fairly long (currently demands more than half of the time of a full test run)
+#    def test_get_worksheet_list(self):
+#        for worksheet in fortraininglib.get_worksheet_list():
+#            page_source = fortraininglib.get_page_source(worksheet)
+#            self.assertIsNotNone(page_source)
+#            self.assertGreater(len(page_source), 100)
 
     def test_get_file_url(self):
         test_file = 'Forgiving_Step_by_Step.pdf'
