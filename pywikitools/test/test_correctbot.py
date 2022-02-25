@@ -5,6 +5,7 @@ import unittest
 import importlib
 import os
 from pywikitools.correctbot.correctors.base import CorrectorBase
+from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.universal import UniversalCorrector
 
 from typing import Callable, List
@@ -70,12 +71,6 @@ from os.path import isfile, join
 #         execute_test("en", ["\"foo\"", "„foo“"], "“foo”")
 #
 #
-# class CorrectBotGerman(unittest.TestCase):
-#     def test_fix_quotation_marks(self):
-#         # Verify replacement of non-german quotations marks
-#         execute_test("de", ["“foo”", "\"foo\""], "„foo“")
-#         # Verify that german quotation marks are used in a correct way ('„' starts and '“' ends a quotation)
-#         execute_test("de", ["“foo„", "„foo„", "“foo“"], "„foo“")
 #
 #
 #class CorrectBotFrench(unittest.TestCase):
@@ -233,6 +228,23 @@ class TestUniversalCorrector(unittest.TestCase):
             self.assertEqual(corrector.filename_correct("Not a filename"), "Not a filename")
         with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
             self.assertEqual(corrector.filename_correct("other extension.exe"), "other extension.exe")
+
+class TestGermanCorrector(unittest.TestCase):
+    def test_correct_quotes(self):
+        corrector = GermanCorrector()
+        for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
+            self.assertEqual(corrector.correct(wrong), '„Test“')
+            self.assertEqual(corrector.correct(f"Beginn und {wrong}"), 'Beginn und „Test“')
+            self.assertEqual(corrector.correct(f"{wrong} und Ende."), '„Test“ und Ende.')
+            self.assertEqual(corrector.correct(f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
+
+        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
+            self.assertEqual(corrector.correct(' " “ ” „'), ' " “ ” „')
+        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
+            self.assertEqual(corrector.correct('"f“al"sc”h"'), '„f“al"sc”h“')
+        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
+            self.assertEqual(corrector.correct('"Das ist" seltsam"'), '„Das ist“ seltsam“')
+
 
 if __name__ == '__main__':
     unittest.main()
