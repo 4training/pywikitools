@@ -6,7 +6,7 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 """
 import logging
 import re
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 import requests
 
@@ -214,10 +214,13 @@ def get_translated_title(page: str, language_code: str) -> Optional[str]:
 def get_translated_unit(page: str, language_code: str, identifier: int,
                         revision_id: Optional[int] = None) -> Optional[str]:
     """
-    Returns the translation of one translation unit of a page into a give language
-    @param identifier: number of the translation unit
+    Returns the translation of one translation unit of a page into a give language, to fetch the data provided by e.g.,
+    https://www.4training.net/mediawiki/index.php?title=Translations:How_to_Continue_After_a_Prayer_Time/1/ar&type=revision&diff=62258&oldid=62195
+    @param page: e.g. "How_to_Continue_After_a_Prayer_Time"
+    @param language_code: two char string
+    @param identifier: number of the translation unit (media-wiki internal)
     (use get_translated_title() for getting the "Page display title" translation unit)
-    @param revision_id Specify this to retrieve an older revision (default: retrieve current revision)
+    @param revision_id: Specify this to retrieve an older revision (default: retrieve current revision)
     @return the translated string or None if translation doesn't exist
     """
     return get_page_source(f"Translations:{page}/{identifier}/{language_code}", revision_id)
@@ -359,11 +362,11 @@ def list_page_templates(page: str) -> List[str]:
         return []
 
 
-def get_translation_units(page: str, language_code: str):
+def get_translation_units(page: str, language_code: str) -> Union[str, List[str]]:
     """
     List the translation units of worksheet translated into the language identified by language_code
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
-    @return if successful than returns the structure as is in response.json()["query"]["messagecollection"]
+    @return if successful, then returns the structure as is in response.json()["query"]["messagecollection"]
     @return on error: returns string with error message
     """
     response = requests.get(APIURL, params={
