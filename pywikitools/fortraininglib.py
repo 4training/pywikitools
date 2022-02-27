@@ -214,13 +214,15 @@ def get_translated_title(page: str, language_code: str) -> Optional[str]:
 def get_translated_unit(page: str, language_code: str, identifier: int,
                         revision_id: Optional[int] = None) -> Optional[str]:
     """
-    Returns the translation of one translation unit of a page into a give language, to fetch the data provided by e.g.,
-    https://www.4training.net/mediawiki/index.php?title=Translations:How_to_Continue_After_a_Prayer_Time/1/ar&type=revision&diff=62258&oldid=62195
-    @param page: e.g. "How_to_Continue_After_a_Prayer_Time"
-    @param language_code: two char string
-    @param identifier: number of the translation unit (media-wiki internal)
+    Returns the translation of one translation unit of a page into a given language
+    
+    This is comparable to e.g. https://www.4training.net/Translations:Hearing_from_God/2/de
+    but returns wikitext, not HTML
+    
+    @param identifier: number of the translation unit (mediawiki internal)
     (use get_translated_title() for getting the "Page display title" translation unit)
     @param revision_id: Specify this to retrieve an older revision (default: retrieve current revision)
+    (similar to https://www.4training.net/mediawiki/index.php?title=Translations:Hearing_from_God/2/de&oldid=26928 )
     @return the translated string or None if translation doesn't exist
     """
     return get_page_source(f"Translations:{page}/{identifier}/{language_code}", revision_id)
