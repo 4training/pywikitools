@@ -61,8 +61,54 @@ class TranslationUnit:
         self.__translation_snippets: Optional[List[TranslationSnippet]] = None
         self.logger = logging.getLogger('pywikitools.lang.TranslationUnit')
 
+    def get_definition(self) -> str:
+        return self.__definition
+
+    def set_definition(self, text: str):
+        self.__definition = text
+        self.__definition_snippets = None
+
+    def get_translation(self) -> str:
+        return self.__translation
+
+    def set_translation(self, text: str):
+        self.__translation = text
+        self.__translation_snippets = None
+
     def get_name(self):
         return f"Translations:{self.__identifier}/{self.__language_code}"
+
+    def remove_links(self):
+        """
+        Remove links (both in definition and in translation). Warns also if there is a link without |
+        Example: [[Prayer]] causes a warning, correct would be [[Prayer|Prayer]].
+        We have this convention so that translators are less confused as they need to write e.g. [[Prayer/de|Gebet]]
+        """
+        # This does all necessary replacements if the link correctly uses the form [[destination|description]]
+        link_pattern_with_bar = re.compile(r"\[\[(.*?)\|(.*?)\]\]")
+        self.__definition = link_pattern_with_bar.sub(r"\2", self.__definition)
+        self.__translation = link_pattern_with_bar.sub(r"\2", self.__translation)
+
+        # Now we check for links that are not following the convention
+        # We need to remove the # of internal links, otherwise it gets the meaning of a numbering. (#?) does the trick
+        link_pattern_without_bar = re.compile(r"\[\[(#?)(.*?)\]\]")
+        match_d = link_pattern_without_bar.search(self.__definition)
+        if match_d:
+            self.logger.warning(f"Found errorneous link {match_d.group(0)} in English original in {self.get_name()}. "
+                                "Please tell an administrator.")
+            self.__definition = link_pattern_without_bar.sub(r"\2", self.__definition)
+
+        match_t = link_pattern_without_bar.search(self.__translation)
+        if match_t:
+            self.logger.warning(f"The following link is errorneous: {match_t.group(0)}. "
+                                f"It needs to be [[English destination/{self.__language_code}|{match_t.group(2)}]]. "
+                                f"Please correct {self.get_name()}")
+            self.__translation = link_pattern_without_bar.sub(r"\2", self.__translation)
+
+        if match_d or match_t:
+            # Snippets need to be re-created. We don't have to do that right now, we'll do it just-in-time when needed
+            self.__definition_snippets = None
+            self.__translation_snippets = None
 
     @staticmethod
     def split_into_snippets(text: str, fallback: bool = False) -> List[TranslationSnippet]:

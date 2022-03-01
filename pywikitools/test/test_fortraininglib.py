@@ -63,6 +63,18 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertTrue(fortraininglib.get_file_url(test_file).startswith('https://www.4training.net'))
         self.assertTrue(fortraininglib.get_file_url(test_file).endswith(test_file))
 
+    def test_get_translation_units(self):
+        # Not existing page should return an empty list
+        with self.assertLogs("pywikitools.lib", level="WARNING"):
+            self.assertEqual(len(fortraininglib.get_translation_units("Invalid", "de")), 0)
+        # Check that there are translation units returned for a valid page
+        translation_units = fortraininglib.get_translation_units("Healing", "de")
+        counter = 0
+        for translation_unit in translation_units:
+            counter += 1
+            self.assertGreater(len([snippet for snippet in translation_unit]), 0)
+        self.assertGreater(counter, 10)
+
 
 if __name__ == '__main__':
     unittest.main()

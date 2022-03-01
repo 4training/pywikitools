@@ -98,6 +98,38 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertTrue(with_lists.is_translation_well_structured())
         self.assertGreaterEqual(counter, 8)
 
+    def test_remove_links(self):
+        DEFINITION_WITH_LINK = "This is a [[destination|link]]."
+        DEFINITION_WITHOUT_LINK = "This is a link."
+        TRANSLATION_WITH_LINK = "Das ist ein [[destination/de|Link]]."
+        TRANSLATION_WITHOUT_LINK = "Das ist ein Link."
+        link_unit = TranslationUnit("Test", "de", DEFINITION_WITH_LINK, TRANSLATION_WITH_LINK)
+        link_unit.remove_links()
+        self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
+        self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
+        (definition, translation) = next(snippet for snippet in link_unit)
+        self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
+        self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
+
+        link_unit.set_definition("This is a [[link]].")
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            link_unit.remove_links()
+        self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
+        self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
+        (definition, translation) = next(snippet for snippet in link_unit)
+        self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
+        self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
+
+        link_unit.set_definition("This is a [[#link]].")
+        link_unit.set_translation("Das ist ein [[Link]].")
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            link_unit.remove_links()
+        self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
+        self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
+        (definition, translation) = next(snippet for snippet in link_unit)
+        self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
+        self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
+
 
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):

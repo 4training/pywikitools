@@ -65,7 +65,6 @@ class TranslateODT:
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
         self.logger = logging.getLogger('pywikitools.translateodt')
-        logging.getLogger().setLevel(logging.DEBUG)
 
         if loglevel is not None:
             numeric_level = getattr(logging, loglevel.upper(), None)
@@ -128,28 +127,6 @@ class TranslateODT:
             self.logger.warning("Error trying to access the LibreOffice document."
                                f"Tried {retries} times, giving up now.")
             sys.exit(2)
-
-
-    def remove_links(self, text: str) -> str:
-        """
-        Remove links. Warns also if there is a link without |
-        Example: [[Prayer]] causes a warning, correct would be [[Prayer|Prayer]].
-        We have this convention so that translators are less confused as they need to write e.g. [[Prayer/de|Gebet]]
-        @return the processed string
-        """
-        # This does all necessary replacements if the link correctly uses the form [[destination|description]]
-        cleansed_text = re.sub(r"\[\[(.*?)\|(.*?)\]\]", r"\2", text)
-
-        # Now we check for links who are not following the convention
-        # We need to remove the # of an internal link, otherwise it gets the meaning of a numbering. (#?) does the trick
-        pattern = re.compile(r"\[\[(#?)(.*?)\]\]")
-        match = pattern.search(cleansed_text)
-        if match:
-            self.logger.warning(f"The following link is errorneous: {match.group(0)}. "
-                    f"It needs to look like [[English destination/language code|{match.group(2)}]]. Please correct.")
-            cleansed_text = pattern.sub(r"\2", cleansed_text)
-
-        return cleansed_text
 
     def is_search_and_replace_necessary(self, orig: str, trans: str) -> bool:
         """
@@ -300,6 +277,28 @@ class TranslateODT:
             self.logger.error(f"soffice process didn't terminate within {TIMEOUT}s. Killing it.")
             self.proc.kill()
 
+    def _fetch_english_file(self, odt_file: str) -> str:
+        """Download the specified file from the mediawiki server
+        @return full path of the downloaded file (empty string on error)
+        """
+        en_path = self.config['Paths']['worksheets'] + 'en'
+        if not os.path.isdir(en_path):
+            os.makedirs(en_path)
+        odt_path = f"{en_path}/{odt_file}"
+        if os.path.isfile(odt_path):
+            self.logger.warning(f"File {odt_path} already exists locally, not downloading.")
+        else:
+            url = fortraininglib.get_file_url(odt_file)
+            if url is None:
+                self.logger.error(f"Could not get URL of file {odt_file}")
+                return ""
+
+            odt_doc = requests.get(url, allow_redirects=True)
+            with open(odt_path, 'wb') as fh:
+                fh.write(odt_doc.content)
+            self.logger.info(f"Successfully downloaded and saved {odt_path}")
+        return odt_path
+
 
     def translate_odt(self, worksheet: str, language_code: str) -> Optional[str]:
         """Central function to process the given worksheet
@@ -307,22 +306,20 @@ class TranslateODT:
         @param language_code what language we should translate to (e.g. "de")
         @return file name of the created ODT file (or None in case of error)
         """
-        assert self.model is not None
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
-        translations = fortraininglib.get_translation_units(worksheet, language_code)
-        if isinstance(translations, str):
-            # This means we couldn't get the translation units so we can't do anything
-            self.logger.error(translations)
+        translations: List[TranslationUnit] = fortraininglib.get_translation_units(worksheet, language_code)
+        if len(translations) == 0:
+            self.logger.error(f"Couldn't get translation units of {worksheet}.")
             return None
 
         # Check for templates we need to read as well
         templates = set(fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
         for template in templates:
-            response = fortraininglib.get_translation_units(template, language_code)
-            if isinstance(response, str):
+            template_units = fortraininglib.get_translation_units(template, language_code)
+            if len(template_units) == 0:
                 self.logger.warning(f"Couldn't get translations of {template}, ignoring this template.")
             else:
-                translations.extend(response)
+                translations.extend(template_units)
 
         # find out version, name of original odt-file and name of translated odt-file
         version = None
@@ -330,18 +327,18 @@ class TranslateODT:
         odt = None
         filename = None
         for t in translations:
-            if re.search(r"\.odt", t["definition"]):
-                odt = t["definition"]
-                filename = t["translation"]
+            if re.search(r"\.odt$", t.get_definition()):
+                odt = t.get_definition()
+                filename = t.get_translation()
             # Searching for version number (valid examples: 1.0; 2.1; 0.7b; 1.5a)
-            if re.search(r"^\d\.\d[a-zA-Z]?$", t["definition"]):
-                if t["translation"] != t["definition"]:
-                    self.logger.warning(f"English original has version {t['definition']}, "
-                                f"translation has version {t['translation']}. "
+            if re.search(r"^\d\.\d[a-zA-Z]?$", t.get_definition()):
+                if t.get_definition() != t.get_translation():
+                    self.logger.warning(f"English original has version {t.get_definition()}, "
+                                f"translation has version {t.get_translation()}. "
                                 "Please update translation. "
                                 "Ask an administrator for a list of changes in the English original.")
-                version = t["translation"]
-                version_orig = t["definition"]
+                version = t.get_translation()
+                version_orig = t.get_definition()
 
         if not odt:
             self.logger.error(f"Couldn't find name of odt file in page {worksheet}")
@@ -355,95 +352,70 @@ class TranslateODT:
         if not filename:
             self.logger.warning("Translation of file name is missing!")
 
-        # add footer (Template:CC0Notice) to translation list
-        translations.extend([{
-            "definition": fortraininglib.get_cc0_notice(version_orig, 'en'),
-            "translation": fortraininglib.get_cc0_notice(version, language_code)}])
+        # Add footer (Template:CC0Notice) to translation list
+        translations.extend([TranslationUnit("Template:CC0Notice", language_code,
+            fortraininglib.get_cc0_notice(version_orig, 'en'), fortraininglib.get_cc0_notice(version, language_code))])
 
-        en_path = self.config['Paths']['worksheets'] + 'en'
-        if not os.path.isdir(en_path):
-            os.makedirs(en_path)
-        odt_path = en_path + '/' + odt
-        if os.path.isfile(odt_path):
-            self.logger.warning(f"File {odt_path} already exists locally, not downloading.")
-        else:
-            url = fortraininglib.get_file_url(odt)
-            if url is None:
-                self.logger.error(f"Could not get URL of file {odt}")
-                return None
-
-            odt_doc = requests.get(url, allow_redirects=True)
-            with open(odt_path, 'wb') as fh:
-                fh.write(odt_doc.content)
-            self.logger.info(f"Successfully downloaded and saved {odt_path}")
-
-        ############################################################################################
-        # Open and Translate odt
-        ############################################################################################
+        odt_path = self._fetch_english_file(odt)
+        if not odt_path:
+            return None
 
         self.open_file(odt_path)
 
         # for each translation unit:
         for t in translations:
-            orig = t["definition"]
-            trans = t["translation"]
-
-            if not isinstance(orig, str):
-                self.logger.warning("Empty unit in original detected")
+            if t.get_definition() == "":
+                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
                 continue
-            if not isinstance(trans, str):
-                self.logger.warning(f"Translation missing. Please translate the following part: {orig}")
+            if t.get_translation() == "":
+                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
                 continue
-            if orig == version_orig:
+            if t.get_definition() == version_orig:
                 # We don't try to do search and replace with the version string. We later process the whole CC0 notice
                 continue
 
-            self.logger.debug(f"Translation unit: {orig}")
-            # Preprocessing: remove links
-            orig = self.remove_links(orig)
-            trans = self.remove_links(trans)
+            self.logger.debug(f"Translation unit: {t.get_definition()}")
+            t.remove_links()
 
             # Check if number of <br/> is equal, otherwise replace by newline
-            br_in_orig = len(re.split("< *br */ *>", orig)) - 1
-            br_in_trans = len(re.split("< *br */ *>", trans)) - 1
+            br_in_orig = len(re.split("< *br */ *>", t.get_definition())) - 1
+            br_in_trans = len(re.split("< *br */ *>", t.get_translation())) - 1
             if br_in_orig != br_in_trans:
                 # TODO in the future remove this? At least find out how much this is necessary
                 self.logger.info("Number of <br/> differs between original and translations. Replacing with newlines.")
-                orig = re.sub("< *br */ *>", '\n', orig)
-                trans = re.sub("< *br */ *>", '\n', trans)
+                t.set_definition(re.sub("< *br */ *>", '\n', t.get_definition()))
+                t.set_translation(re.sub("< *br */ *>", '\n', t.get_translation()))
 
-            identifier = t["key"] if "key" in t else ""
-            translation_unit = TranslationUnit(identifier, language_code, orig, trans)
-            if not translation_unit.is_translation_well_structured():
+            if not t.is_translation_well_structured():
                 # We can't process this translation unit. Logging messages are already written
                 continue
             if br_in_orig != br_in_trans:
                 self.logger.warning(f"Issue with <br/> (line breaks). There are {br_in_orig} in the original "
                             f"but {br_in_trans} of them in the translation. "
-                            f"We still can process {t['title']}. You may ignore this warning.")
+                            f"We still can process {t.get_name()}. You may ignore this warning.")
 
-            # for each snippet of translation unit:
-            for (search, replace) in translation_unit:
+            for (search, replace) in t:     # for each snippet of translation unit:
                 self.process_snippet(search.content, replace.content)
 
         ############################################################################################
         # Set properties
         ############################################################################################
+        assert self.model is not None
         docProps = self.model.getDocumentProperties()
 
         # check if there is a subtitle in docProps.Subject:
         subtitle_en = ""
         subtitle_lan = ""
         if docProps.Subject != "":
-            if docProps.Subject != translations[1]['definition']:
+            if docProps.Subject != translations[1].get_definition():
                 self.logger.info(f"Assuming we have no subtitle. Subject in properties is {docProps.Subject}"
-                            f", but second translation unit is {translations[1]['definition']}")
+                            f", but second translation unit is {translations[1].get_definition()}")
             else:
-                subtitle_en = " - " + translations[1]['definition']
-                subtitle_lan = " - " + translations[1]['translation']
+                subtitle_en = " - " + translations[1].get_definition()
+                subtitle_lan = " - " + translations[1].get_translation()
 
         # Title: [translated Title]
-        headline = translations[0]['translation']
+        headline = translations[0].get_translation()
         if headline is None:
             self.logger.error("Headline doesn't seem to be translated. Exiting now.")
             return None
@@ -452,7 +424,7 @@ class TranslateODT:
 
 
         # Subject: [English title] [Languagename in English] [Languagename autonym]
-        docProps.Subject = str(translations[0]['definition'])
+        docProps.Subject = str(translations[0].get_definition())
         docProps.Subject += subtitle_en
         docProps.Subject += " " + str(fortraininglib.get_language_name(language_code, 'en'))
         docProps.Subject += " " + str(fortraininglib.get_language_name(language_code))

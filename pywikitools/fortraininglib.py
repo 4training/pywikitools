@@ -10,6 +10,8 @@ from typing import List, Optional, Dict, Union
 
 import requests
 
+from pywikitools.lang.translated_page import TranslationUnit
+
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
 logger = logging.getLogger('pywikitools.lib')
@@ -215,10 +217,10 @@ def get_translated_unit(page: str, language_code: str, identifier: int,
                         revision_id: Optional[int] = None) -> Optional[str]:
     """
     Returns the translation of one translation unit of a page into a given language
-    
+
     This is comparable to e.g. https://www.4training.net/Translations:Hearing_from_God/2/de
     but returns wikitext, not HTML
-    
+
     @param identifier: number of the translation unit (mediawiki internal)
     (use get_translated_title() for getting the "Page display title" translation unit)
     @param revision_id: Specify this to retrieve an older revision (default: retrieve current revision)
@@ -364,12 +366,11 @@ def list_page_templates(page: str) -> List[str]:
         return []
 
 
-def get_translation_units(page: str, language_code: str) -> Union[str, List[str]]:
+def get_translation_units(page: str, language_code: str) -> List[TranslationUnit]:
     """
     List the translation units of worksheet translated into the language identified by language_code
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
-    @return if successful, then returns the structure as is in response.json()["query"]["messagecollection"]
-    @return on error: returns string with error message
+    @return empty list in case of an error
     """
     response = requests.get(APIURL, params={
         "action": "query",
@@ -381,16 +382,22 @@ def get_translation_units(page: str, language_code: str) -> Union[str, List[str]
 
     logger.info(f"Retrieving translation of {page} into language {language_code}... {response.status_code}")
     json = response.json()
-    if "error" in json:
-        if "info" in json["error"]:
-            return f"Couldn't get translation units. Error: {json['error']['info']}"
-        return "Couldn't get translation units. Strange error."
-    if "query" not in json:
-        return "Couldn't get translation units. Some serious error"
-    if "messagecollection" not in json["query"]:
-        return "Couldn't get translation units. Unexpected error."
-    return json["query"]["messagecollection"]
-
+    result = []
+    try:
+        if "error" in json:
+            if json["error"]["code"] == "badparameter":
+                logger.warning(f"Couldn't get translation units: Page {page} doesn't exist.")
+            else:
+                logger.warning(f"Couldn't get translation units. Error: {json['error']['info']}")
+            return []
+        for tu in json["query"]["messagecollection"]:
+            translation_unit = TranslationUnit(str(tu["key"]), str(tu["targetLanguage"]),
+                str(tu["definition"]), str(tu["translation"]))
+            result.append(translation_unit)
+        return result
+    except KeyError as err:
+        logger.warning(f"Unexpected error in get_translation_units({page}/{language_code}): {err}")
+        return []
 
 def title_to_message(title: str) -> str:
     """Converts a mediawiki title to its corresponding system message

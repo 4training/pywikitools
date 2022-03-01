@@ -52,7 +52,6 @@ import json
 import argparse # For CLI arguments
 import configparser
 from typing import Optional, Dict, Any
-from uno import Bool
 import pywikibot
 
 from pywikitools import fortraininglib
@@ -62,10 +61,10 @@ from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
 
-class ResourcesBot():
+class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, limit_to_lang:Optional[str]=None, rewrite_all:Bool=False, loglevel:Optional[str]=None):
+    def __init__(self, limit_to_lang: Optional[str] = None, rewrite_all: bool = False, loglevel: Optional[str] = None):
         """
         @param limit_to_lang: limit processing to one language (string with a language code)
         @param rewrite_all: Rewrite all language information less, regardless if we find changes or not
@@ -240,7 +239,7 @@ class ResourcesBot():
 
         encoded_json = LanguageInfoEncoder().encode(self._result[lang])
         language_info: LanguageInfo = LanguageInfo(lang)
-        rewrite_json: Bool = self._rewrite_all
+        rewrite_json: bool = self._rewrite_all
 
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
         page = pywikibot.Page(self.site, f"4training:{lang}.json")
@@ -334,7 +333,7 @@ class ResourcesBot():
                     incomplete_translations.append(worksheet)
                     incomplete_translations_reports.append(f"{worksheet}: {progress}")
                 if self._result[lang].has_worksheet(worksheet):
-                    if self._result[lang].get_worksheet(worksheet).has_file_type("pdf"):
+                    if self._result[lang].worksheet_has_type(worksheet, "pdf"):
                         #check if there exists a pdf
                         pdfcounter += 1
                         translated_worksheets.append(worksheet)
