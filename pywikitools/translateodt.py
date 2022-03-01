@@ -38,6 +38,7 @@ from com.sun.star.lang import Locale
 #from com.sun.star.lang import IllegalArgumentException #could this be helpful to check oo arguments?
 import fortraininglib
 from lang.libreoffice_lang import LANG_LOCALE
+from pywikitools.lang.translated_page import TranslationUnit
 
 def usage():
     print("Usage: python3 translateodt.py [-l loglevel] [--keep-english-file] worksheetname languagecode")
@@ -204,8 +205,8 @@ def process_snippet(oo_data, orig: str, trans: str):
         if replaced:
             logger.info(f"Replaced: {orig} with: {trans}")
         else:
-            # Second try: split at new lines (or similar strange breaks) and try again
-            logger.info(f"Couldn't find {orig}. Splitting at white characters and trying again.")
+            # Second try: split at newlines (or similar strange breaks) and try again
+            logger.info(f"Couldn't find {orig}. Splitting at newlines and trying again.")
 
             orig_split = re.split("[\t\n\r\f\v]", orig)
             trans_split = re.split("[\t\n\r\f\v]", trans)
@@ -352,8 +353,7 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
         return None
 
     # Check for templates we need to read as well
-    templates = set(fortraininglib.list_page_templates(worksheet)) \
-            - set(IGNORE_TEMPLATES)
+    templates = set(fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
     for template in templates:
         response = fortraininglib.get_translation_units(template, languagecode)
         if isinstance(response, str):
@@ -447,44 +447,24 @@ def translateodt(worksheet: str, languagecode: str) -> Optional[str]:
         br_in_orig = len(re.split("< *br */ *>", orig)) - 1
         br_in_trans = len(re.split("< *br */ *>", trans)) - 1
         if br_in_orig != br_in_trans:
+            # TODO in the future remove this? At least find out how much this is necessary
+            logger.info("Number of <br/> differs between original and translations. Replacing with newlines.")
             orig = re.sub("< *br */ *>", '\n', orig)
             trans = re.sub("< *br */ *>", '\n', trans)
 
-        orig_split = split_translation_unit(orig)
-        trans_split = split_translation_unit(trans)
-
-        # check if the structure of the original and the translation fit together
-        if len(orig_split) != len(trans_split):
-            # TODO give more specific warnings like "missing #" or "Number of = mismatch"
-            logger.info("Number of *, =, #, italic and bold formatting, ;, : and html tags is not equal"
-                        f" in original and translation:\n{t['definition']}\n{t['translation']}")
-            logger.info('Falling back: removing all formatting and trying again')
-            orig_split = split_translation_unit(orig, fallback=True)
-            trans_split = split_translation_unit(trans, fallback=True)
-
-            if len(orig_split) != len(trans_split):
-                if br_in_orig != br_in_trans:
-                    # There could be another issue besides the <br/> issue. Still this warning is probably helpful
-                    logger.warning(f"Couldn't process the following translation unit. Reason: Missing/wrong <br/>. "
-                                   f"In original: {br_in_orig}, in translation: {br_in_trans}. Please correct.")
-                else:
-                    logger.warning("Couldn't process the following translation unit. Reason: Formatting issues. "
-                                   "Please check that all special characters like * = # ; : <b> <i> are correct.")
-                logger.warning(f"Original: \n{t['definition']}")
-                logger.warning(f"Translation: \n{t['translation']}")
-                continue
-            logger.warning("Found an issue with formatting (special characters like * = # ; : <b> <i>). "
-                           "I ignored all formatting and could continue. You may ignore this error "
-                           f"or correct the translation unit {t['title']}")
-
+        identifier = t["key"] if "key" in t else ""
+        translation_unit = TranslationUnit(identifier, languagecode, orig, trans)
+        if not translation_unit.is_translation_well_structured():
+            # We can't process this translation unit. Logging messages are already written
+            continue
         if br_in_orig != br_in_trans:
             logger.warning(f"Issue with <br/> (line breaks). There are {br_in_orig} in the original "
                            f"but {br_in_trans} of them in the translation. "
                            f"We still can process {t['title']}. You may ignore this warning.")
 
         # for each snippet of translation unit:
-        for _, (search, replace) in enumerate(zip(orig_split, trans_split)):
-            process_snippet(oo_data, search, replace)
+        for (search, replace) in translation_unit:
+            process_snippet(oo_data, search.content, replace.content)
 
     ############################################################################################
     # Set properties
