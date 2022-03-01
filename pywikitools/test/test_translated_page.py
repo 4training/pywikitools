@@ -57,8 +57,6 @@ Use the ''support'' of a '''good''' helper!
 class TestTranslationUnit(unittest.TestCase):
     def test_split_into_snippets(self):
         with_lists = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_LISTS)
-        for snippet in with_lists:
-            print(snippet)
         self.assertEqual(len(with_lists), 16)
         self.assertEqual(len([s for s in with_lists if s.is_text()]), 8)
         self.assertEqual(TEST_UNIT_WITH_LISTS, "".join([s.content for s in with_lists]))
