@@ -4,7 +4,7 @@ import unittest
 from bs4 import BeautifulSoup, Comment
 from bs4.element import NavigableString
 from pywikitools import fortraininglib
-from pywikitools.html.beautify_html import BeautifyHTML
+from pywikitools.htmltools.beautify_html import BeautifyHTML
 
 class TestBeautifyHTML(unittest.TestCase):
     def test_get_image_basename(self):
@@ -13,13 +13,13 @@ class TestBeautifyHTML(unittest.TestCase):
             "/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"), "Hand_5.png")
         self.assertEqual(beautify._extract_image_name(
             "/mediawiki/images/a/ab/Family.png"), "Family.png")
-        with self.assertLogs('pywikitools.lib.html.BeautifyHTML', level='WARNING'):
+        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify._extract_image_name(
                 "/path/Test.png"), "Test.png")
-        with self.assertLogs('pywikitools.lib.html.BeautifyHTML', level='WARNING'):
+        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify._extract_image_name(
                 "/mediawiki/images/thumb/wrong_structure.png"), "wrong_structure.png")
-        with self.assertLogs('pywikitools.lib.html.BeautifyHTML', level='WARNING'):
+        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify._extract_image_name("Test.png"), "Test.png")
 
     def test_img_rewrite_handler(self):
@@ -71,7 +71,7 @@ class TestBeautifyHTML(unittest.TestCase):
                                                '<a href="/Prayer_redirected"><span>test</span></a>')
         self.assertEqual(beautify.process_html('<div><p><b><a href="/Church">Test<br/></a></b></p></div>'),
                                                '<p><b><a href="/redirected/Church">Test<br/></a></b></p>')
-        with self.assertLogs('pywikitools.lib.html.BeautifyHTML', level='WARNING'):
+        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify.process_html('<div><a href="/other">not in change_hrefs</a></div>'),
                                                    '<a href="/other">not in change_hrefs</a>')
 

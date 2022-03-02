@@ -19,7 +19,7 @@ class BeautifyHTML:
         self._img_src_base = img_src_base
         self._change_hrefs = change_hrefs
         self._img_src_rewrite = img_src_rewrite
-        self.logger = logging.getLogger('pywikitools.lib.html.BeautifyHTML')
+        self.logger = logging.getLogger('pywikitools.lib.htmltools.BeautifyHTML')
 
     def process_html(self, text: str) -> str:
         """
