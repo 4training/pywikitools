@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List, Optional
 
 import pywikibot
-import urllib
+from urllib.parse import unquote
 from pywikitools import fortraininglib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
@@ -62,7 +62,7 @@ class WorksheetInfo:
             else:
                 logger.warning("add_file_info() failed: timestamp is not of type str.")
         elif file_info is not None:
-            new_file_info = FileInfo(file_type, urllib.parse.unquote(file_info.url), file_info.timestamp)
+            new_file_info = FileInfo(file_type, unquote(file_info.url), file_info.timestamp)
         if new_file_info is not None:
             self._files[file_type] = new_file_info
         return new_file_info
@@ -117,7 +117,7 @@ class LanguageInfo:
 
                         self.add_worksheet_info(worksheet, worksheet_info)
                     else:
-                         logger.warning(f"No title attribute in {worksheet} object, skipping.")
+                        logger.warning(f"No title attribute in {worksheet} object, skipping.")
                 else:
                     logger.warning("Unexpected data structure while trying to deserialize LanguageInfo object.")
         else:
@@ -188,7 +188,7 @@ class LanguageInfo:
         return [worksheet for worksheet in self.worksheets if not self.worksheets[worksheet].has_file_type('pdf')]
 
     def list_incomplete_translations(self) -> List[WorksheetInfo]:
-        return [worksheet for worksheet in self.worksheets if self.worksheets[worksheet].is_incomplete()]
+        return [info for worksheet, info in self.worksheets.items() if info.is_incomplete()]
 
     def count_finished_translations(self) -> int:
         count: int = 0

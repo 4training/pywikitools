@@ -1,6 +1,5 @@
 import re
 import logging
-from typing import Dict
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
@@ -59,8 +58,8 @@ class WriteList(LanguagePostProcessor):
         for worksheet, worksheet_info in language_info.worksheets.items():
             if not worksheet_info.has_file_type('pdf'):
                 # Only show worksheets where we have a PDF file in the list
-                self.logger.warning(f"Language {language_info.get_language_code()}: worksheet {worksheet} has no PDF, "
-                                     "not including in list.")
+                self.logger.warning(f"Language {language_info.get_language_code()}: worksheet {worksheet} has no PDF,"
+                                    " not including in list.")
                 continue
 
             content += f"* [[{worksheet}/{language_info.get_language_code()}|"
@@ -148,6 +147,4 @@ class WriteList(LanguagePostProcessor):
             self.logger.info(f"Updated language information page {language} and marked it for translation.")
         else:
             self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
-
-
 

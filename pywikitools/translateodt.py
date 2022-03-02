@@ -31,10 +31,10 @@ from time import sleep
 from configparser import ConfigParser
 from typing import Any, List, Optional
 import requests
-import uno          # type: ignore
-from com.sun.star.connection import NoConnectException
-from com.sun.star.beans import PropertyValue
-from com.sun.star.lang import Locale
+import uno                                              # type: ignore
+from com.sun.star.connection import NoConnectException  # type: ignore
+from com.sun.star.beans import PropertyValue            # type: ignore
+from com.sun.star.lang import Locale                    # type: ignore
 from pywikitools import fortraininglib
 from pywikitools.lang.libreoffice_lang import LANG_LOCALE
 from pywikitools.lang.translated_page import TranslationUnit

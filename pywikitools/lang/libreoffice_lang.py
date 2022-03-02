@@ -1,7 +1,7 @@
-from typing import Final, Dict
+from typing import Final, Dict, Optional
 from enum import Enum
-import uno
-from com.sun.star.lang import Locale
+import uno                              # type: ignore
+from com.sun.star.lang import Locale    # type: ignore
 
 class FontType(Enum):
     """LibreOffice has three different font categories"""
@@ -15,37 +15,32 @@ class Lang:
     The Locale struct has the following parameters: "ISO language code","ISO country code", "variant (browser specific)"
     See also https://www.openoffice.org/api/docs/common/ref/com/sun/star/lang/Locale.html
     """
-    def __init__(self, language_code: str, country_code: str=None, font_type: FontType=None, custom_font: str=None):
+    def __init__(self, language_code: str, country_code: str,
+                 font_type: FontType = FontType.FONT_STANDARD, custom_font: Optional[str] = None):
         """
         @param language_code: ISO language code
         @param country_code: ISO country code
         @custom_font can be defined to use a different font than Arial (used for some complex layout languages)
         """
-        self._language_code = language_code
-        if country_code is None:
-            self._country_code = ''
-        else:
-            self._country_code = country_code
-        self._variant = ''   # Currently it looks like we never need to set it
-        if font_type is None:
-            self._font_type = FontType.FONT_STANDARD
-        else:
-            self._font_type = font_type
-        self._custom_font = custom_font
+        self._language_code: str = language_code
+        self._country_code: str = country_code
+        self._variant: str = ''   # Currently it looks like we never need to set it
+        self._font_type: FontType = font_type
+        self._custom_font: Optional[str] = custom_font
 
     def __str__(self):
         return f'("{self._language_code}","{self._country_code}","{self._variant}")'
 
-    def is_standard(self):
+    def is_standard(self) -> bool:
         return self._font_type == FontType.FONT_STANDARD
 
-    def is_asian(self):
+    def is_asian(self) -> bool:
         return self._font_type == FontType.FONT_ASIAN
 
-    def is_complex(self):
+    def is_complex(self) -> bool:
         return self._font_type == FontType.FONT_CTL
 
-    def has_custom_font(self):
+    def has_custom_font(self) -> bool:
         return self._custom_font is not None
 
     def get_custom_font(self) -> str:
