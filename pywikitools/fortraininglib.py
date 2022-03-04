@@ -6,7 +6,7 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 """
 import logging
 import re
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict
 
 import requests
 
@@ -205,12 +205,12 @@ def get_page_html(page: str) -> Optional[str]:
         return None
 
 
-def get_translated_title(page: str, language_code: str) -> Optional[str]:
+def get_translated_title(page: str, language_code: str, revision_id: Optional[int] = None) -> Optional[str]:
     """
     Returns the translated title of a worksheet
     @return None on error
     """
-    return get_page_source(f"Translations:{page}/Page display title/{language_code}")
+    return get_page_source(f"Translations:{page}/Page display title/{language_code}", revision_id)
 
 
 def get_translated_unit(page: str, language_code: str, identifier: int,

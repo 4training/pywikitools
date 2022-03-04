@@ -10,7 +10,6 @@ Each function should have a documentation string which will be used for print_st
 """
 import logging
 import re
-from typing import List
 
 class UniversalCorrector():
     """Has language-independent correction functions"""
@@ -30,8 +29,7 @@ class UniversalCorrector():
 
         # TODO: Quotation marks are not yet covered - double check if necessary
         find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
-        matches = re.finditer(find_wrong_capitalization, text)
-        for match in reversed(list(matches)):
+        for match in re.finditer(find_wrong_capitalization, text):
             text = text[:match.end() - 1] + match.group(1).upper() + text[match.end():]
         text = text[0].upper() + text[1:]
         return text
@@ -50,6 +48,10 @@ class UniversalCorrector():
         """Erase redundant spaces before punctuation"""
         check_wrong_spaces = re.compile(r'\s+([.!?;,])')
         return re.sub(check_wrong_spaces, r'\1', text)
+
+    def correct_wrong_dash(self, text: str) -> str:
+        """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
+        return re.sub(' - ', ' – ', text)
 
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""
@@ -75,12 +77,5 @@ class RTLCorrector():
         return re.sub(r'\)$', ')\u200f', text)
 
     def fix_rtl_filename(self, text: str) -> str:
-        """ when file name has a closing parenthesis right before the file ending,
-        make sure we have a RTL mark in there!
-        """
-        file_extensions: List[str] = ['.pdf', '.odt', '.doc', '.odg']
-        if not text.endswith(tuple(file_extensions)):
-            # TODO log something / write warning
-            return text
-        re.sub(r'\)\.([a-z][a-z][a-z])$', ')\u200f.\\1', text)
-        return text
+        """When file name has a closing parenthesis before the file ending, make sure we have a RTL mark afterwards!"""
+        return re.sub(r'\)\.([a-z]{3})$', ')\u200f.\\1', text)
