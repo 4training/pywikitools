@@ -45,6 +45,11 @@ Setup:
 
    * ``cp config.example.ini config.ini``
    * Edit and where necessary adjust it
+#. Make sure the pywikitools package is found by python. Options:
+
+   * Create a PTH file in the site-packages directory (something like ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it (recommended)
+   * Appending it to PYTHONPATH
+   * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
 Run scripts
