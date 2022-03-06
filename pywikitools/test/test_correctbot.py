@@ -214,6 +214,26 @@ class TestGermanCorrector(CorrectorTestCase):
         with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
             self.assertEqual(corrector.correct('"Das ist" seltsam"'), '„Das ist“ seltsam“')
 
+    def test_correct_quotes_todo(self):
+        corrector = GermanCorrector()
+        valid_strings: List[str] = [
+            "(siehe Arbeitsblatt „[[Forgiving Step by Step/de|Schritte der Vergebung]]“)",
+            "[[How to Continue After a Prayer Time/de|“Wie es nach einer Gebetszeit weitergeht”]]",
+            "(indem er sagt: „Ich vergebe mir.“)",
+            "(Zum Beispiel: „Gott, wir kommen zu dir als den Richter[...] hilf du ____ in diesem Prozess.“)",
+            "(„Was heißt Vergeben?“)",
+            "„ich habe mich missverstanden gefühlt“,",
+            "Vergebung bedeutet nicht zu sagen „das war ja nur eine Kleinigkeit“."
+        ]
+        for valid in valid_strings:
+            # TODO: all these strings shouldn't give warnings
+            self.assertEqual(corrector.correct(valid), valid)
+            # TODO: In fact they should receive corrections
+            #needs_correction = valid.replace("„", '"')
+            #needs_correction = needs_correction.replace("”", '"')
+            #self.assertEqual(corrector.correct(needs_correction), valid)
+
+
 """TODO
 class TestEnglishCorrector(unittest.TestCase):
     def test_correct_apostrophe(self):

@@ -1,8 +1,9 @@
 
+import difflib
 from enum import Enum
 import logging
 import re
-from typing import List, Optional
+from typing import Final, List, Optional
 
 class SnippetType(Enum):
     """
@@ -16,6 +17,9 @@ class SnippetType(Enum):
 class TranslationSnippet:
     """
     Represents a smallest piece of mediawiki content: either markup or text.
+
+    Content can be directly changed - use TranslationUnit.sync_from_snippets() to save it in the
+    corresponding TranslationUnit
     """
     __slots__ = ['_type', 'content']
 
@@ -44,9 +48,17 @@ class TranslationUnit:
     Represents one translation unit of a translatable mediawiki page with its translation into a given language.
     https://www.mediawiki.org/wiki/Help:Extension:Translate/Glossary
 
-    Can be split up into one or more TranslationSnippets
-    TODO save identifier/name of the unit also properly
+    Can be split up into one or more TranslationSnippets.
+    You can make changes either with set_definition() / set_translation() or by changing the content of a snippet
+    and syncing it back here with sync_from_snippets().
+    There is no real persistence, so if you want to permanently store the changes in the mediawiki system
+    you need to take care of that yourself.
     """
+    # Font color for terminal output in diffs
+    RED: Final[str] = "\033[0;31m"
+    GREEN: Final[str] = "\033[0;32m"
+    NO_COLOR: Final[str] = "\033[0m"
+
     def __init__(self, identifier: str, language_code: str, definition: str, translation: str):
         """
         @param identifier: The key of the translation unit (e.g. "Prayer/7")
@@ -56,7 +68,9 @@ class TranslationUnit:
         self.__identifier = identifier
         self.__language_code = language_code
         self.__definition = definition
+        self.__original_definition = definition
         self.__translation = translation
+        self.__original_translation = translation
         self.__definition_snippets: Optional[List[TranslationSnippet]] = None
         self.__translation_snippets: Optional[List[TranslationSnippet]] = None
         self.logger = logging.getLogger('pywikitools.lang.TranslationUnit')
@@ -65,15 +79,54 @@ class TranslationUnit:
         return self.__definition
 
     def set_definition(self, text: str):
+        """Changes the definition of this translation unit. Caution: Changes in snippets will be discarded."""
         self.__definition = text
         self.__definition_snippets = None
+
+    def sync_from_snippets(self):
+        """In case changes were made to snippets, save all changes to the translation unit."""
+        if self.__definition_snippets is None or self.__translation_snippets is None:
+            self.logger.warning("Attempting to sync from non-existing snippets. Ignoring.")
+            return
+        self.__definition = "".join([s.content for s in self.__definition_snippets])
+        self.__translation = "".join([s.content for s in self.__translation_snippets])
 
     def get_translation(self) -> str:
         return self.__translation
 
     def set_translation(self, text: str):
+        """Changes the translation of this translation unit. Caution: Changes in snippets will be discarded."""
         self.__translation = text
         self.__translation_snippets = None
+
+    def has_translation_changes(self) -> bool:
+        """
+        Have there any changes be made to the translation of this unit?
+
+        We compare to the original translation content we got during __init__().
+        If you made changes to snippets, make sure you first call sync_from_snippets()!
+        """
+        return self.__translation != self.__original_translation
+
+    def get_translation_diff(self) -> str:
+        """
+        Returns a diff between original translation content and current translation content.
+        If you made changes to snippets, make sure you first call sync_from_snippets()!
+        """
+        diff: str = ""
+        if self.has_translation_changes():
+            seq_mat = difflib.SequenceMatcher(a=self.__original_translation, b=self.__translation)
+            for operation, a_start, a_end, b_start, b_end in seq_mat.get_opcodes():
+                if operation == "delete":
+                    diff += self.RED + "{" + self.__original_translation[a_start:a_end] + "}" + self.NO_COLOR
+                elif operation == "replace":
+                    diff += self.RED + "{" + self.__original_translation[a_start:a_end] + ","
+                    diff += self.GREEN + self.__translation[b_start:b_end] + "}" + self.NO_COLOR
+                elif operation == "insert":
+                    diff += self.GREEN + "{" + self.__translation[b_start:b_end] + "}" + self.NO_COLOR
+                elif operation == "equal":
+                    diff += self.__translation[b_start:b_end]
+        return diff
 
     def get_name(self):
         return f"Translations:{self.__identifier}/{self.__language_code}"
@@ -197,6 +250,8 @@ class TranslationUnit:
             # Currently we test only whether they have the same SnippetType. TODO check whether they actually match
             if d_snippet.get_type() != t_snippet.get_type():
                 return False
+#            if (d_snippet.get_type() == SnippetType.MARKUP_SNIPPET) and (d_snippet.content != t_snippet.content):
+#                return False
 
         return True
 
@@ -213,7 +268,11 @@ class TranslationUnit:
         This leaves out snippets that are markup. Also it assumes is_translation_well_structured(),
         otherwise this will probably raise errors (todo make it more robust?)
         """
-        while self.iterate_pos + 1 <= len(self.__definition_snippets):
+        while self.iterate_pos < len(self.__definition_snippets):
+            if self.iterate_pos >= len(self.__translation_snippets):
+                self.logger.warning(f"Internal error while iterating over {self.get_name()}: "
+                                    "Inconsistency in snippets. You didn't call is_translation_well_structured()!")
+                raise StopIteration
             definition_snippet = self.__definition_snippets[self.iterate_pos]
             translation_snippet = self.__translation_snippets[self.iterate_pos]
             self.iterate_pos += 1

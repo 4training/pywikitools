@@ -4,7 +4,7 @@ import re
 from .base import CorrectorBase
 from .universal import UniversalCorrector
 
-class GermanCorrector(CorrectorBase, UniversalCorrector):
+class GermanCorrector(CorrectorBase):
     """
     Correct typical German typos. Currently one rule is implemented
     * German quotations start with „ and end with “ („Beispiel“)
@@ -13,12 +13,14 @@ class GermanCorrector(CorrectorBase, UniversalCorrector):
     def correct_quotes(self, text: str) -> str:
         """Ensure correct German quotes (example: „korrekt“)"""
         logger = logging.getLogger('pywikitools.correctbot.de')
-        pattern = re.compile('[„“”"]')  # Search for all kinds of quotation marks
+        quote_pattern = re.compile('[„“”"]')  # Search for all kinds of quotation marks
+        # space_pattern = re.compile(r'[\s|\]\[]') # Search for spaces or | ] [ (used in mediawiki links)
         quote_counter = 0
         text_as_list = list(text)
-        for quote in pattern.finditer(text):
+        for quote in quote_pattern.finditer(text):
             quote_counter += 1
             pos = quote.start()
+#            if (pos == 0) or space_pattern.match(text[pos - 1]):
             if (pos == 0) or text[pos - 1].isspace():
                 # Looks like we found a starting quotation mark
                 if (pos + 1 >= len(text)) or text[pos + 1].isspace():

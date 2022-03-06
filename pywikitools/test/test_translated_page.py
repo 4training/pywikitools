@@ -1,3 +1,4 @@
+from ast import Pass
 import unittest
 
 from pywikitools.lang.translated_page import SnippetType, TranslationUnit, TranslationSnippet
@@ -55,6 +56,33 @@ Use the ''support'' of a '''good''' helper!
 """
 
 class TestTranslationUnit(unittest.TestCase):
+    def test_read_and_write(self):
+        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with_lists.set_definition(TEST_UNIT_WITH_HEADLINE)
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            self.assertFalse(with_lists.is_translation_well_structured())   # Split everything in snippets
+        self.assertEqual(with_lists.get_definition(), TEST_UNIT_WITH_HEADLINE)
+        with_lists.set_translation(TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        self.assertTrue(with_lists.has_translation_changes())
+        self.assertNotEqual(with_lists.get_translation_diff(), "")
+
+        # Making no changes to snippets should leave everything as it was before
+        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            with_lists.sync_from_snippets()
+        self.assertTrue(with_lists.is_translation_well_structured())
+        with_lists.sync_from_snippets()
+        self.assertFalse(with_lists.has_translation_changes())
+
+        # Test making changes to snippets
+        for _, translation_snippet in with_lists:
+            translation_snippet.content = translation_snippet.content.replace("e", "i")
+        self.assertFalse(with_lists.has_translation_changes())  # because we haven't synced yet
+        self.assertEqual(with_lists.get_translation_diff(), "")
+        with_lists.sync_from_snippets()
+        self.assertTrue(with_lists.has_translation_changes())
+        self.assertNotEqual(with_lists.get_translation_diff(), "")
+
     def test_split_into_snippets(self):
         with_lists = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_LISTS)
         self.assertEqual(len(with_lists), 16)
@@ -97,6 +125,12 @@ class TestTranslationUnit(unittest.TestCase):
             counter += 1
         self.assertTrue(with_lists.is_translation_well_structured())
         self.assertGreaterEqual(counter, 8)
+
+        # Iterating over not well-structured translation unit should give a warning (and not raise an error)
+        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            for _, _ in with_lists:
+                pass
 
     def test_remove_links(self):
         DEFINITION_WITH_LINK = "This is a [[destination|link]]."

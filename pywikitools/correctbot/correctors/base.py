@@ -72,6 +72,17 @@ class CorrectorBase:
 
         return result
 
+    def reset_stats(self) -> None:
+        """Reset all statistics gathered until now"""
+        self._stats.clear()
+
+    def count_corrections(self) -> int:
+        """
+        Returns the number of corrections that were made.
+        See print_stats() to get more details
+        """
+        return sum(self._stats.values())
+
     def print_stats(self) -> str:
         """
         Give a detailed overview how much corrections were made and by which functions.
