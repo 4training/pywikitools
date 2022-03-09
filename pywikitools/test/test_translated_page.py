@@ -1,4 +1,3 @@
-from ast import Pass
 import unittest
 
 from pywikitools.lang.translated_page import SnippetType, TranslationUnit, TranslationSnippet

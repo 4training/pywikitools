@@ -207,7 +207,7 @@ class TranslationUnit:
         if self.__translation_snippets is None:
             self.__translation_snippets = self.split_into_snippets(self.__translation)
 
-    def is_translation_well_structured(self) -> bool:
+    def is_translation_well_structured(self, use_fallback: bool = False) -> bool:
         """
         Is the snippet structure of original and translation the same?
 
@@ -220,11 +220,12 @@ class TranslationUnit:
 
         if len(self.__definition_snippets) != len(self.__translation_snippets):
             # TODO give more specific warnings like "missing #" or "Number of = mismatch"
-            self.logger.info("Number of *, =, #, italic and bold formatting, ;, : and html tags is not equal"
-                            f" in original and translation:\n{self.__definition}\n{self.__translation}")
-            self.logger.info('Falling back: removing all formatting and trying again')
-            self.__definition_snippets = self.split_into_snippets(self.__definition, fallback=True)
-            self.__translation_snippets = self.split_into_snippets(self.__translation, fallback=True)
+            if use_fallback:
+                self.logger.info("Number of *, =, #, italic and bold formatting, ;, : and html tags is not equal"
+                                f" in original and translation:\n{self.__definition}\n{self.__translation}")
+                self.logger.info('Falling back: removing all formatting and trying again')
+                self.__definition_snippets = self.split_into_snippets(self.__definition, fallback=True)
+                self.__translation_snippets = self.split_into_snippets(self.__translation, fallback=True)
 
             if len(self.__definition_snippets) != len(self.__translation_snippets):
                 br_in_definition = len([s for s in self.__definition_snippets if s.is_br()])

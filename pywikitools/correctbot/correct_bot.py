@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 Bot that replaces common typos for different languages.
-This requires the pywikibot framework.
 
-Documentation should also go to https://www.4training.net/User:TheCorrectBot
+All correction rules for different languages are in the correctors/ folder in separate classes.
 
-Run with dummy page with available translation units
-www.4training.net/mediawiki/api.php?action=query&list=messagecollection&mcgroup=page-CorrectTestpage&mclanguage=fr
+Run with dummy page:
+    python3 correct_bot.py Test de
+    python3 correct_bot.py CorrectTestpage fr
+
+TODO: Not yet operational
 """
 
 import argparse
@@ -16,12 +18,11 @@ import importlib
 import sys
 from typing import Callable, List, Optional
 
-from communicator import PageWrapper
-from communicator import Communicator
 from pywikitools import fortraininglib
 from pywikitools.lang.translated_page import TranslationUnit
 
 class CorrectBot:
+    """Main class for doing corrections"""
     def __init__(self, simulate: bool = False, loglevel: Optional[str] = None):
         self.logger = logging.getLogger("pywikitools.correctbot")
         self._simulate: bool = simulate
@@ -36,8 +37,8 @@ class CorrectBot:
             logging.basicConfig(level=numeric_level)
             self.logger.setLevel(numeric_level)
 
-    def load_corrector(self, language_code: str) -> Callable:
-        """Load the corrector class and return it. Exit on error"""
+    def _load_corrector(self, language_code: str) -> Callable:
+        """Load the corrector class for the specified language and return it. Exit on error"""
         # Dynamically load e.g. correctors/de.py
         module_name = f"correctors.{language_code}"
         module = importlib.import_module(module_name, ".")
@@ -53,8 +54,14 @@ class CorrectBot:
         sys.exit(1)
 
     def check_page(self, page: str, language_code: str):
+        """
+        Check one specific page and store the results in this class
+
+        This does not write anything back to the server. Changes can be read with
+        get_stats(), get_correction_counter() and get_diff()
+        """
         translation_units: List[TranslationUnit] = fortraininglib.get_translation_units(page, language_code)
-        corrector = self.load_corrector(language_code)()
+        corrector = self._load_corrector(language_code)()
         self._diff = ""
         for translation_unit in translation_units:
             if translation_unit.is_translation_well_structured():
@@ -71,13 +78,19 @@ class CorrectBot:
         self._stats = corrector.print_stats()
         self._correction_counter = corrector.count_corrections()
 
-    def get_stats(self) -> Optional[str]:
+    def get_stats(self) -> str:
+        """Return a summary: which correction rules could be applied (in the last run)?"""
+        if self._stats is None:
+            self.logger.warning("No statistics available. You need to run check_page() first.")
+            return ""
         return self._stats
 
     def get_correction_counter(self) -> int:
+        """How many corrections did we do (in the last run)?"""
         return self._correction_counter
 
     def get_diff(self) -> str:
+        """Print a diff of the corrections (made in the last run)"""
         return self._diff
 
     def run(self, page: str, language_code: str):
@@ -93,12 +106,7 @@ class CorrectBot:
 
 
 def parse_arguments() -> argparse.Namespace:
-    """
-    Parses the arguments given from outside
-
-    Returns:
-        argparse.Namespace: parsed arguments
-    """
+    """Parses the arguments given from outside"""
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
 
     parser = argparse.ArgumentParser()
@@ -114,4 +122,3 @@ if __name__ == "__main__":
     args = parse_arguments()
     correctbot = CorrectBot(args.simulate, args.loglevel)
     correctbot.run(args.page, args.language_code)
-

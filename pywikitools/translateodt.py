@@ -386,7 +386,7 @@ class TranslateODT:
                 t.set_definition(re.sub("< *br */ *>", '\n', t.get_definition()))
                 t.set_translation(re.sub("< *br */ *>", '\n', t.get_translation()))
 
-            if not t.is_translation_well_structured():
+            if not t.is_translation_well_structured(use_fallback=True):
                 # We can't process this translation unit. Logging messages are already written
                 continue
             if br_in_orig != br_in_trans:
