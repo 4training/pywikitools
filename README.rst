@@ -30,12 +30,11 @@ See https://github.com/orgs/4training/projects/1 for the project roadmap
 Setup:
 ------
 
-#. Install pywikibot, following
-   https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
+#. Install required libraries: ``pip install -r requirements.txt``
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located). Alternatively you can generate it yourself:
-
-   * You need a "full" pywikibot installation (not just the one you get with ``pip install pywikibot``)
+   
+   * You need a "full" pywikibot installation (not just the one you get with ``pip install pywikibot``, see https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation)
    * Make sure the 4training_family.py is at the correct place in that pywikibot installation
    * ``python3 pwb.py generate_user_files``
    * select 1: 4training family
@@ -52,13 +51,22 @@ Setup:
    * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
+
 Run scripts
----------------------------
+-----------
 ``python3 path/to/script args``
 
 (*more cumbersome alternative using a full pywikibot installation:* ``python3 /path/to/pwb.py path/to/script.py args``)
 
 If you're not yet logged in, pywikibot will ask you for the password for the user you defined in ``user-config.py``. After successful login, the login cookie is stored in ``pywikibot.lwp`` so you don't have to log in every time again.
+
+Testing
+-------
+
+``python3 -m unittest discover -s pywikitools/test``
+
+With GitHub Actions these are run also on any push or pull request in the repository. The goal is to cover all important code parts with good tests. Some of the tests are making real API calls, that's why running the tests can take half a minute. `More details`_
+
 
 File overview
 -------------
@@ -121,5 +129,6 @@ Credits
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
+.. _More details: https://www.holydevelopers.net/python-setting-up-automatic-testing-with-github-actions`_
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
