@@ -51,7 +51,7 @@ import logging
 import json
 import argparse # For CLI arguments
 import configparser
-from typing import Optional, Dict, Any
+from typing import List, Optional, Dict, Any
 import pywikibot
 
 from pywikitools import fortraininglib
@@ -417,9 +417,9 @@ def parse_arguments() -> ResourcesBot:
     """
     msg: str = 'Update list of available training resources in the language information pages'
     epi_msg: str = 'Refer https://datahub.io/core/language-codes/r/0.html for language codes.'
-    log_levels: list = ['debug', 'info', 'warning', 'error', 'critical']
+    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
 
-    parser = argparse.ArgumentParser(prog='python3 pwb.py resourcesbot', description=msg, epilog=epi_msg)
+    parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=msg, epilog=epi_msg)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, help='set loglevel for the script')
     parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists, also if there have been no changes')

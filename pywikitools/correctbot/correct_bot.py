@@ -15,7 +15,6 @@ TODO: Not yet operational
 import argparse
 import logging
 import importlib
-import sys
 from typing import Callable, List, Optional
 
 from pywikitools import fortraininglib
@@ -38,7 +37,9 @@ class CorrectBot:
             self.logger.setLevel(numeric_level)
 
     def _load_corrector(self, language_code: str) -> Callable:
-        """Load the corrector class for the specified language and return it. Exit on error"""
+        """Load the corrector class for the specified language and return it.
+
+        Raises ImportError if corrector class can't be found"""
         # Dynamically load e.g. correctors/de.py
         module_name = f"correctors.{language_code}"
         module = importlib.import_module(module_name, ".")
@@ -50,8 +51,7 @@ class CorrectBot:
                 if corrector_class.__module__ == module_name:
                     return corrector_class
 
-        logging.fatal(f"Couldn't load corrector for language {language_code}. Giving up")
-        sys.exit(1)
+        raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
     def check_page(self, page: str, language_code: str):
         """

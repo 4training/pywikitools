@@ -73,6 +73,7 @@ class TranslationUnit:
         self.__original_translation = translation
         self.__definition_snippets: Optional[List[TranslationSnippet]] = None
         self.__translation_snippets: Optional[List[TranslationSnippet]] = None
+        self.__iterate_pos = 0      # For iterating over all snippets in this TranslationUnit
         self.logger = logging.getLogger('pywikitools.lang.TranslationUnit')
 
     def get_definition(self) -> str:
@@ -259,7 +260,7 @@ class TranslationUnit:
     def __iter__(self):
         """Make this class iterable in a simple way (not suitable for concurrency!)"""
         self._ensure_split()
-        self.iterate_pos = 0
+        self.__iterate_pos = 0
         return self
 
     def __next__(self):
@@ -269,14 +270,14 @@ class TranslationUnit:
         This leaves out snippets that are markup. Also it assumes is_translation_well_structured(),
         otherwise this will probably raise errors (todo make it more robust?)
         """
-        while self.iterate_pos < len(self.__definition_snippets):
-            if self.iterate_pos >= len(self.__translation_snippets):
+        while self.__iterate_pos < len(self.__definition_snippets):
+            if self.__iterate_pos >= len(self.__translation_snippets):
                 self.logger.warning(f"Internal error while iterating over {self.get_name()}: "
                                     "Inconsistency in snippets. You didn't call is_translation_well_structured()!")
                 raise StopIteration
-            definition_snippet = self.__definition_snippets[self.iterate_pos]
-            translation_snippet = self.__translation_snippets[self.iterate_pos]
-            self.iterate_pos += 1
+            definition_snippet = self.__definition_snippets[self.__iterate_pos]
+            translation_snippet = self.__translation_snippets[self.__iterate_pos]
+            self.__iterate_pos += 1
             if definition_snippet.is_text():
                 return (definition_snippet, translation_snippet)
         raise StopIteration
