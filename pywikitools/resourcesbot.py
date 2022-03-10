@@ -57,6 +57,7 @@ import pywikibot
 from pywikitools import fortraininglib
 from pywikitools.fortraininglib import TranslationProgress
 from pywikitools.resourcesbot.changes import ChangeLog
+from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, LanguageInfoEncoder
 
@@ -64,10 +65,12 @@ from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, limit_to_lang: Optional[str] = None, rewrite_all: bool = False, loglevel: Optional[str] = None):
+    def __init__(self, limit_to_lang: Optional[str] = None, rewrite_all: bool = False,
+                 read_from_cache: bool = False, loglevel: Optional[str] = None):
         """
         @param limit_to_lang: limit processing to one language (string with a language code)
         @param rewrite_all: Rewrite all language information less, regardless if we find changes or not
+        @param read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
         @param loglevel: define how much logging output should be written
         """
         # read-only list of download file types
@@ -85,10 +88,13 @@ class ResourcesBot:
         # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
         # "No user is logged in on site 4training:en" -> use this as a workaround and test with self.site.logged_in()
         self.site.login()
-        self._limit_to_lang = limit_to_lang
-        self._rewrite_all = rewrite_all
+        self._limit_to_lang: Optional[str] = limit_to_lang
+        self._read_from_cache: bool = read_from_cache
+        self._rewrite_all: bool = rewrite_all
         if self._limit_to_lang is not None:
             self.logger.info(f"Parameter lang is set, limiting processing to language {limit_to_lang}")
+        if self._read_from_cache:
+            self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
         if self._rewrite_all:
             self.logger.info('Parameter --rewrite-all is set, rewriting all language information pages')
 
@@ -103,9 +109,21 @@ class ResourcesBot:
         self._changelog: Dict[str, ChangeLog] = {}
 
     def run(self):
-        # Gather all data (this takes quite some time!)
-        for worksheet in fortraininglib.get_worksheet_list():
-            self.query_translations(worksheet)
+        if self._read_from_cache:
+            if self._limit_to_lang is not None:
+                language_info: LanguageInfo = LanguageInfo(self._limit_to_lang)
+                page = pywikibot.Page(self.site, f"4training:{self._limit_to_lang}.json")
+                if not page.exists():
+                    raise RuntimeError(f"Couldn't load from cache for language {self._limit_to_lang}")
+                language_info.deserialize(json.loads(page.text))
+                self._result[self._limit_to_lang] = language_info
+            else:
+                raise NotImplementedError("Please run the script with --limit-to-lang [lang]")
+
+        else:
+            for worksheet in fortraininglib.get_worksheet_list():
+                # Gather all data (this takes quite some time!)
+                self.query_translations(worksheet)
 
         if not self.site.logged_in():
             self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
@@ -116,7 +134,9 @@ class ResourcesBot:
         # Find out what has been changed since our last run and run all LanguagePostProcessors
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username"),
             self._config.get("resourcesbot", "password"), self._rewrite_all)
+        consistency_check = ConsistencyCheck()
         for lang in self._result:
+            consistency_check.run(self._result[lang], ChangeLog())
             if lang != 'en':
                 self._changelog[lang] = self.sync_and_compare(lang)
                 write_list.run(self._result[lang], self._changelog[lang])
@@ -422,13 +442,15 @@ def parse_arguments() -> ResourcesBot:
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=msg, epilog=epi_msg)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, help='set loglevel for the script')
+    parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
     parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists, also if there have been no changes')
 
     args = parser.parse_args()
     limit_to_lang = None
     if args.lang is not None:
         limit_to_lang = str(args.lang)
-    return ResourcesBot(limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all, loglevel=args.loglevel)
+    return ResourcesBot(limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all,
+                        read_from_cache=args.read_from_cache, loglevel=args.loglevel)
 
 if __name__ == "__main__":
     resourcesbot = parse_arguments()

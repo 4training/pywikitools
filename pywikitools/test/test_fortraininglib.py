@@ -36,6 +36,9 @@ class TestFortrainingLib(unittest.TestCase):
                 self.assertTrue(progress.is_unfinished())
                 self.assertFalse(progress.is_incomplete())
 
+        # Check correct error handling for non-existing page
+        self.assertEqual(len(fortraininglib.list_page_translations("NotExisting", "de")), 0)
+
     def test_get_pdf_name(self):
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'en'), 'Forgiving_Step_by_Step.pdf')
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')

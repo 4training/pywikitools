@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Final, List, Optional
 
 import pywikibot
 from urllib.parse import unquote
@@ -29,16 +29,15 @@ class WorksheetInfo:
     """Holds information on one worksheet in one specific language
     Only for worksheets that are at least partially translated
     """
-    __slots__ = ['_name', '_language', '_files', 'title', 'progress']
+    __slots__ = ['page', 'language_code', '_files', 'title', 'progress']
 
-    def __init__(self, en_name: str, language: str, title: str, progress: TranslationProgress):
+    def __init__(self, page: str, language_code: str, title: str, progress: TranslationProgress):
         """
-        @param en_name: English name of the worksheet
-        @param language: language code
+        @param page: English name of the worksheet
         @param title: translated worksheet title
         @param progress: how much is already translated"""
-#        self._en_name: str = en_name
-#        self._language: str = language
+        self.page: Final[str] = page
+        self.language_code: Final[str] = language_code
         self._files: Dict[str, FileInfo] = {}
         self.title: str = title
         self.progress: TranslationProgress = progress
