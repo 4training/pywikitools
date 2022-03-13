@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests and generate coverage report
 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
@@ -11,19 +11,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  python-tests:
+  # Do both in one job run so we only need to install python3-uno once
+  # (as that is fairly expensive)
+  python-tests-and-coverage:
     runs-on: ubuntu-latest
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
+
       - name: Install Python uno module (LibreOffice UNO Bridge)
         run: sudo apt-get install python3-uno
-        
+
       - name: Install python packages
         run: pip install -r requirements.txt
-        
+
       - name: Run all tests
         run: python -m unittest discover -s pywikitools/test
 
+      # Now we're generating the coverage report
+      - name: Install coverage.py
+        run: pip install coverage
+
+      - name: Generate coverage report
+        run: |
+          coverage run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test
+          coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2

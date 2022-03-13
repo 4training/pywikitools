@@ -1,7 +1,9 @@
-|Run tests| |GPLv3 license| |Open Source? Yes!|
+|Run tests| |Coverage| |GPLv3 license| |Open Source? Yes!|
 
 .. |Run tests| image:: https://github.com/4training/pywikitools/actions/workflows/main.yml/badge.svg
    :target: https://github.com/4training/pywikitools/actions/workflows/main.yml
+.. |Coverage| image:: https://codecov.io/gh/4training/pywikitools/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/4training/pywikitools
 .. |GPLv3 license| image:: https://img.shields.io/badge/License-GPLv3-blue.svg
    :target: http://perso.crans.org/besson/LICENSE.html
 .. |Open Source? Yes!| image:: https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github
@@ -33,7 +35,7 @@ Setup:
 #. Install required libraries: ``pip install -r requirements.txt``
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located). Alternatively you can generate it yourself:
-   
+
    * You need a "full" pywikibot installation (not just the one you get with ``pip install pywikibot``, see https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation)
    * Make sure the 4training_family.py is at the correct place in that pywikibot installation
    * ``python3 pwb.py generate_user_files``
