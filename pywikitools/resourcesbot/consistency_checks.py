@@ -13,17 +13,29 @@ from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
 
 class ConsistencyCheck(LanguagePostProcessor):
+    """
+    Post-processing plugin: Check whether some translation units with the same English definition
+    also have the same translation in the specified language
+
+    This is completely 4training.net-specific.
+    Next step: Write the results to some meaningful place on 4training.net
+               so that translators can access them and correct inconsistencies
+    """
     TITLE: Final[str] = "Page display title"
 
     def __init__(self):
         self.logger = logging.getLogger("pywikitools.resourcesbot.consistency_checks")
 
     def extract_link(self, text: str) -> Tuple[str, str]:
+        """
+        Search in text for a mediawiki link of the form [[Destination|Title]].
+        This function will only look at the first link it finds in the text, any other will be ignored.
+        @return a tuple (destination, title). In case no link was found both strings will be empty.
+        """
         match = re.search(r"\[\[([^|]+)\|([^\]]+)\]\]", text)
         if not match:
             return "", ""
         return match.group(1), match.group(2)
-
 
     def load_translation_unit(self, language_info: LanguageInfo, page: str,
                               identifier: Union[int, str]) -> Optional[TranslationUnit]:
@@ -131,7 +143,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         t24 = self.load_translation_unit(language_info, "Template:BibleReadingHints", 24)
         t26 = self.load_translation_unit(language_info, "Template:BibleReadingHints", 26)
         if t24 is None or (len(t24.get_translation()) <= 3) or t26 is None or (len(t26.get_translation()) <= 3):
-            return
+            return True
         # Text is e.g. "2. Apostelgeschichte" / "3. Apostelgeschichte" -> remove first three characters
         t24.set_translation(t24.get_translation()[3:])
         t26.set_translation(t26.get_translation()[3:])
@@ -145,18 +157,19 @@ class ConsistencyCheck(LanguagePostProcessor):
         self.check_book_of_acts(language_info)
 
 """
-TODO: implement the following checks:
+TODO implement more consistency checks:
+- Each list item of the Seven Stories full of Hope should start with a number (in the target language of course...)
+  e.g. Translations:Bible Reading Hints (Seven Stories full of Hope)/7/id starts with "1."
+
+- Check each link: Is the title the same as the title of the destination page?
+
+More consistency checks that currently can't be automated:
 
 Head-Heart-Hands questions should be the same on
 https://www.4training.net/Time_with_God
 https://www.4training.net/Template:BibleReadingHints
-TODO no: the first uses "me", the latter "we"
+-> not automated because the first uses "me", the latter "we"
 
-TODO: this can't really be automated, needs to be checked manually
 Many title from the Three-Thirds-Process and from Template:BibleReadingHints should be the same
-
-Each list item of the Seven Stories full of hope starts with a number (in the target language of course...)
-e.g. Translations:Bible Reading Hints (Seven Stories full of Hope)/7/id starts with "1."
-
-Check each link: Is the title the same as the title of the destination page?
+-> needs to be checked manually
 """

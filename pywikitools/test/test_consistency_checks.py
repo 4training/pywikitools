@@ -1,5 +1,4 @@
 import unittest
-from pywikitools.resourcesbot.changes import ChangeLog
 
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.data_structures import LanguageInfo
