@@ -54,6 +54,12 @@ TEST_UNIT_WITH_FORMATTING = """''God, through which glasses am I seeing You?''<b
 Use the ''support'' of a '''good''' helper!
 """
 
+LIST_TEST = """* soll er Gott um Vergebung bitten, dass er die Lüge geglaubt und mit ihr zusammengearbeitet hat,
+* die Lüge an Gott abgeben und
+* fragen, „Gott, was ist die Wahrheit stattdessen?“
+Lass denjenigen fragen, „Welche Lüge habe ich dadurch über mich gelernt?“ und fahre wie oben fort.
+"""
+
 class TestTranslationUnit(unittest.TestCase):
     def test_read_and_write(self):
         with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
@@ -179,6 +185,12 @@ class TestTranslationSnippet(unittest.TestCase):
         self.assertFalse(with_br[1].is_text())
         self.assertTrue(with_br[1].is_markup())
         self.assertFalse(with_br[2].is_markup())
+
+class TestSpontaneous(unittest.TestCase):
+    def test_bla(self):
+        for snippet in TranslationUnit.split_into_snippets(LIST_TEST):
+            print(snippet)
+
 
 if __name__ == '__main__':
     unittest.main()

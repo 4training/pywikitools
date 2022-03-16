@@ -10,7 +10,7 @@ from typing import List, Optional, Dict
 
 import requests
 
-from pywikitools.lang.translated_page import TranslationUnit
+from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
@@ -366,11 +366,11 @@ def list_page_templates(page: str) -> List[str]:
         return []
 
 
-def get_translation_units(page: str, language_code: str) -> List[TranslationUnit]:
+def get_translation_units(page: str, language_code: str) -> Optional[TranslatedPage]:
     """
-    List the translation units of worksheet translated into the language identified by language_code
+    Get the translation units of a page translated into the language identified by language_code
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
-    @return empty list in case of an error
+    @return None in case of an error
     """
     response = requests.get(APIURL, params={
         "action": "query",
@@ -389,15 +389,15 @@ def get_translation_units(page: str, language_code: str) -> List[TranslationUnit
                 logger.warning(f"Couldn't get translation units: Page {page} doesn't exist.")
             else:
                 logger.warning(f"Couldn't get translation units. Error: {json['error']['info']}")
-            return []
+            return None
         for tu in json["query"]["messagecollection"]:
             translation_unit = TranslationUnit(str(tu["key"]), str(tu["targetLanguage"]),
                 str(tu["definition"]), str(tu["translation"]))
             result.append(translation_unit)
-        return result
+        return TranslatedPage(page, language_code, result)
     except KeyError as err:
         logger.warning(f"Unexpected error in get_translation_units({page}/{language_code}): {err}")
-        return []
+        return None
 
 def title_to_message(title: str) -> str:
     """Converts a mediawiki title to its corresponding system message

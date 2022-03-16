@@ -69,11 +69,11 @@ class TestFortrainingLib(unittest.TestCase):
     def test_get_translation_units(self):
         # Not existing page should return an empty list
         with self.assertLogs("pywikitools.lib", level="WARNING"):
-            self.assertEqual(len(fortraininglib.get_translation_units("Invalid", "de")), 0)
+            self.assertIsNone(fortraininglib.get_translation_units("Invalid", "de"))
         # Check that there are translation units returned for a valid page
-        translation_units = fortraininglib.get_translation_units("Healing", "de")
+        translated_page = fortraininglib.get_translation_units("Healing", "de")
         counter = 0
-        for translation_unit in translation_units:
+        for translation_unit in translated_page:
             counter += 1
             self.assertGreater(len([snippet for snippet in translation_unit]), 0)
         self.assertGreater(counter, 10)

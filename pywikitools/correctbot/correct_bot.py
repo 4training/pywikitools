@@ -18,7 +18,7 @@ import importlib
 from typing import Callable, List, Optional
 
 from pywikitools import fortraininglib
-from pywikitools.lang.translated_page import TranslationUnit
+from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 class CorrectBot:
     """Main class for doing corrections"""
@@ -53,17 +53,21 @@ class CorrectBot:
 
         raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
-    def check_page(self, page: str, language_code: str):
+    def check_page(self, page: str, language_code: str) -> bool:
         """
         Check one specific page and store the results in this class
 
         This does not write anything back to the server. Changes can be read with
         get_stats(), get_correction_counter() and get_diff()
         """
-        translation_units: List[TranslationUnit] = fortraininglib.get_translation_units(page, language_code)
-        corrector = self._load_corrector(language_code)()
         self._diff = ""
-        for translation_unit in translation_units:
+        self._stats = None
+        self._correction_counter = 0
+        translated_page: Optional[TranslatedPage] = fortraininglib.get_translation_units(page, language_code)
+        if translated_page is None:
+            return False
+        corrector = self._load_corrector(language_code)()
+        for translation_unit in translated_page:
             if translation_unit.is_translation_well_structured():
                 for _, snippet in translation_unit:
                     snippet.content = corrector.correct(snippet.content)
@@ -77,6 +81,7 @@ class CorrectBot:
                 self._diff += f"{translation_unit.get_name()}: {diff}\n"
         self._stats = corrector.print_stats()
         self._correction_counter = corrector.count_corrections()
+        return True
 
     def get_stats(self) -> str:
         """Return a summary: which correction rules could be applied (in the last run)?"""
