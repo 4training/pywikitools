@@ -357,6 +357,7 @@ class TranslatedPage:
         return self._get_info("odt_translation")
 
     def add_translation_unit(self, unit: TranslationUnit):
+        """Append a translation unit. Infos are not invalidated"""
         self.units.append(unit)
 
 #    def add_translation_units(self, page: TranslatedPage):

@@ -23,25 +23,15 @@ Command line options:
 import argparse
 import sys
 import logging
-import shlex
 import os.path
 import re
-from subprocess import Popen, TimeoutExpired
-from time import sleep
 from configparser import ConfigParser
-from typing import Any, List, Optional
+from typing import List, Optional
 import requests
-import uno                                              # type: ignore
-from com.sun.star.connection import NoConnectException  # type: ignore
-from com.sun.star.beans import PropertyValue            # type: ignore
-from com.sun.star.lang import Locale                    # type: ignore
 from pywikitools import fortraininglib
-from pywikitools.lang.libreoffice_lang import LANG_LOCALE
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+from pywikitools.libreoffice import LibreOffice
 
-PORT = 2002             # port where libreoffice is running
-CONNECT_TRIES = 10      # how often we re-try to connect to libreoffice
-TIMEOUT = 200           # The script will be aborted if it's running longer than this amount of seconds
 SNIPPET_WARN_LENGTH = 4 # give a warning when search or replace string is shorter than 4 characters
 # The following templates don't contain any translation units and can be ignored
 IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
@@ -76,60 +66,9 @@ class TranslateODT:
 
         self.keep_english_file: bool = keep_english_file
 
-        self.desktop: Optional[Any] = None     # LibreOffice central desktop element (com.sun.star.frame.Desktop)
-        self.model: Optional[Any] = None       # LibreOffice current component
-        self.proc: Optional[Any] = None        # LibreOffice process handle
+        self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
 
-    def open_file(self, file_name: str):
-        """Opens an existing LibreOffice document
-
-        This starts LibreOffice and establishes a socket connection to it
-        If something doesn't work the script will abort with sys.exit()
-        """
-        self.logger.info(f"Opening file {file_name}")
-
-        command = 'soffice ' + shlex.quote(file_name)
-        if self.config.getboolean('translateodt', 'headless'):
-            command += " --headless"
-        command += f' --accept="socket,host=localhost,port={PORT};urp;StarOffice.ServiceManager"'
-        self.logger.debug(command)
-        self.proc = Popen(command, shell=True)
-
-        local_context = uno.getComponentContext()
-        resolver = local_context.ServiceManager.createInstanceWithContext(
-            "com.sun.star.bridge.UnoUrlResolver", local_context)
-
-        # connect to the running LibreOffice
-        retries = 0
-        ctx = None
-        search_ready = False
-        while not search_ready and retries < CONNECT_TRIES:
-            if ctx is None:
-                try:
-                    ctx = resolver.resolve(f"uno:socket,host=localhost,port={PORT};urp;StarOffice.ComponentContext")
-                except NoConnectException as error:
-                    self.logger.info(f"Failed to connect to LibreOffice: {error}. Retrying...")
-            else:
-                self.desktop = ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
-                self.model = self.desktop.getCurrentComponent()
-                if self.model:
-                    try:
-                        self.model.createSearchDescriptor()
-                    except AttributeError as error:
-                        self.logger.info(f"Error while preparing LibreOffice for searching: {error}. Retrying...")
-                    else:
-                        search_ready = True
-
-            retries += 1
-            # Sleep in any case as sometimes the loading of the document isn't complete yet
-            sleep(2)
-
-        if not search_ready:
-            self.logger.warning("Error trying to access the LibreOffice document."
-                                f"Tried {retries} times, giving up now.")
-            sys.exit(2)
-
-    def is_search_and_replace_necessary(self, orig: str, trans: str) -> bool:
+    def _is_search_and_replace_necessary(self, orig: str, trans: str) -> bool:
         """
         Checks if we need to do a search and replace or if there are other exceptions
         Logs warnings for certain circumstances
@@ -157,7 +96,7 @@ class TranslateODT:
         return True
 
 
-    def process_snippet(self, orig: str, trans: str):
+    def _process_snippet(self, orig: str, trans: str):
         """
         Looks at one snippet, does some preparations and tries to do search and replace
         @param orig the original string (what to search for)
@@ -167,11 +106,11 @@ class TranslateODT:
         orig = orig.strip()
         trans = trans.strip()
 
-        if not self.is_search_and_replace_necessary(orig, trans):
+        if not self._is_search_and_replace_necessary(orig, trans):
             return
         # if translation snippet can be found in document, replace
         try:
-            replaced = self.search_and_replace(orig, trans)
+            replaced = self._loffice.search_and_replace(orig, trans)
             if replaced:
                 self.logger.info(f"Replaced: {orig} with: {trans}")
             else:
@@ -186,9 +125,9 @@ class TranslateODT:
                     self.logger.warning(f"Translation: \n{trans}")
                     return
                 for search, replace in zip(orig_split, trans_split):
-                    if not self.is_search_and_replace_necessary(search.strip(), replace.strip()):
+                    if not self._is_search_and_replace_necessary(search.strip(), replace.strip()):
                         continue
-                    replaced = self.search_and_replace(search, replace)
+                    replaced = self._loffice.search_and_replace(search, replace)
                     if replaced:
                         self.logger.info(f"Replaced: {search} with: {replace}")
                     else:
@@ -197,86 +136,43 @@ class TranslateODT:
         except AttributeError as error:
             self.logger.error(f"AttributeError: {error}")  # todo: wait some seconds and try again
 
+    def _search_and_replace(self, translated_page: TranslatedPage):
+        """Go through the whole document, search for original text snippets and replace them
+        with the translated text snippets"""
+        for t in translated_page:           # for each translation unit:
+            if t.get_definition() == "":
+                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
+                continue
+            if t.get_translation() == "":
+                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
+                continue
+            if t.get_definition() == translated_page.get_original_version():
+                # We don't try to do search and replace with the version string. We later process the whole CC0 notice
+                continue
 
-    def search_and_replace(self, search: str, replace: str) -> bool:
-        """
-        Replaces first occurence of search with replace in a LibreOffice document
-        @return True if successful
-        """
-        # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
-        assert self.model is not None
-        searcher = self.model.createSearchDescriptor()
-        searcher.SearchCaseSensitive = True
-        searcher.SearchString = search
+            self.logger.debug(f"Translation unit: {t.get_definition()}")
+            t.remove_links()
 
-        found = bool(self.model.findFirst(searcher))
-        if found:
-            found_x = self.model.findFirst(searcher)
-            found_x.setString(replace)
-        return found
+            # Check if number of <br/> is equal, otherwise replace by newline
+            br_in_orig = len(re.split("< *br */ *>", t.get_definition())) - 1
+            br_in_trans = len(re.split("< *br */ *>", t.get_translation())) - 1
+            if br_in_orig != br_in_trans:
+                # TODO in the future remove this? At least find out how much this is necessary
+                self.logger.warning("Number of <br/> differs between original and translations. Replacing with newlines.")
+                t.set_definition(re.sub("< *br */ *>", '\n', t.get_definition()))
+                t.set_translation(re.sub("< *br */ *>", '\n', t.get_translation()))
 
-    def close_and_save_file(self, file_name: str):
-        """Saves file, exports it as PDF and closes LibreOffice
-        @param filename where to save the odt file (full URL, e.g. /home/user/worksheets/de/Gebet.odt )
-        """
-        assert self.model is not None and self.desktop is not None and self.proc is not None
-        uri = f"file://{file_name}"
-        args = []   # arguments for saving
+            if not t.is_translation_well_structured(use_fallback=True):
+                # We can't process this translation unit. Logging messages are already written
+                continue
+            if br_in_orig != br_in_trans:
+                self.logger.warning(f"Issue with <br/> (line breaks). There are {br_in_orig} in the original "
+                                    f"but {br_in_trans} of them in the translation. "
+                                    f"We still can process {t.get_name()}. You may ignore this warning.")
 
-        # Overwrite file if it already exists
-        arg0 = PropertyValue()
-        arg0.Name = "Overwrite"
-        arg0.Value = True
-        args.append(arg0)
+            for (search, replace) in t:     # for each snippet of translation unit:
+                self._process_snippet(search.content, replace.content)
 
-        self.model.storeAsURL(uri, args) # save as ODT
-        self.logger.info(f"Saved translated document to {uri}")
-
-        opts = []   # options for PDF export
-        # Archive PDF/A
-        opt1 = PropertyValue()
-        opt1.Name = "SelectPdfVersion"
-        opt1.Value = 1
-        opts.append(opt1)
-        # Reduce image resolution to 300dpi
-        opt2 = PropertyValue()
-        opt2.Name = "MaxImageResolution"
-        opt2.Value = 300
-        opts.append(opt2)
-        # Export bookmarks
-        opt3 = PropertyValue()
-        opt3.Name = "ExportBookmarks"
-        opt3.Value = True
-        opts.append(opt3)
-        # 90% JPEG image compression
-        opt4 = PropertyValue()
-        opt4.Name = "Quality"
-        opt4.Value = 90
-        opts.append(opt4)
-
-        # Export to pdf property
-        arg1 = PropertyValue()
-        arg1.Name = "FilterName"
-        arg1.Value = "writer_pdf_Export"
-        args.append(arg1)
-        # Collect options
-        arg2 = PropertyValue()
-        arg2.Name = "FilterData"
-        arg2.Value = uno.Any("[]com.sun.star.beans.PropertyValue", tuple(opts))
-        args.append(arg2)
-
-        # export as pdf
-        self.model.storeToURL(uri.replace(".odt", ".pdf"), tuple(args))
-        self.logger.info(f"Exported translated document as PDF to {uri.replace('.odt', '.pdf')}")
-
-        # close
-        if self.config.getboolean('translateodt', 'closeoffice'):
-            self.desktop.terminate()
-        try:
-            return self.proc.wait(timeout=TIMEOUT)
-        except TimeoutExpired:
-            self.logger.error(f"soffice process didn't terminate within {TIMEOUT}s. Killing it.")
-            self.proc.kill()
 
     def _fetch_english_file(self, odt_file: str) -> str:
         """Download the specified file from the mediawiki server
@@ -299,6 +195,21 @@ class TranslateODT:
                 fh.write(odt_doc.content)
             self.logger.info(f"Successfully downloaded and saved {odt_path}")
         return odt_path
+
+    def _get_odt_filename(self, translated_page: TranslatedPage) -> str:
+        """Create filename from headline of translated page
+
+        E.g. page "Hearing from God" -> "Hearing_from_God.odt"
+        Compares it to the translated file name and gives a warning if it doesn't match"""
+        # TODO correct wrong filename translations automatically in the system?
+        filename: str = re.sub(" ", '_', translated_page.get_translated_headline())
+        filename = re.sub("[':]", "", filename)
+        filename += ".odt"
+        if translated_page.get_translated_odt() != filename:
+            self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
+                                f"Translation: {translated_page.get_translated_odt()}, "
+                                f"according to the headline it should be: {filename}")
+        return filename
 
     def translate_odt(self, worksheet: str, language_code: str) -> Optional[str]:
         """Central function to process the given worksheet
@@ -350,45 +261,32 @@ class TranslateODT:
         if not odt_path:
             return None
 
-        self.open_file(odt_path)
+        try:
+            self._loffice.open_file(odt_path)
+        except ConnectionError as err:
+            self.logger.error(err)
+            sys.exit(2)
 
-        for t in translated_page:           # for each translation unit:
-            if t.get_definition() == "":
-                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
-                continue
-            if t.get_translation() == "":
-                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
-                continue
-            if t.get_definition() == translated_page.get_original_version():
-                # We don't try to do search and replace with the version string. We later process the whole CC0 notice
-                continue
+        self._search_and_replace(translated_page)
 
-            self.logger.debug(f"Translation unit: {t.get_definition()}")
-            t.remove_links()
+        self._set_properties(translated_page)
+        self._loffice.set_default_style(language_code, fortraininglib.get_language_direction(language_code) == "rtl")
 
-            # Check if number of <br/> is equal, otherwise replace by newline
-            br_in_orig = len(re.split("< *br */ *>", t.get_definition())) - 1
-            br_in_trans = len(re.split("< *br */ *>", t.get_translation())) - 1
-            if br_in_orig != br_in_trans:
-                # TODO in the future remove this? At least find out how much this is necessary
-                self.logger.warning("Number of <br/> differs between original and translations. Replacing with newlines.")
-                t.set_definition(re.sub("< *br */ *>", '\n', t.get_definition()))
-                t.set_translation(re.sub("< *br */ *>", '\n', t.get_translation()))
+        # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
+        save_path = self.config['Paths']['worksheets'] + translated_page.language_code
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
+        filename = self._get_odt_filename(translated_page)
+        file_path = f"{save_path}/{filename}"
 
-            if not t.is_translation_well_structured(use_fallback=True):
-                # We can't process this translation unit. Logging messages are already written
-                continue
-            if br_in_orig != br_in_trans:
-                self.logger.warning(f"Issue with <br/> (line breaks). There are {br_in_orig} in the original "
-                                    f"but {br_in_trans} of them in the translation. "
-                                    f"We still can process {t.get_name()}. You may ignore this warning.")
+        self.logger.info(f"Saving translated document to {file_path}...")
+        self._loffice.save_odt(file_path)
+        pdf_path = file_path.replace(".odt", ".pdf")
+        self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
+        self._loffice.export_pdf(pdf_path)
 
-            for (search, replace) in t:     # for each snippet of translation unit:
-                self.process_snippet(search.content, replace.content)
-
-        self.set_odt_properties(translated_page)
-        self.set_styles(translated_page)
-        file_path: str = self.write_odt(translated_page)
+        if self.config.getboolean('translateodt', 'closeoffice'):
+            self._loffice.close()
 
         if self.keep_english_file:
             self.logger.info(f"Keeping {odt_path}")
@@ -397,20 +295,18 @@ class TranslateODT:
             os.remove(odt_path)
         return file_path
 
-    def set_odt_properties(self, page: TranslatedPage):
+    def _set_properties(self, page: TranslatedPage):
         """Set the properties of the ODT file"""
-        assert self.model is not None
-        properties = self.model.getDocumentProperties()
-
-        # check if there is a subtitle in docProps.Subject:
+        # Read the existing subject to check if there is a subtitle in our document
+        subject: str = self._loffice.get_properties_subject()
         subtitle_en = ""
         subtitle_lan = ""
-        if properties.Subject != "":
+        if subject != "":
             if len(page.units) < 2:
                 self.logger.error(f"{page.page} only has {len(page.units)} translation units! Exiting now.")
                 return None
-            if properties.Subject != page.units[1].get_definition():
-                self.logger.info(f"Assuming we have no subtitle. Subject in properties is {properties.Subject}"
+            if subject != page.units[1].get_definition():
+                self.logger.info(f"Assuming we have no subtitle. Subject in properties is {subject}"
                                  f", but second translation unit is {page.units[1].get_definition()}")
             else:
                 subtitle_en = " - " + page.units[1].get_definition()
@@ -421,14 +317,13 @@ class TranslateODT:
         if headline == "":
             self.logger.error("Headline doesn't seem to be translated. Exiting now.")
             return None
-        properties.Title = headline
-        properties.Title += subtitle_lan
+        headline += subtitle_lan
 
         # Subject: [English title] [Languagename in English] [Languagename autonym]
-        properties.Subject = page.get_original_headline()
-        properties.Subject += subtitle_en
-        properties.Subject += " " + str(fortraininglib.get_language_name(page.language_code, 'en'))
-        properties.Subject += " " + str(fortraininglib.get_language_name(page.language_code))
+        subject  = page.get_original_headline()
+        subject += subtitle_en
+        subject += " " + str(fortraininglib.get_language_name(page.language_code, 'en'))
+        subject += " " + str(fortraininglib.get_language_name(page.language_code))
 
         # Keywords: [Translated no-copyright notice + version] - copyright-free, version [original version]
         # ",version [original version]" is omitted in languages where the translation of "version" is very similar
@@ -442,79 +337,8 @@ class TranslateODT:
                 self.logger.warning("Version number seems not to use standard decimal numbers."
                                     f"Assuming this is identical to {page.get_original_version()}."
                                     "Please check File->Properties->Keywords")
-        properties.Keywords = [cc0_notice]
 
-    def write_odt(self, page: TranslatedPage) -> str:
-        """
-        Save the ODT file. Does a check of the file name
-        @return the path of the ODT file we created
-        """
-        # create filename from headline and compare it to the translated file name
-        filename = page.get_translated_odt()
-        filename_check: str = re.sub(" ", '_', page.get_translated_headline())
-        filename_check = re.sub("[':]", "", filename_check)
-        filename_check += ".odt"
-        if page.get_translated_odt() != filename_check:
-            self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
-                                f"Translation: {filename}, according to the headline it should be: {filename_check}")
-            filename = filename_check
-
-        # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
-        save_path = self.config['Paths']['worksheets'] + page.language_code
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        file_path = f"{save_path}/{filename}"
-        self.close_and_save_file(file_path)
-        return file_path
-
-    def set_styles(self, page: TranslatedPage):
-        """Setting properties of the ODT document's default style:
-        Locale (with language code) and writing mode (LTR/RTL) """
-        assert self.model is not None
-        par_styles = self.model.getStyleFamilies().getByName("ParagraphStyles")
-        default_style = None
-        if par_styles.hasByName('Default Style'):       # until LibreOffice 6
-            default_style = par_styles.getByName('Default Style')
-        elif par_styles.hasByName('Default Paragraph Style'):
-            # got renamed in LibreOffice 7, see https://bugs.documentfoundation.org/show_bug.cgi?id=129568
-            default_style = par_styles.getByName('Default Paragraph Style')
-        else:
-            self.logger.warning("Couldn't find Default Style in paragraph styles."
-                                "Can't set RTL and language locale, please do that manually.")
-
-        if default_style is not None:
-            if fortraininglib.get_language_direction(page.language_code) == "rtl":
-                self.logger.debug("Setting language direction to RTL")
-                default_style.ParaAdjust = 1 # alignment (0: left; 1: right; 2: justified; 3: center)
-                default_style.WritingMode = 1 # writing direction (0: LTR; 1: RTL; 4: use superordinate object settings)
-
-            # default_style.CharLocale.Language and .Country seem to be read-only
-            self.logger.debug("Setting language locale of Default Style")
-            if page.language_code in LANG_LOCALE:
-                lang = LANG_LOCALE[page.language_code]
-                struct_locale = lang.to_locale()
-                self.logger.info(f"Assigning Locale for language '{page.language_code}': {lang}")
-                if lang.is_standard():
-                    default_style.CharLocale = struct_locale
-                if lang.is_asian():
-                    default_style.CharLocaleAsian = struct_locale
-                if lang.is_complex():
-                    default_style.CharLocaleComplex = struct_locale
-                if lang.has_custom_font():
-                    self.logger.warning(f'Using font "{lang.get_custom_font()}". Please make sure you have it installed.')
-                    default_style.CharFontName = lang.get_custom_font()
-                    default_style.CharFontNameAsian = lang.get_custom_font()
-                    default_style.CharFontNameComplex = lang.get_custom_font()
-            else:
-                self.logger.warning(f"Language '{page.language_code}' not in LANG_LOCALE. "
-                                    "Please ask an administrator to fix this.")
-                struct_locale = Locale(page.language_code, "", "")
-                # We don't know which of the three this language belongs to... so we assign it to all Fontstyles
-                # (unfortunately e.g. 'ar' can be assigned to "Western Font" so try-and-error-assigning doesn't work)
-                default_style.CharLocale = struct_locale
-                default_style.CharLocaleAsian = struct_locale
-                default_style.CharLocaleComplex = struct_locale
-
+        self._loffice.set_properties(subject, headline, cc0_notice)
 
 if __name__ == '__main__':
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
