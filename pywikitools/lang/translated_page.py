@@ -40,7 +40,7 @@ class TranslationSnippet:
         return (self._type == SnippetType.MARKUP_SNIPPET) and bool(re.match("<br ?/?>\n?", self.content))
 
     def __str__(self):
-        return f"{self._type}({len(self.content)}): {self.content}"
+        return f"{self._type.name} ({len(self.content)}): {self.content}"
 
 
 class TranslationUnit:
@@ -292,7 +292,7 @@ class TranslatedPage:
     Holds all translation units of a translated worksheet and analyzes them
     to provide some information we need in some places.
 
-    This class is not fetching the content on its own, they need to provided in the constructor.
+    This class is not fetching the content on its own, they need to be provided in the constructor.
     Also there is no persistence: If you make changes it's your responsibility to write them back
     to the mediawiki system.
     """
@@ -315,17 +315,17 @@ class TranslatedPage:
         """
         self._infos = {}
         # find out version, name of original odt-file and name of translated odt-file
-        for tu in self.units:
-            if tu.is_title():
-                self._infos["headline_original"] = tu.get_definition()
-                self._infos["headline_translation"] = tu.get_translation()
-            if re.search(r"\.odt$", tu.get_definition()):
-                self._infos["odt_original"] = tu.get_definition()
-                self._infos["odt_translation"] = tu.get_translation()
+        for u in self.units:
+            if u.is_title():
+                self._infos["headline_original"] = u.get_definition()
+                self._infos["headline_translation"] = u.get_translation()
+            if re.search(r"\.odt$", u.get_definition()):
+                self._infos["odt_original"] = u.get_definition()
+                self._infos["odt_translation"] = u.get_translation()
             # Searching for version number (valid examples: 1.0; 2.1; 0.7b; 1.5a)
-            if re.search(r"^\d\.\d[a-zA-Z]?$", tu.get_definition()):
-                self._infos["version_original"] = tu.get_definition()
-                self._infos["version_translation"] = tu.get_translation()
+            if re.search(r"^\d\.\d[a-zA-Z]?$", u.get_definition()):
+                self._infos["version_original"] = u.get_definition()
+                self._infos["version_translation"] = u.get_translation()
             # TODO extract also PDF files?
 
     def _get_info(self, key: str) -> str:

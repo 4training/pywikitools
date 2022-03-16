@@ -1,6 +1,7 @@
 import unittest
+from pywikitools import fortraininglib
 
-from pywikitools.lang.translated_page import SnippetType, TranslationUnit, TranslationSnippet
+from pywikitools.lang.translated_page import SnippetType, TranslatedPage, TranslationUnit, TranslationSnippet
 
 TEST_UNIT_WITH_LISTS = """Jesus would not...
 * <b>sell your data</b>
@@ -54,6 +55,9 @@ TEST_UNIT_WITH_FORMATTING = """''God, through which glasses am I seeing You?''<b
 Use the ''support'' of a '''good''' helper!
 """
 
+# TODO: Ideally this should be split into four snippets... but that would require
+# more complexity in split_into_snippets() to understand that the newline after the third item
+# should also be a splitting point... so currently this is split up into three snippets only
 LIST_TEST = """* soll er Gott um Vergebung bitten, dass er die Lüge geglaubt und mit ihr zusammengearbeitet hat,
 * die Lüge an Gott abgeben und
 * fragen, „Gott, was ist die Wahrheit stattdessen?“
@@ -62,7 +66,7 @@ Lass denjenigen fragen, „Welche Lüge habe ich dadurch über mich gelernt?“ 
 
 class TestTranslationUnit(unittest.TestCase):
     def test_read_and_write(self):
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         with_lists.set_definition(TEST_UNIT_WITH_HEADLINE)
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
             self.assertFalse(with_lists.is_translation_well_structured())   # Split everything in snippets
@@ -72,7 +76,7 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertNotEqual(with_lists.get_translation_diff(), "")
 
         # Making no changes to snippets should leave everything as it was before
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
             with_lists.sync_from_snippets()
         self.assertTrue(with_lists.is_translation_well_structured())
@@ -87,6 +91,12 @@ class TestTranslationUnit(unittest.TestCase):
         with_lists.sync_from_snippets()
         self.assertTrue(with_lists.has_translation_changes())
         self.assertNotEqual(with_lists.get_translation_diff(), "")
+
+    def test_is_title(self):
+        headline = TranslationUnit("Test/Page_display_title", "de", "Test headline", "Test-Überschrift")
+        self.assertTrue(headline.is_title())
+        no_headline = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        self.assertFalse(no_headline.is_title())
 
     def test_split_into_snippets(self):
         with_lists = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_LISTS)
@@ -115,14 +125,14 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(TEST_UNIT_WITH_FORMATTING, "".join([s.content for s in with_formatting]))
 
     def test_is_translation_well_structured(self):
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         self.assertTrue(with_lists.is_translation_well_structured())
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        with_lists = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
             self.assertFalse(with_lists.is_translation_well_structured())
 
     def test_iteration(self):
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         counter = 0
         for orig, trans in with_lists:
             self.assertTrue(orig.is_text())
@@ -132,7 +142,7 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertGreaterEqual(counter, 8)
 
         # Iterating over not well-structured translation unit should give a warning (and not raise an error)
-        with_lists = TranslationUnit("Test", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        with_lists = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
             for _, _ in with_lists:
                 pass
@@ -142,7 +152,7 @@ class TestTranslationUnit(unittest.TestCase):
         DEFINITION_WITHOUT_LINK = "This is a link."
         TRANSLATION_WITH_LINK = "Das ist ein [[destination/de|Link]]."
         TRANSLATION_WITHOUT_LINK = "Das ist ein Link."
-        link_unit = TranslationUnit("Test", "de", DEFINITION_WITH_LINK, TRANSLATION_WITH_LINK)
+        link_unit = TranslationUnit("Test/1", "de", DEFINITION_WITH_LINK, TRANSLATION_WITH_LINK)
         link_unit.remove_links()
         self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
         self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
@@ -186,10 +196,58 @@ class TestTranslationSnippet(unittest.TestCase):
         self.assertTrue(with_br[1].is_markup())
         self.assertFalse(with_br[2].is_markup())
 
-class TestSpontaneous(unittest.TestCase):
-    def test_bla(self):
-        for snippet in TranslationUnit.split_into_snippets(LIST_TEST):
-            print(snippet)
+    def test_str(self):
+        snippet = TranslationSnippet(SnippetType.MARKUP_SNIPPET, "<br/>")
+        self.assertTrue(str(snippet).endswith("<br/>"))
+        self.assertTrue(str(snippet).startswith("MARKUP"))
+
+class TestTranslatedPage(unittest.TestCase):
+    def test_returning_empty_strings(self):
+        # Constructing a strange TranslatedPage that doesn't even have a headline
+        with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        translated_page = TranslatedPage("Test", "de", [with_lists])
+        self.assertEqual(translated_page.get_original_headline(), "")
+        self.assertEqual(translated_page.get_translated_headline(), "")
+        # We construct a TranslatedPage with a headline but no version and ODT file information
+        headline = TranslationUnit("Test/Page_display_title", "de", "Test headline", "Test-Überschrift")
+        unit1 = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        unit2 = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        translated_page = TranslatedPage("Test", "de", [headline, unit1, unit2])
+        self.assertEqual(translated_page.get_original_headline(), headline.get_definition())
+        self.assertEqual(translated_page.get_translated_headline(), headline.get_translation())
+        self.assertEqual(translated_page.get_original_odt(), "")
+        self.assertEqual(translated_page.get_translated_odt(), "")
+        self.assertEqual(translated_page.get_original_version(), "")
+        self.assertEqual(translated_page.get_translated_version(), "")
+
+    def test_with_real_data(self):
+        # TODO this test is closely tied to content on 4training.net that might change in the future
+        translated_page = fortraininglib.get_translation_units("Forgiving_Step_by_Step", "de")
+        self.assertIsNotNone(translated_page)
+        self.assertEqual(translated_page.page, "Forgiving_Step_by_Step")
+        self.assertEqual(translated_page.language_code, "de")
+        self.assertEqual(translated_page.get_original_headline(), "Forgiving Step by Step")
+        self.assertEqual(translated_page.get_original_odt(), "Forgiving_Step_by_Step.odt")
+        self.assertEqual(translated_page.get_original_version(), "1.3")
+        self.assertEqual(translated_page.get_translated_headline(), "Schritte der Vergebung")
+        self.assertEqual(translated_page.get_translated_odt(), "Schritte_der_Vergebung.odt")
+        self.assertEqual(translated_page.get_translated_version(), "1.3")
+        unit_counter: int = 0
+        for unit in translated_page:
+            self.assertTrue(unit.get_name().startswith("Translations:Forgiving_Step_by_Step"))
+            unit_counter += 1
+
+        # Now let's load the translation units of one template and add them to our translated_page
+        template_unit_counter: int = 0
+        template_page = fortraininglib.get_translation_units("Template:BibleReadingHints", "de")
+        for unit in template_page:
+            translated_page.add_translation_unit(unit)
+            template_unit_counter += 1
+        self.assertGreater(unit_counter, 20)
+        self.assertGreater(template_unit_counter, 10)
+
+        # Make sure we have now all translation units combined
+        self.assertEqual(len(translated_page.units), unit_counter + template_unit_counter)
 
 
 if __name__ == '__main__':
