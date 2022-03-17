@@ -21,7 +21,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Python uno module (LibreOffice UNO Bridge)
-        run: sudo apt-get install python3-uno
+        run: |
+          sudo apt update
+          sudo apt-get install python3-uno
 
       - name: Install python packages
         run: pip install -r requirements.txt
