@@ -391,8 +391,12 @@ def get_translation_units(page: str, language_code: str) -> Optional[TranslatedP
                 logger.warning(f"Couldn't get translation units. Error: {json['error']['info']}")
             return None
         for tu in json["query"]["messagecollection"]:
-            translation_unit = TranslationUnit(str(tu["key"]), str(tu["targetLanguage"]),
-                str(tu["definition"]), str(tu["translation"]))
+            if str(tu["targetLanguage"]) != language_code:
+                logger.warning(f"Unexpected error in get_translation_units({page}/{language_code}): "
+                               f"{tu['key']} has targetLanguage {tu['targetLanguage']}")
+                continue
+            translation_unit = TranslationUnit(str(tu["key"]), language_code,
+                str(tu["definition"]), tu["translation"])   # tu["translation"] may be None
             result.append(translation_unit)
         return TranslatedPage(page, language_code, result)
     except KeyError as err:

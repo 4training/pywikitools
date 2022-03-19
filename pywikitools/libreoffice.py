@@ -178,12 +178,12 @@ class LibreOffice:
         properties = self._model.getDocumentProperties()
         return properties.Subject
 
-    def set_properties(self, subject: str, title: str, keywords: str):
+    def set_properties(self, title: str, subject: str, keywords: str):
         """Set the properties (subject, title and keywords) of the ODT file"""
         assert self._model is not None
         properties = self._model.getDocumentProperties()
-        properties.Subject = subject
         properties.Title = title
+        properties.Subject = subject
         properties.Keywords = [keywords]
 
     def set_default_style(self, language_code: str, rtl: bool = False):

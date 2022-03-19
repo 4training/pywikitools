@@ -65,6 +65,13 @@ Lass denjenigen fragen, „Welche Lüge habe ich dadurch über mich gelernt?“ 
 """
 
 class TestTranslationUnit(unittest.TestCase):
+    def test_untranslated_unit(self):
+        # Make sure None isn't accidentally converted to "None"
+        not_translated = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, None)
+        self.assertEqual(not_translated.get_translation(), "")
+        not_translated = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, "")
+        self.assertEqual(not_translated.get_translation(), "")
+
     def test_read_and_write(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         with_lists.set_definition(TEST_UNIT_WITH_HEADLINE)
@@ -202,6 +209,15 @@ class TestTranslationSnippet(unittest.TestCase):
         self.assertTrue(str(snippet).startswith("MARKUP"))
 
 class TestTranslatedPage(unittest.TestCase):
+    def test_untranslated_page(self):
+        unit1 = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, None)
+        unit2 = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, "")
+        translated_page = TranslatedPage("Test", "de", [unit1, unit2])
+        self.assertTrue(translated_page.is_untranslated())
+        headline = TranslationUnit("Test/Page_display_title", "de", "Test headline", "Test-Überschrift")
+        translated_page = TranslatedPage("Test", "de", [headline, unit1, unit2])
+        self.assertFalse(translated_page.is_untranslated())
+
     def test_returning_empty_strings(self):
         # Constructing a strange TranslatedPage that doesn't even have a headline
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)

@@ -59,21 +59,24 @@ class TranslationUnit:
     GREEN: Final[str] = "\033[0;32m"
     NO_COLOR: Final[str] = "\033[0m"
 
-    def __init__(self, identifier: str, language_code: str, definition: str, translation: str):
+    def __init__(self, identifier: str, language_code: str, definition: str, translation: Optional[str]):
         """
         @param identifier: The key of the translation unit (e.g. "Prayer/7")
         @param definition: The original text (usually English)
         @param translation: The translation of the definition
+                            None or "" have the same meaning: there is no translation
         """
-        self._identifier = identifier
-        self._language_code = language_code
-        self._definition = definition
-        self._original_definition = definition
-        self._translation = translation
-        self._original_translation = translation
+        self._identifier: str = identifier
+        self._language_code: str = language_code
+        self._definition: str = definition
+        self._original_definition: str = definition
+        self._translation: str = ""
+        if translation is not None:
+            self._translation = translation
+        self._original_translation: str = self._translation
         self._definition_snippets: Optional[List[TranslationSnippet]] = None
         self._translation_snippets: Optional[List[TranslationSnippet]] = None
-        self._iterate_pos = 0      # For iterating over all snippets in this TranslationUnit
+        self._iterate_pos: int = 0      # For iterating over all snippets in this TranslationUnit
         self.logger = logging.getLogger('pywikitools.lang.TranslationUnit')
 
     def is_title(self) -> bool:
@@ -97,6 +100,7 @@ class TranslationUnit:
         self._translation = "".join([s.content for s in self._translation_snippets])
 
     def get_translation(self) -> str:
+        """Returns an empty string if no translation exists"""
         return self._translation
 
     def set_translation(self, text: str):
@@ -303,6 +307,13 @@ class TranslatedPage:
         self._infos: Optional[Dict[str, str]] = None    # Storing results of analyze_units()
         self.units: List[TranslationUnit] = units       # Our translation units
         self._iterate_pos = 0      # For iterating over all translation units in this TranslatedPage
+
+    def is_untranslated(self) -> bool:
+        """A TranslatedPage is untranslated if there is not a single translation unit with a translation in it"""
+        for translation_unit in self.units:
+            if translation_unit.get_translation() != "":
+                return False
+        return True
 
     def _analyze_units(self):
         """

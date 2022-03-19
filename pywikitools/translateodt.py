@@ -32,7 +32,7 @@ from pywikitools import fortraininglib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 
-SNIPPET_WARN_LENGTH = 4 # give a warning when search or replace string is shorter than 4 characters
+SNIPPET_WARN_LENGTH = 3 # give a warning when search or replace string is shorter than 3 characters
 # The following templates don't contain any translation units and can be ignored
 IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
                     'Template:PrintPdfDownload',
@@ -74,12 +74,7 @@ class TranslateODT:
         Logs warnings for certain circumstances
         @return true if we need to do search and replace
         """
-        # if string is empty there is nothing to do
-        if orig == '':
-            return False
-
-        # if string is a file name, we ignore it
-        if orig.endswith(('.pdf', '.odt', '.doc')):
+        if orig.endswith((".pdf", ".odt", ".odg")): # if string is a file name, we ignore it
             return False
 
         if orig == trans:
@@ -87,7 +82,7 @@ class TranslateODT:
             return False
 
         if len(orig) < SNIPPET_WARN_LENGTH:
-            if (orig in [' ', '.', ',', ':', ';']):
+            if orig in ["", " ", ".", ",", ":", ";"]:
                 self.logger.warning("Warning: Problematic search string detected! Please check and correct."
                                     f" Replaced {orig} with {trans}")
             else:
@@ -222,6 +217,9 @@ class TranslateODT:
         if translated_page is None:
             self.logger.error(f"Couldn't get translation units of {worksheet}.")
             return None
+        if translated_page.is_untranslated():
+            self.logger.error(f"Worksheet {worksheet} is not translated into language {language_code}")
+            return None
 
         # Check for templates we need to read as well
         templates = set(fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
@@ -237,7 +235,7 @@ class TranslateODT:
         if translated_version == "":
             self.logger.warning("Translation of version is missing!")
             translated_version = translated_page.get_original_version()
-        elif translated_page.get_original_version() != translated_version:
+        elif not translated_version.startswith(translated_page.get_original_version()):
             self.logger.warning(f"English original has version {translated_page.get_original_version()}, "
                                 f"translation has version {translated_version}. "
                                 "Please update translation. "
@@ -338,7 +336,7 @@ class TranslateODT:
                                     f"Assuming this is identical to {page.get_original_version()}."
                                     "Please check File->Properties->Keywords")
 
-        self._loffice.set_properties(subject, headline, cc0_notice)
+        self._loffice.set_properties(headline, subject, cc0_notice)
 
 if __name__ == '__main__':
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
