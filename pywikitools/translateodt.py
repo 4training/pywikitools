@@ -301,6 +301,7 @@ class TranslateODT:
         subtitle_lan = ""
         if subject != "":
             if len(page.units) < 2:
+                # TODO: Check this already in the beginning
                 self.logger.error(f"{page.page} only has {len(page.units)} translation units! Exiting now.")
                 return None
             if subject != page.units[1].get_definition():
@@ -313,6 +314,7 @@ class TranslateODT:
         # Title: [translated Title]
         headline = page.get_translated_headline()
         if headline == "":
+            # TODO: Check that already in the beginning
             self.logger.error("Headline doesn't seem to be translated. Exiting now.")
             return None
         headline += subtitle_lan

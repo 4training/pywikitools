@@ -21,26 +21,23 @@ class TranslationSnippet:
     Content can be directly changed - use TranslationUnit.sync_from_snippets() to save it in the
     corresponding TranslationUnit
     """
-    __slots__ = ['_type', 'content']
+    __slots__ = ['type', 'content']
 
     def __init__(self, snippet_type: SnippetType, content: str):
-        self._type: SnippetType = snippet_type
+        self.type: Final[SnippetType] = snippet_type
         self.content: str = content
 
-    def get_type(self) -> SnippetType:
-        return self._type
-
     def is_text(self) -> bool:
-        return self._type == SnippetType.TEXT_SNIPPET
+        return self.type == SnippetType.TEXT_SNIPPET
 
     def is_markup(self) -> bool:
-        return self._type == SnippetType.MARKUP_SNIPPET
+        return self.type == SnippetType.MARKUP_SNIPPET
 
     def is_br(self) -> bool:
-        return (self._type == SnippetType.MARKUP_SNIPPET) and bool(re.match("<br ?/?>\n?", self.content))
+        return (self.type == SnippetType.MARKUP_SNIPPET) and bool(re.match("<br ?/?>\n?", self.content))
 
     def __str__(self):
-        return f"{self._type.name} ({len(self.content)}): {self.content}"
+        return f"{self.type.name} ({len(self.content)}): {self.content}"
 
 
 class TranslationUnit:
@@ -66,8 +63,8 @@ class TranslationUnit:
         @param translation: The translation of the definition
                             None or "" have the same meaning: there is no translation
         """
-        self._identifier: str = identifier
-        self._language_code: str = language_code
+        self.identifier: Final[str] = identifier
+        self.language_code: Final[str] = language_code
         self._definition: str = definition
         self._original_definition: str = definition
         self._translation: str = ""
@@ -81,7 +78,7 @@ class TranslationUnit:
 
     def is_title(self) -> bool:
         """Is this unit holding the title of a page?"""
-        return self._identifier.endswith("Page_display_title")
+        return self.identifier.endswith("Page_display_title")
 
     def get_definition(self) -> str:
         return self._definition
@@ -138,7 +135,7 @@ class TranslationUnit:
         return diff
 
     def get_name(self):
-        return f"Translations:{self._identifier}/{self._language_code}"
+        return f"Translations:{self.identifier}/{self.language_code}"
 
     def remove_links(self):
         """
@@ -163,7 +160,7 @@ class TranslationUnit:
         match_t = link_pattern_without_bar.search(self._translation)
         if match_t:
             self.logger.warning(f"The following link is errorneous: {match_t.group(0)}. "
-                                f"It needs to be [[English destination/{self._language_code}|{match_t.group(2)}]]. "
+                                f"It needs to be [[English destination/{self.language_code}|{match_t.group(2)}]]. "
                                 f"Please correct {self.get_name()}")
             self._translation = link_pattern_without_bar.sub(r"\2", self._translation)
 
@@ -258,9 +255,9 @@ class TranslationUnit:
         # Iterate over both lists at the same time and check whether the snippet types fit each other
         for d_snippet, t_snippet in zip(self._definition_snippets, self._translation_snippets):
             # Currently we test only whether they have the same SnippetType. TODO check whether they actually match
-            if d_snippet.get_type() != t_snippet.get_type():
+            if d_snippet.type != t_snippet.type:
                 return False
-#            if (d_snippet.get_type() == SnippetType.MARKUP_SNIPPET) and (d_snippet.content != t_snippet.content):
+#            if (d_snippet.type == SnippetType.MARKUP_SNIPPET) and (d_snippet.content != t_snippet.content):
 #                return False
 
         return True
@@ -300,12 +297,13 @@ class TranslatedPage:
     Also there is no persistence: If you make changes it's your responsibility to write them back
     to the mediawiki system.
     """
+    __slots__ = ["page", "language_code", "units", "_infos", "_iterate_pos"]
 
     def __init__(self, page: str, language_code: str, units: List[TranslationUnit]):
         self.page: Final[str] = page                    # Name of the worksheet
         self.language_code: Final[str] = language_code
-        self._infos: Optional[Dict[str, str]] = None    # Storing results of analyze_units()
         self.units: List[TranslationUnit] = units       # Our translation units
+        self._infos: Optional[Dict[str, str]] = None    # Storing results of analyze_units()
         self._iterate_pos = 0      # For iterating over all translation units in this TranslatedPage
 
     def is_untranslated(self) -> bool:
@@ -370,10 +368,6 @@ class TranslatedPage:
     def add_translation_unit(self, unit: TranslationUnit):
         """Append a translation unit. Infos are not invalidated"""
         self.units.append(unit)
-
-#    def add_translation_units(self, page: TranslatedPage):
-#        for unit in page:
-#            self.units.append(unit)
 
     def __iter__(self):
         """Make this class iterable in a simple way (not suitable for concurrency!)"""

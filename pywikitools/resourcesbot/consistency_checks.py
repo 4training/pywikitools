@@ -47,27 +47,27 @@ class ConsistencyCheck(LanguagePostProcessor):
         Otherwise we try to load the translation unit from the mediawiki system
         """
         if isinstance(identifier, int):
-            content = fortraininglib.get_translated_unit(page, language_info.get_language_code(), identifier)
+            content = fortraininglib.get_translated_unit(page, language_info.language_code, identifier)
             if content is None:
-                self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.get_language_code()}")
+                self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.language_code}")
                 return None
-            return TranslationUnit(f"{page}/{identifier}", language_info.get_language_code(), \
+            return TranslationUnit(f"{page}/{identifier}", language_info.language_code, \
                 "", content) # Leaving definition parameter empty because we don't have it and don't need it
 
         elif identifier == self.TITLE:
             worksheet_info: Optional[WorksheetInfo] = language_info.get_worksheet(page)
             if worksheet_info is not None:
                 return TranslationUnit(f"{page}/Page display title",
-                                       language_info.get_language_code(), page, worksheet_info.title)
-            content = fortraininglib.get_translated_title(page, language_info.get_language_code())
+                                       language_info.language_code, page, worksheet_info.title)
+            content = fortraininglib.get_translated_title(page, language_info.language_code)
             if content is None:
-                self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.get_language_code()}")
+                self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.language_code}")
                 return None
             return TranslationUnit(f"{page}/Page display title",
-                                   language_info.get_language_code(), page, content)
+                                   language_info.language_code, page, content)
 
         else:
-            raise LookupError(f"Invalid unit name {page}/{identifier}/{language_info.get_language_code()}")
+            raise LookupError(f"Invalid unit name {page}/{identifier}/{language_info.language_code}")
 
     def should_be_equal(self, base: Optional[TranslationUnit], other: Optional[TranslationUnit]) -> bool:
         """returns True if checks pass: base and other are the same (or not existing)"""

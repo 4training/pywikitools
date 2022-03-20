@@ -44,6 +44,7 @@ Best for understanding what the script does, but requires running via pywikibot 
 
 """
 
+from ast import Assert
 import os
 import re
 import sys
@@ -59,7 +60,7 @@ from pywikitools.fortraininglib import TranslationProgress
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, LanguageInfoEncoder
+from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, WorksheetInfoEncoder, json_decode
 
 
 class ResourcesBot:
@@ -111,12 +112,16 @@ class ResourcesBot:
     def run(self):
         if self._read_from_cache:
             if self._limit_to_lang is not None:
-                language_info: LanguageInfo = LanguageInfo(self._limit_to_lang)
                 page = pywikibot.Page(self.site, f"4training:{self._limit_to_lang}.json")
                 if not page.exists():
                     raise RuntimeError(f"Couldn't load from cache for language {self._limit_to_lang}")
-                language_info.deserialize(json.loads(page.text))
-                self._result[self._limit_to_lang] = language_info
+                try:
+                    language_info = json.loads(page.text, object_hook=json_decode)
+                    assert isinstance(language_info, LanguageInfo)
+                    assert self._limit_to_lang == language_info.language_code
+                    self._result[self._limit_to_lang] = language_info
+                except AssertionError:
+                    raise RuntimeError(f"Unexpected error while parsing JSON data from cache.")
             else:
                 raise NotImplementedError("Please run the script with --limit-to-lang [lang]")
 
@@ -229,10 +234,7 @@ class ResourcesBot:
                     try:
                         file_page = pywikibot.FilePage(self.site, translation)
                         if file_page.exists():
-                            new_file_info = page_info.add_file_info(file_type, file_info=file_page.latest_file_info)
-                            self.logger.debug(new_file_info)
-                            if new_file_info is None:
-                                self.logger.warning(f"Language {lang}, page {page}: Couldn't add file of type {file_type}")
+                            page_info.add_file_info(file_type=file_type, from_pywikibot=file_page.latest_file_info)
                         else:
                             self.logger.info(f"Language {lang}, page {page}: File {translation} does not seem to exist")
                     except pywikibot.exceptions.Error as err:
@@ -241,7 +243,6 @@ class ResourcesBot:
             if lang not in self._result:
                 self._result[lang] = LanguageInfo(lang)
             self._result[lang].add_worksheet_info(page, page_info)
-            self.logger.debug(self._result)
 
 
     def sync_and_compare(self, lang: str) -> ChangeLog:
@@ -257,7 +258,7 @@ class ResourcesBot:
             self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
             return ChangeLog()
 
-        encoded_json = LanguageInfoEncoder().encode(self._result[lang])
+        encoded_json = WorksheetInfoEncoder().encode(self._result[lang])
         language_info: LanguageInfo = LanguageInfo(lang)
         rewrite_json: bool = self._rewrite_all
 
@@ -271,7 +272,14 @@ class ResourcesBot:
             rewrite_json = False
         else:
             # Load "old" data structure of this language (from previous resourcesbot run)
-            language_info.deserialize(json.loads(page.text))
+            try:
+                language_info = json.loads(page.text, object_hook=json_decode)
+                assert isinstance(language_info, LanguageInfo)
+                assert language_info.language_code == lang
+            except AssertionError:
+                self.logger.warning(f"Error while trying to load {lang}.json")
+                language_info = LanguageInfo(lang)
+
             if encoded_json != page.text:
                 rewrite_json = True
 

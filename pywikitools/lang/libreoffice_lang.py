@@ -14,7 +14,10 @@ class Lang:
     When editing styles we need to know which of the three FontTypes a language belongs to.
     The Locale struct has the following parameters: "ISO language code","ISO country code", "variant (browser specific)"
     See also https://www.openoffice.org/api/docs/common/ref/com/sun/star/lang/Locale.html
+    Currently there is no need for the variant and we always set it as an empty string
     """
+    __slots__ = ["language_code", "country_code", "font_type", "_custom_font"]
+
     def __init__(self, language_code: str, country_code: str,
                  font_type: FontType = FontType.FONT_STANDARD, custom_font: Optional[str] = None):
         """
@@ -22,23 +25,22 @@ class Lang:
         @param country_code: ISO country code
         @custom_font can be defined to use a different font than Arial (used for some complex layout languages)
         """
-        self._language_code: str = language_code
-        self._country_code: str = country_code
-        self._variant: str = ''   # Currently it looks like we never need to set it
-        self._font_type: FontType = font_type
+        self.language_code: Final[str] = language_code
+        self.country_code: Final[str] = country_code
+        self.font_type: Final[FontType] = font_type
         self._custom_font: Optional[str] = custom_font
 
     def __str__(self):
-        return f'("{self._language_code}","{self._country_code}","{self._variant}")'
+        return f'("{self.language_code}","{self.country_code}","")'
 
     def is_standard(self) -> bool:
-        return self._font_type == FontType.FONT_STANDARD
+        return self.font_type == FontType.FONT_STANDARD
 
     def is_asian(self) -> bool:
-        return self._font_type == FontType.FONT_ASIAN
+        return self.font_type == FontType.FONT_ASIAN
 
     def is_complex(self) -> bool:
-        return self._font_type == FontType.FONT_CTL
+        return self.font_type == FontType.FONT_CTL
 
     def has_custom_font(self) -> bool:
         return self._custom_font is not None
@@ -49,7 +51,7 @@ class Lang:
 
     def to_locale(self) -> Locale:
         """ Return a LibreOffice Locale object """
-        return Locale(self._language_code, self._country_code, '')
+        return Locale(self.language_code, self.country_code, '')
 
 # Configuration for each language:
 # - the LibreOffice language configuration counterpart (languagecode, countrycode, category)
