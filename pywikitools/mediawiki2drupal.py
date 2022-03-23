@@ -23,7 +23,7 @@ from typing import Final, Dict, Optional
 from requests.auth import HTTPBasicAuth
 from bs4 import BeautifulSoup, Comment
 import configparser
-import fortraininglib
+from pywikitools import fortraininglib
 
 class Mediawiki2Drupal():
     """The main class containing all major functionality to import pages from mediawiki into Drupal"""
@@ -35,7 +35,7 @@ class Mediawiki2Drupal():
 
     def __init__(self, endpoint: str, username: str, password: str,
                  content_type: str="page", change_hrefs: Dict[str, str]=None,
-                 img_src_rewrite: Dict[str,str]=None):
+                 img_src_rewrite: Dict[str, str]=None):
         """
         @param content_type refers to the Drupal content type that we should create articles with.
         This needs to be the system name of a content type
@@ -53,6 +53,8 @@ class Mediawiki2Drupal():
 
     def _process_html(self, input: str, custom_fields: Dict[str, str]=None) -> str:
         """
+        TODO Start using pywikitools.lib.html.BeautifyHTML
+        TODO Subclass BeautifyHTML and overwrite image_rewrite_handler to add customizations for "hands" images
         Take the original HTML coming from mediawiki and remove unnecessary tags or attributes.
 
         If we would request the English originals like fortraininglib.get_page_html("Prayer"),
@@ -88,7 +90,7 @@ class Mediawiki2Drupal():
             last_slash = img_src.rfind('/')
             if last_slash >= 0:
                 img_src = img_src[last_slash+1:]
-            if img_src in self._img_src_rewrite:
+            if (self._img_src_rewrite is not None) and (img_src in self._img_src_rewrite):
                 self.logger.info(f"Replacing img src {element['src']} with {self._img_src_rewrite[img_src]}")
                 element['src'] = self._img_src_rewrite[img_src]
                 if img_src.startswith('30px-Hand'): # some customizations for the five "hands" images in God's Story

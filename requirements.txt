@@ -3,3 +3,4 @@ wikitextparser>=0.47.5
 pywikibot~=6.6.5
 requests~=2.27.1
 dropbox~=11.27.0
+beautifulsoup4~=4.8.2

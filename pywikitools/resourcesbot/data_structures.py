@@ -1,10 +1,10 @@
-import datetime
+from datetime import datetime
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, Final, List, Optional, Union
 
 import pywikibot
-import urllib
+from urllib.parse import unquote
 from pywikitools import fortraininglib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
@@ -17,10 +17,19 @@ class FileInfo:
     This shouldn't be modified after creation (is there a way to enforce that?)
     """
     __slots__ = ['file_type', 'url', 'timestamp']
-    def __init__(self, file_type: str, url: str, timestamp: datetime.datetime):
-        self.file_type = file_type
+    def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str]):
+        self.file_type: str = file_type
         self.url: str = url
-        self.timestamp: datetime.datetime = timestamp
+        if isinstance(timestamp, datetime):
+            self.timestamp: datetime = timestamp
+        else:
+            try:
+                timestamp = timestamp.replace('Z', '+00:00')    # we want to support this format as well
+                self.timestamp = datetime.fromisoformat(timestamp)
+            except (ValueError, TypeError):
+                logger = logging.getLogger('pywikitools.resourcesbot.fileinfo')
+                logger.error("Invalid timestamp {timestamp}. {file_type}: {url}.")
+                self.timestamp = datetime(1970, 1, 1)
 
     def __str__(self):
         return f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
@@ -29,43 +38,32 @@ class WorksheetInfo:
     """Holds information on one worksheet in one specific language
     Only for worksheets that are at least partially translated
     """
-    __slots__ = ['_name', '_language', '_files', 'title', 'progress']
+    __slots__ = ['page', 'language_code', 'title', 'progress', '_files']
 
-    def __init__(self, en_name: str, language: str, title: str, progress: TranslationProgress):
+    def __init__(self, page: str, language_code: str, title: str, progress: TranslationProgress):
         """
-        @param en_name: English name of the worksheet
-        @param language: language code
+        @param page: English name of the worksheet
         @param title: translated worksheet title
         @param progress: how much is already translated"""
-#        self._en_name: str = en_name
-#        self._language: str = language
+        self.page: Final[str] = page
+        self.language_code: Final[str] = language_code
+        self.title: Final[str] = title
+        self.progress: Final[TranslationProgress] = progress
         self._files: Dict[str, FileInfo] = {}
-        self.title: str = title
-        self.progress: TranslationProgress = progress
 
-    def add_file_info(self, file_type: str, url: str = None, timestamp: str = None,
-                      file_info: pywikibot.page.FileInfo = None) -> Optional[FileInfo]:
-        """Add information about another file associated with this worksheet
-        Either give url and timestamp or file_info
+    def add_file_info(self, file_info: Optional[FileInfo] = None,
+                      file_type: Optional[str] = None, from_pywikibot: Optional[pywikibot.page.FileInfo] = None):
+        """Add information about another file associated with this worksheet.
+        You can call the function in two different ways:
+        - providing file_info
+        - providing file_type and from_pywikibot
         This will log on errors but shouldn't raise exceptions
-        @return FileInfo or None if it wasn't successful
         """
-        new_file_info = None
-        logger = logging.getLogger('pywikitools.resourcesbot.worksheetinfo')
-        if url is not None and timestamp is not None:
-            if isinstance(timestamp, str):
-                try:
-                    timestamp = timestamp.replace('Z', '+00:00')    # we want to support this format as well
-                    new_file_info = FileInfo(file_type, url, datetime.datetime.fromisoformat(timestamp))
-                except (ValueError, TypeError):
-                    logger.warning("Couldn't parse timestamp {timestamp}. add_file_info() failed.")
-            else:
-                logger.warning("add_file_info() failed: timestamp is not of type str.")
-        elif file_info is not None:
-            new_file_info = FileInfo(file_type, urllib.parse.unquote(file_info.url), file_info.timestamp)
-        if new_file_info is not None:
-            self._files[file_type] = new_file_info
-        return new_file_info
+        if file_info is not None:
+            self._files[file_info.file_type] = file_info
+            return
+        assert file_type is not None and from_pywikibot is not None
+        self._files[file_type] = FileInfo(file_type, unquote(from_pywikibot.url), from_pywikibot.timestamp)
 
     def get_file_infos(self) -> Dict[str, FileInfo]:
         """Returns all available files associated with this worksheet"""
@@ -88,43 +86,11 @@ class WorksheetInfo:
 
 class LanguageInfo:
     """Holds information on all available worksheets in one specific language"""
-    __slots__ = '_language_code', 'worksheets'
+    __slots__ = 'language_code', 'worksheets'
 
     def __init__(self, language_code: str):
-        self._language_code: str = language_code
+        self.language_code: Final[str] = language_code
         self.worksheets: Dict[str, WorksheetInfo] = {}
-
-    def deserialize(self, obj):
-        """Reads a JSON object of a data structure into this LanguageInfo object.
-        Any previously stored data is discarded.
-
-        This is a top-down approach
-        TODO: The JSON data structure isn't very good - improve it to make bottom-up approach possible
-        Then we could use json.JSONDecoder() which would be a bit more elegant
-        For that WorksheetInfo and FileInfo should also be well serializable / deserializable
-        """
-        self.worksheets = {}
-        logger = logging.getLogger('pywikitools.resourcesbot.languageinfo')
-        if isinstance(obj, Dict):
-            for worksheet, details in obj.items():
-                if isinstance(worksheet, str) and isinstance(details, Dict):
-                    if "title" in details:
-                        worksheet_info = WorksheetInfo(worksheet, self._language_code, details['title'], None)
-                        for file_type in fortraininglib.get_file_types():
-                            if file_type in details:
-                                worksheet_info.add_file_info(file_type, url=details[file_type],
-                                    timestamp=(details[file_type + '-timestamp']))
-
-                        self.add_worksheet_info(worksheet, worksheet_info)
-                    else:
-                         logger.warning(f"No title attribute in {worksheet} object, skipping.")
-                else:
-                    logger.warning("Unexpected data structure while trying to deserialize LanguageInfo object.")
-        else:
-            logger.warning("Unexpected data structure. Couldn't deserialize LanguageInfo object.")
-
-    def get_language_code(self) -> str:
-        return self._language_code
 
     def add_worksheet_info(self, name: str, worksheet_info: WorksheetInfo):
         self.worksheets[name] = worksheet_info
@@ -183,12 +149,11 @@ class LanguageInfo:
         return change_log
 
     def list_worksheets_with_missing_pdf(self) -> List[str]:
-        """ Returns a list of worksheets which are translated but are missing the PDF
-        """
+        """ Returns a list of worksheets which are translated but are missing the PDF"""
         return [worksheet for worksheet in self.worksheets if not self.worksheets[worksheet].has_file_type('pdf')]
 
     def list_incomplete_translations(self) -> List[WorksheetInfo]:
-        return [worksheet for worksheet in self.worksheets if self.worksheets[worksheet].is_incomplete()]
+        return [info for _, info in self.worksheets.items() if info.is_incomplete()]
 
     def count_finished_translations(self) -> int:
         count: int = 0
@@ -197,22 +162,54 @@ class LanguageInfo:
                 count += 1
         return count
 
-class LanguageInfoEncoder(json.JSONEncoder):
-    """serialize the data structure stored in ResourcesBot._result
-    TODO: This currently uses the legacy dictionary data structure that was stored in global_result before,
-    think about it and define a better structure?
+
+def json_decode(data: Dict[str, Any]):
     """
+    Deserializes a JSON-formatted string back into FileInfo / WorksheetInfo / LanguageInfo objects.
+    @raises AssertionError if data is malformatted
+    """
+    if "file_type" in data:
+        assert "url" in data and "timestamp" in data
+        return FileInfo(data["file_type"], data["url"], data["timestamp"])
+    if "translated" in data:
+        return fortraininglib.TranslationProgress(**data)
+    if "page" in data:
+        assert "language_code" in data and "title" in data and "progress" in data
+        assert isinstance(data["progress"], TranslationProgress)
+        worksheet_info = WorksheetInfo(data["page"], data["language_code"], data["title"], data["progress"])
+        if "files" in data:
+            for file_info in data["files"]:
+                assert isinstance(file_info, FileInfo)
+                worksheet_info.add_file_info(file_info=file_info)
+        return worksheet_info
+    if "worksheets" in data:
+        assert "language_code" in data
+        language_info = LanguageInfo(data["language_code"])
+        for worksheet in data["worksheets"]:
+            assert isinstance(worksheet, WorksheetInfo)
+            language_info.add_worksheet_info(worksheet.page, worksheet)
+        return language_info
+    return data
+
+
+class DataStructureEncoder(json.JSONEncoder):
+    """Serializes a LanguageInfo / WorksheetInfo / FileInfo / TranslationProgress object into a JSON string"""
     def default(self, obj):
         if isinstance(obj, LanguageInfo):
-            return obj.worksheets
+            return {"language_code": obj.language_code, "worksheets": list(obj.worksheets.values())}
         if isinstance(obj, WorksheetInfo):
-            worksheet_map = {}
-            worksheet_map['title'] = obj.title
-            for file_type, file_info in obj.get_file_infos().items():
-                worksheet_map[f"{file_type}-timestamp"] = file_info.timestamp.isoformat()
-                worksheet_map[file_type] = file_info.url
-            return worksheet_map
-        if isinstance(obj, pywikibot.Timestamp):
-            return obj.isoformat()
-        # Let the base class default method raise the TypeError
-        return json.JSONEncoder.default(self, obj)
+            worksheet_json: Dict[str, Any] = {
+                "page": obj.page,
+                "language_code": obj.language_code,
+                "title": obj.title,
+                "progress": obj.progress
+            }
+            file_infos: Dict[str, FileInfo] = obj.get_file_infos()
+            if file_infos:
+                worksheet_json["files"] = list(file_infos.values())
+            return worksheet_json
+        if isinstance(obj, FileInfo):
+            return { "file_type": obj.file_type, "url": obj.url, "timestamp": obj.timestamp.isoformat() }
+        if isinstance(obj, TranslationProgress):
+            return { "translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total }
+        return super().default(obj)

@@ -1,6 +1,5 @@
 import re
 import logging
-from typing import Dict
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
@@ -32,7 +31,7 @@ class WriteList(LanguagePostProcessor):
 
     def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
         """Determine whether the list of available training resources needs to be rewritten."""
-        lang = language_info.get_language_code()
+        lang = language_info.language_code
         needs_rewrite = False
         for change_item in change_log.get_all_changes():
             if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF]:
@@ -59,11 +58,11 @@ class WriteList(LanguagePostProcessor):
         for worksheet, worksheet_info in language_info.worksheets.items():
             if not worksheet_info.has_file_type('pdf'):
                 # Only show worksheets where we have a PDF file in the list
-                self.logger.warning(f"Language {language_info.get_language_code()}: worksheet {worksheet} has no PDF, "
-                                     "not including in list.")
+                self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"
+                                    " not including in list.")
                 continue
 
-            content += f"* [[{worksheet}/{language_info.get_language_code()}|"
+            content += f"* [[{worksheet}/{language_info.language_code}|"
             content += "{{int:" + fortraininglib.title_to_message(worksheet) + "}}]]"
             if worksheet_info.has_file_type('pdf'):
                 pdfname = worksheet_info.get_file_type_info('pdf').url
@@ -94,7 +93,7 @@ class WriteList(LanguagePostProcessor):
     def run(self, language_info: LanguageInfo, change_log: ChangeLog):
         if not self.needs_rewrite(language_info, change_log):
             return
-        lang = language_info.get_language_code()
+        lang = language_info.language_code
         self.logger.debug(f"Writing list of available resources in {lang}...")
 
         # Saving this to the language information page, e.g. https://www.4training.net/German
@@ -148,6 +147,4 @@ class WriteList(LanguagePostProcessor):
             self.logger.info(f"Updated language information page {language} and marked it for translation.")
         else:
             self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
-
-
 
