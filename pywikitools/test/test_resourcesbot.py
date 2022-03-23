@@ -14,7 +14,7 @@ import logging
 import json
 from pywikitools import fortraininglib
 from pywikitools.resourcesbot.changes import ChangeType
-from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, WorksheetInfoEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
 # but datetime.fromisoformat() can't handle the "Z" in the end
@@ -46,11 +46,11 @@ class TestFileInfo(unittest.TestCase):
     def test_serialization(self):
         # encode a FileInfo object to JSON and decode it again: Make sure the result is the same
         file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME))
-        json_text = WorksheetInfoEncoder().encode(file_info)
+        json_text = DataStructureEncoder().encode(file_info)
         decoded_file_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_file_info, FileInfo)
         self.assertEqual(str(decoded_file_info), str(file_info))
-        self.assertEqual(WorksheetInfoEncoder().encode(decoded_file_info), json_text)
+        self.assertEqual(DataStructureEncoder().encode(decoded_file_info), json_text)
 
 
 class TestWorksheetInfo(unittest.TestCase):
@@ -117,19 +117,19 @@ class TestWorksheetInfo(unittest.TestCase):
         # encode a WorksheetInfo object to JSON and decode it again: Make sure the result is the same
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
-        json_text = WorksheetInfoEncoder().encode(worksheet_info)
+        json_text = DataStructureEncoder().encode(worksheet_info)
         decoded_worksheet_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_worksheet_info, WorksheetInfo)
-        self.assertEqual(WorksheetInfoEncoder().encode(decoded_worksheet_info), json_text)
+        self.assertEqual(DataStructureEncoder().encode(decoded_worksheet_info), json_text)
 
         # Now let's add two files and make sure serialization is still working correctly
         worksheet_info.add_file_info(FileInfo("pdf", TEST_URL, TEST_TIME))
         worksheet_info.add_file_info(FileInfo("odt", TEST_URL.replace(".pdf", ".odt"), TEST_TIME))
-        json_text = WorksheetInfoEncoder().encode(worksheet_info)
+        json_text = DataStructureEncoder().encode(worksheet_info)
         decoded_worksheet_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_worksheet_info, WorksheetInfo)
         self.assertEqual(len(decoded_worksheet_info.get_file_infos()), 2)
-        self.assertEqual(WorksheetInfoEncoder().encode(decoded_worksheet_info), json_text)
+        self.assertEqual(DataStructureEncoder().encode(decoded_worksheet_info), json_text)
 
 
 class TestLanguageInfo(unittest.TestCase):
@@ -161,22 +161,22 @@ class TestLanguageInfo(unittest.TestCase):
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
         self.language_info.add_worksheet_info("Prayer", worksheet_info)
-        json_text = WorksheetInfoEncoder().encode(self.language_info)
+        json_text = DataStructureEncoder().encode(self.language_info)
 
         # Now decode again and check results
         decoded_language_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsNotNone(decoded_language_info)
         self.assertIsInstance(decoded_language_info, LanguageInfo)
-        self.assertEqual(WorksheetInfoEncoder().encode(decoded_language_info), json_text)
+        self.assertEqual(DataStructureEncoder().encode(decoded_language_info), json_text)
         self.assertTrue(decoded_language_info.has_worksheet(TEST_EN_NAME))
         self.assertTrue(decoded_language_info.worksheet_has_type(TEST_EN_NAME, "odt"))
 
     def test_compare(self):
         # TODO: Have 2-3 real (more complex) examples that should cover all cases and test with them
         self.test_basic_functionality()
-        basic_json = WorksheetInfoEncoder().encode(self.language_info)
+        basic_json = DataStructureEncoder().encode(self.language_info)
         self.assertTrue(self.language_info.compare(self.language_info).is_empty())
-        old_language_info = json.loads(WorksheetInfoEncoder().encode(self.language_info), object_hook=json_decode)
+        old_language_info = json.loads(DataStructureEncoder().encode(self.language_info), object_hook=json_decode)
         self.assertTrue(self.language_info.compare(old_language_info).is_empty())
 
         # Add an ODT file

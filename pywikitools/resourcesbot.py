@@ -60,7 +60,7 @@ from pywikitools.fortraininglib import TranslationProgress
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, WorksheetInfoEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
 
 
 class ResourcesBot:
@@ -258,7 +258,7 @@ class ResourcesBot:
             self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
             return ChangeLog()
 
-        encoded_json = WorksheetInfoEncoder().encode(self._result[lang])
+        encoded_json = DataStructureEncoder().encode(self._result[lang])
         language_info: LanguageInfo = LanguageInfo(lang)
         rewrite_json: bool = self._rewrite_all
 

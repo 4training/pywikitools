@@ -192,8 +192,8 @@ def json_decode(data: Dict[str, Any]):
     return data
 
 
-class WorksheetInfoEncoder(json.JSONEncoder):
-    """Serializes a LanguageInfo / WorksheetInfo / FileInfo object into a JSON string"""
+class DataStructureEncoder(json.JSONEncoder):
+    """Serializes a LanguageInfo / WorksheetInfo / FileInfo / TranslationProgress object into a JSON string"""
     def default(self, obj):
         if isinstance(obj, LanguageInfo):
             return {"language_code": obj.language_code, "worksheets": list(obj.worksheets.values())}
