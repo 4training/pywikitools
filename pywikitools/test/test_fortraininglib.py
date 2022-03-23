@@ -6,6 +6,8 @@ Run tests:
     python3 -m unittest test_fortraininglib.py
 """
 import unittest
+from unittest.mock import Mock, patch
+import requests
 #import logging
 
 from pywikitools import fortraininglib
@@ -14,6 +16,50 @@ class TestFortrainingLib(unittest.TestCase):
 # use this to see logging messages (can be increased to logging.DEBUG)
 #    def setUp(self):
 #        logging.basicConfig(level=logging.INFO)
+
+    @patch("pywikitools.fortraininglib.requests.get")
+    def test_get(self, mock_get):
+        # Emulate a successful get request
+        response = requests.Response()
+        response.status_code = 200
+        response.json = Mock()
+        response.json.return_value = {}
+        mock_get.return_value = response
+        fortraininglib._get({})
+        mock_get.assert_called_once()
+
+    @patch("pywikitools.fortraininglib.requests.get")
+    def test_get_with_timeouts(self, mock_get):
+        # Let's emulate repeated Timeouts and assert that requests.get() got called CONNECT_RETRIES times
+        mock_get.side_effect = requests.exceptions.Timeout
+        with self.assertLogs('pywikitools.lib', level='WARNING') as logs:
+            fortraininglib._get({})
+            self.assertEqual(len(logs.output), fortraininglib.CONNECT_RETRIES + 1)
+        self.assertEqual(mock_get.call_count, fortraininglib.CONNECT_RETRIES)
+
+    @patch("pywikitools.fortraininglib.requests.get")
+    def test_get_with_single_timeout(self, mock_get):
+        # One request times out and afterwards all works fine again
+        response = requests.Response()
+        response.status_code = 200
+        response.json = Mock()
+        response.json.return_value = {}
+        mock_get.side_effect = [requests.exceptions.Timeout, response]
+        with self.assertLogs('pywikitools.lib', level='WARNING') as logs:
+            fortraininglib._get({})
+            self.assertEqual(len(logs.output), 1)   # there should be only one warning
+        self.assertEqual(mock_get.call_count, 2)
+
+    @patch("pywikitools.fortraininglib.requests.get")
+    def test_get_with_json_decode_error(self, mock_get):
+        response = requests.Response()
+        response.status_code = 200
+        response.json = Mock()
+        response.json.side_effect = requests.exceptions.JSONDecodeError
+        mock_get.return_value = response
+        with self.assertLogs('pywikitools.lib', level='WARNING'):
+            fortraininglib._get({})
+        mock_get.assert_called_once()
 
     def test_get_language_name(self):
         self.assertEqual(fortraininglib.get_language_name('de'), 'Deutsch')
@@ -77,7 +123,6 @@ class TestFortrainingLib(unittest.TestCase):
             counter += 1
             self.assertGreater(len([snippet for snippet in translation_unit]), 0)
         self.assertGreater(counter, 10)
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,7 +6,7 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 """
 import logging
 import re
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 
 import requests
 
@@ -14,6 +14,8 @@ from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
+TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
+CONNECT_RETRIES: int = 3    # In case a request timed out, let's try again up to three times
 logger = logging.getLogger('pywikitools.lib')
 # Language codes of all right-to-left languages we currently have
 RTL_LANGUAGES = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"]
@@ -57,6 +59,28 @@ class TranslationProgress:
         out of 14 translation units total
         """
         return f"{self.translated}+{self.fuzzy}/{self.total}"
+
+
+def _get(params: Dict[str, str]) -> Any:
+    """
+    Wrapper around requests.get to handle timeouts and other issues
+    @return JSON (as from response.json()) or {} in case of an error
+    """
+    retries = 0
+    while retries < CONNECT_RETRIES:
+        try:
+            response = requests.get(APIURL, params=params, timeout=TIMEOUT)
+            logger.debug(f"API Request with parameters {params}... {response.status_code}")
+            return response.json()
+        except requests.exceptions.Timeout:
+            retries += 1
+            logger.warning(f"Request timed out. This was attempt #{retries}. Trying again...")
+        except requests.exceptions.JSONDecodeError as e:
+            logger.warning(f"Unexpected error: Received an invalid JSON: {e}")
+            return {}
+
+    logger.warning(f"Tried {retries} times to query {params}, all timed out. Giving up.")
+    return {}
 
 
 def get_worksheet_list() -> List[str]:
@@ -118,15 +142,16 @@ def get_language_name(language_code: str, translate_to: Optional[str] = None) ->
     lang_parameter: str = language_code
     if isinstance(translate_to, str):
         lang_parameter += '|' + translate_to
-    response = requests.get(APIURL, params={
+    json = _get({
         'action': 'parse',
         'text': '{{#language:' + lang_parameter + '}}',
         'contentmodel': 'wikitext',
         'format': 'json',
         'prop': 'text',
         'disablelimitreport': 'true'})
+
     try:
-        langname = re.search('<p>([^<]*)</p>', response.json()['parse']['text']['*'], re.MULTILINE)
+        langname = re.search('<p>([^<]*)</p>', json['parse']['text']['*'], re.MULTILINE)
         if langname:
             return langname.group(1).strip()
         return None
@@ -134,37 +159,36 @@ def get_language_name(language_code: str, translate_to: Optional[str] = None) ->
         return None
 
 
-def get_file_url(filename: str):
+def get_file_url(filename: str) -> Optional[str]:
     """ Return the full URL of the requested file
 
     @return string with the URL or None in case of an error
     """
     # request url for downloading odt-file
-    parameters = {
+
+    logger.info(f"Retrieving URL of file {filename}... ")
+    json = _get({
         "action": "query",
         "format": "json",
         "prop": "imageinfo",
-        "titles": "File:" + filename,
+        "titles": f"File:{filename}",
         "iiprop": "url"
-    }
+    })
 
-    response_url = requests.get(APIURL, params=parameters)
-    logger.info("Retrieving URL of file " + filename + "... " + str(response_url.status_code))
-    url_json = response_url.json()
-    logger.debug(url_json)
+    try:
+        # check if there is only one page in the answer and get its name
+        if len(list(json["query"]["pages"])) == 1:
+            page_number = list(json["query"]["pages"])[0]
+        else:
+            logger.warning(f"fortraininglib:get_file_url: Couldn't get URL of file {filename}: multiple pages detected")
+            return None
 
-    # check if there is only one page in the answer and get its name
-    if len(list(url_json["query"]["pages"])) == 1:
-        page_number = list(url_json["query"]["pages"])[0]
-    else:
-        logger.warning(F"fortraininglib:get_file_url: Couldn't get URL of file {filename}: multiple pages detected")
+        if int(page_number) == -1:
+            logger.info(f"fortraininglib:get_file_url: file {filename} doesn't seem to exist.")
+            return None
+        return json["query"]["pages"][page_number]["imageinfo"][0]["url"]
+    except KeyError:
         return None
-
-    if int(page_number) == -1:
-        logger.info(F"fortraininglib:get_file_url: file {filename} doesn't seem to exist.")
-        return None
-    return url_json["query"]["pages"][page_number]["imageinfo"][0]["url"]
-
 
 def get_page_source(page: str, revision_id: Optional[int] = None) -> Optional[str]:
     """
@@ -183,10 +207,10 @@ def get_page_source(page: str, revision_id: Optional[int] = None) -> Optional[st
     }
     if revision_id is not None:
         params['rvstartid'] = str(revision_id)
-    response = requests.get(APIURL, params=params)
+    json = _get(params)
     try:
-        pageid = next(iter(response.json()["query"]["pages"]))
-        return response.json()["query"]["pages"][pageid]['revisions'][0]['slots']['main']['*']
+        pageid = next(iter(json["query"]["pages"]))
+        return json["query"]["pages"][pageid]['revisions'][0]['slots']['main']['*']
     except KeyError:
         return None
 
@@ -195,12 +219,12 @@ def get_page_html(page: str) -> Optional[str]:
     Return the HTML representation of a page
     @return None on error
     """
-    response = requests.get(APIURL, params={
+    json = _get({
         "action": "parse",
         "page": page,
         "format": "json"})
     try:
-        return response.json()["parse"]["text"]['*']
+        return json["parse"]["text"]['*']
     except KeyError:
         return None
 
@@ -305,14 +329,12 @@ def list_page_translations(page: str, include_unfinished=False) -> Dict[str, Tra
     counter = 1
     while counter < 4:
         # Tricky: Often we need to run this query for a second time so that all data is gathered.
-        response = requests.get(APIURL, params={
+        logger.info(f"Retrieving translation information of {page}, try #{counter}...")
+        json = _get({
             'action': 'query',
             'meta': 'messagegroupstats',
             'format': 'json',
             'mgsgroup': f"page-{page}"})
-        logger.info(f"Retrieving translation information of {page}, try #{counter}. Response: {response.status_code}")
-        json = response.json()
-
         if 'continue' not in json:  # Now we have a complete response
             break
         counter += 1
@@ -341,12 +363,11 @@ def list_page_templates(page: str) -> List[str]:
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&titles=Polish&prop=templates
     @return empty list in case of an error
     """
-    response = requests.get(APIURL, params={
+    json = _get({
         'action': 'query',
         'format': 'json',
         'titles': page,
         'prop': 'templates'})
-    json = response.json()
     try:
         if len(list(json["query"]["pages"])) == 1:
             pageid = list(json["query"]["pages"])[0]
@@ -372,7 +393,8 @@ def get_translation_units(page: str, language_code: str) -> Optional[TranslatedP
     Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
     @return None in case of an error
     """
-    response = requests.get(APIURL, params={
+    logger.info(f"Retrieving translation of {page} into language {language_code}...")
+    json = _get({
         "action": "query",
         "format": "json",
         "list": "messagecollection",
@@ -380,8 +402,6 @@ def get_translation_units(page: str, language_code: str) -> Optional[TranslatedP
         "mclanguage": language_code,
     })
 
-    logger.info(f"Retrieving translation of {page} into language {language_code}... {response.status_code}")
-    json = response.json()
     result = []
     try:
         if "error" in json:
@@ -427,16 +447,16 @@ def expand_template(raw_template: str) -> str:
     TODO more documentation
     https://www.4training.net/mediawiki/api.php?action=expandtemplates&text={{CC0Notice/de|1.3}}&prop=wikitext&format=json
     """
-    response = requests.get(APIURL, params={
+    json = _get({
         "action": "expandtemplates",
         "text": raw_template,
         "prop": "wikitext",
         "format": "json"})
-    if "expandtemplates" in response.json():
-        if "wikitext" in response.json()["expandtemplates"]:
-            return response.json()["expandtemplates"]["wikitext"]
-    logger.warning(f"Warning: couldn't expand template {raw_template}")
-    return ""
+    try:
+        return json["expandtemplates"]["wikitext"]
+    except KeyError:
+        logger.warning(f"Warning: couldn't expand template {raw_template}")
+        return ""
 
 
 def get_cc0_notice(version: str, language_code: str) -> str:
@@ -471,6 +491,7 @@ def mark_for_translation(title: str, user_name: str, password: str):
     @param title The title of the page that should be marked for translation
     @todo currently it's always marking the page for translation, even if there are no changes -> add check
     @todo better error handling, return if we were successful
+    @todo add timeout=TIMEOUT and handle timeouts correctly
     """
     try:
         session = requests.Session()
