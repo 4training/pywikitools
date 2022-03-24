@@ -5,18 +5,27 @@ Currently we have only little test coverage...
 TODO: Find ways to run meaningful tests that don't take too long...
 """
 from configparser import ConfigParser
+from datetime import datetime
 import unittest
+from unittest.mock import patch
 
 from pywikitools import fortraininglib
 from pywikitools.resourcesbot.bot import ResourcesBot
 from pywikitools.resourcesbot.data_structures import WorksheetInfo
-from pywikitools.test.test_data_structures import TEST_PROGRESS
+from pywikitools.test.test_data_structures import TEST_PROGRESS, TEST_TIME, TEST_URL
 
 class TestResourcesBot(unittest.TestCase):
-    def test_add_english_file_infos(self):
-        # This test is requesting data from 4training.net - find a better and faster solution?
+    """
+    We mock pywikibot because otherwise we would need to provide a valid user-config.py (and because it saves time)
+    """
+    @patch("pywikibot.FilePage")
+    def test_add_english_file_infos(self, mock_filepage):
+        # This test function is requesting data from 4training.net - find a better and faster solution?
+        mock_filepage.return_value.exists.return_value = True
+        mock_filepage.return_value.latest_file_info.url = TEST_URL
+        mock_filepage.return_value.latest_file_info.timestamp = datetime.fromisoformat(TEST_TIME)
         config = ConfigParser()
-        config.read_dict({"Paths": {"logs": "~/"}}) # Fill this to prevent warning
+        config.read_dict({"Paths": {"logs": "~/"}}) # Fill this to prevent a warning
         bot = ResourcesBot(config)
 
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
