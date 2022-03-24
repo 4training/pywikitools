@@ -4,6 +4,7 @@ Testing ResourcesBot
 Currently we have only little test coverage...
 TODO: Find ways to run meaningful tests that don't take too long...
 """
+from configparser import ConfigParser
 import unittest
 
 from pywikitools import fortraininglib
@@ -14,7 +15,10 @@ from pywikitools.test.test_data_structures import TEST_PROGRESS
 class TestResourcesBot(unittest.TestCase):
     def test_add_english_file_infos(self):
         # This test is requesting data from 4training.net - find a better and faster solution?
-        bot = ResourcesBot()
+        config = ConfigParser()
+        config.read_dict({"Paths": {"logs": "~/"}}) # Fill this to prevent warning
+        bot = ResourcesBot(config)
+
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress)
         bot._add_english_file_infos(worksheet_info)

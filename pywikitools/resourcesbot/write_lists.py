@@ -27,6 +27,8 @@ class WriteList(LanguagePostProcessor):
         self._password = password
         self._force_rewrite = force_rewrite
         self.logger = logging.getLogger('pywikitools.resourcesbot.write_lists')
+        if user_name == "" or password == "":
+            self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
     def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
         """Determine whether the list of available training resources needs to be rewritten."""

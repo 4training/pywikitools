@@ -3,7 +3,7 @@ import re
 import sys
 import logging
 import json
-import configparser
+from configparser import ConfigParser
 from typing import Optional, Dict
 import pywikibot
 
@@ -18,7 +18,7 @@ from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, limit_to_lang: Optional[str] = None, rewrite_all: bool = False,
+    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite_all: bool = False,
                  read_from_cache: bool = False, loglevel: Optional[str] = None):
         """
         @param limit_to_lang: limit processing to one language (string with a language code)
@@ -29,20 +29,10 @@ class ResourcesBot:
         # read-only list of download file types
         self._file_types = fortraininglib.get_file_types()
         # Read the configuration from config.ini in the same directory
-        self._config = configparser.ConfigParser()
-        self._config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+        self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.set_loglevel(loglevel)
-        if not self._config.has_option("resourcesbot", "username") or \
-            not self._config.has_option("resourcesbot", "password"):
-            self.logger.warning("Missing user name and/or password in configuration. Won't mark pages for translation.")
-        if not self._config.has_option("Paths", "htmlexport"):
-            self.logger.warning("Missing htmlexport path in config.ini. Won't export HTML files.")
-
         self.site: pywikibot.site.APISite = pywikibot.Site()
-        # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
-        # "No user is logged in on site 4training:en" -> use this as a workaround and test with self.site.logged_in()
-        self.site.login()
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
         self._rewrite_all: bool = rewrite_all
@@ -85,11 +75,16 @@ class ResourcesBot:
                 # Gather all data (this takes quite some time!)
                 self._query_translations(worksheet)
 
+        # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
+        # "No user is logged in on site 4training:en" -> better check and try to log in if necessary
         if not self.site.logged_in():
-            self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
-            self.site.getuserinfo()
-            self.logger.warning(f"userinfo: {self.site.userinfo}")
-            sys.exit(2)
+            self.logger.warning("We're not logged in. Trying to log in...")
+            self.site.login()
+            if not self.site.logged_in():
+                self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
+                self.site.getuserinfo()
+                self.logger.warning(f"userinfo: {self.site.userinfo}")
+                sys.exit(2)
 
         # Find out what has been changed since our last run and run all LanguagePostProcessors
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),

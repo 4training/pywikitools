@@ -47,6 +47,8 @@ Best for understanding what the script does, but requires running via pywikibot 
 This is only the wrapper script, all main logic is in resourcesbot/bot.py
 """
 import argparse
+from configparser import ConfigParser
+import os
 from typing import List
 
 from pywikitools.resourcesbot.bot import ResourcesBot
@@ -58,7 +60,7 @@ def parse_arguments() -> ResourcesBot:
     @return: ResourcesBot instance
     """
     msg: str = 'Update list of available training resources in the language information pages'
-    epi_msg: str = 'Refer https://datahub.io/core/language-codes/r/0.html for language codes.'
+    epi_msg: str = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
 
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=msg, epilog=epi_msg)
@@ -71,7 +73,9 @@ def parse_arguments() -> ResourcesBot:
     limit_to_lang = None
     if args.lang is not None:
         limit_to_lang = str(args.lang)
-    return ResourcesBot(limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all,
+    config = ConfigParser()
+    config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+    return ResourcesBot(config, limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all,
                         read_from_cache=args.read_from_cache, loglevel=args.loglevel)
 
 if __name__ == "__main__":
