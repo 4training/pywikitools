@@ -14,12 +14,24 @@ from pywikitools.fortraininglib import TranslationProgress
 class FileInfo:
     """
     Holds information on one file that is available on the website
-    This shouldn't be modified after creation (is there a way to enforce that?)
+    This shouldn't be modified after creation
     """
-    __slots__ = ['file_type', 'url', 'timestamp']
-    def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str]):
-        self.file_type: str = file_type
-        self.url: str = url
+    __slots__ = ['file_type', 'url', 'timestamp', 'translation_unit']
+    def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str],
+                 translation_unit: Optional[int] = None):
+        """
+        @param file_type: e.g. "pdf" (one of fortraininglib.get_file_types())
+        @param url: full URL where the file can be downloaded
+        @param timestamp: Last modification date of the file
+        @param translation_unit: Number of the translation unit where the file name is stored in
+               Example: for worksheet "My_Story_with_God" this is 28
+               -> English file name can be found in Translations:My_Story_with_God/28/en
+               -> German file name can be found in Translations:My_Story_with_God/28/de
+               We only store this information for English worksheets
+        """
+        self.file_type: Final[str] = file_type
+        self.url: Final[str] = url
+        self.translation_unit: Final[Optional[int]] = translation_unit
         if isinstance(timestamp, datetime):
             self.timestamp: datetime = timestamp
         else:
@@ -30,6 +42,14 @@ class FileInfo:
                 logger = logging.getLogger('pywikitools.resourcesbot.fileinfo')
                 logger.error("Invalid timestamp {timestamp}. {file_type}: {url}.")
                 self.timestamp = datetime(1970, 1, 1)
+
+    def get_file_name(self) -> str:
+        """Return file name out of url"""
+        pos = self.url.rfind('/')
+        if pos > -1:
+            return self.url[pos+1:]
+        return self.url
+
 
     def __str__(self):
         return f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
@@ -52,18 +72,20 @@ class WorksheetInfo:
         self._files: Dict[str, FileInfo] = {}
 
     def add_file_info(self, file_info: Optional[FileInfo] = None,
-                      file_type: Optional[str] = None, from_pywikibot: Optional[pywikibot.page.FileInfo] = None):
+                      file_type: Optional[str] = None,
+                      from_pywikibot: Optional[pywikibot.page.FileInfo] = None,
+                      unit: Optional[int] = None):
         """Add information about another file associated with this worksheet.
         You can call the function in two different ways:
         - providing file_info
-        - providing file_type and from_pywikibot
+        - providing file_type and from_pywikibot (and potentially unit)
         This will log on errors but shouldn't raise exceptions
         """
         if file_info is not None:
             self._files[file_info.file_type] = file_info
             return
         assert file_type is not None and from_pywikibot is not None
-        self._files[file_type] = FileInfo(file_type, unquote(from_pywikibot.url), from_pywikibot.timestamp)
+        self._files[file_type] = FileInfo(file_type, unquote(from_pywikibot.url), from_pywikibot.timestamp, unit)
 
     def get_file_infos(self) -> Dict[str, FileInfo]:
         """Returns all available files associated with this worksheet"""
@@ -82,6 +104,16 @@ class WorksheetInfo:
     def is_incomplete(self) -> bool:
         """A translation is incomplete if most units are translated but at least one is not translated or fuzzy"""
         return self.progress.is_incomplete()
+
+    def __str__(self) -> str:
+        """For debugging purposes: Format all data as a human-readable string"""
+        content: str = f"{self.page}/{self.language_code}: '{self.title}' with progress {self.progress}"
+        content += f" and {len(self._files)} files"
+        if len(self._files) > 0:
+            content += ":\n"
+        for file_info in self._files.values():
+            content += f"{file_info}\n"
+        return content
 
 
 class LanguageInfo:
@@ -170,7 +202,8 @@ def json_decode(data: Dict[str, Any]):
     """
     if "file_type" in data:
         assert "url" in data and "timestamp" in data
-        return FileInfo(data["file_type"], data["url"], data["timestamp"])
+        translation_unit: Optional[int] = int(data["translation_unit"]) if "translation_unit" in data else None
+        return FileInfo(data["file_type"], data["url"], data["timestamp"], translation_unit)
     if "translated" in data:
         return fortraininglib.TranslationProgress(**data)
     if "page" in data:
@@ -209,7 +242,14 @@ class DataStructureEncoder(json.JSONEncoder):
                 worksheet_json["files"] = list(file_infos.values())
             return worksheet_json
         if isinstance(obj, FileInfo):
-            return { "file_type": obj.file_type, "url": obj.url, "timestamp": obj.timestamp.isoformat() }
+            file_json: Dict[str, Any] = {
+                "file_type": obj.file_type,
+                "url": obj.url,
+                "timestamp": obj.timestamp.isoformat()
+            }
+            if obj.translation_unit is not None:
+                file_json["translation_unit"] = obj.translation_unit
+            return file_json
         if isinstance(obj, TranslationProgress):
             return { "translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total }
         return super().default(obj)

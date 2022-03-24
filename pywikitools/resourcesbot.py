@@ -44,7 +44,6 @@ Best for understanding what the script does, but requires running via pywikibot 
 
 """
 
-from ast import Assert
 import os
 import re
 import sys
@@ -52,7 +51,7 @@ import logging
 import json
 import argparse # For CLI arguments
 import configparser
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 import pywikibot
 
 from pywikitools import fortraininglib
@@ -84,6 +83,8 @@ class ResourcesBot:
         if not self._config.has_option("resourcesbot", "username") or \
             not self._config.has_option("resourcesbot", "password"):
             self.logger.warning("Missing user name and/or password in configuration. Won't mark pages for translation.")
+        if not self._config.has_option("Paths", "htmlexport"):
+            self.logger.warning("Missing htmlexport path in config.ini. Won't export HTML files.")
 
         self.site: pywikibot.site.APISite = pywikibot.Site()
         # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
@@ -126,9 +127,10 @@ class ResourcesBot:
                 raise NotImplementedError("Please run the script with --limit-to-lang [lang]")
 
         else:
+            self._result["en"] = LanguageInfo("en")
             for worksheet in fortraininglib.get_worksheet_list():
                 # Gather all data (this takes quite some time!)
-                self.query_translations(worksheet)
+                self._query_translations(worksheet)
 
         if not self.site.logged_in():
             self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
@@ -137,14 +139,14 @@ class ResourcesBot:
             sys.exit(2)
 
         # Find out what has been changed since our last run and run all LanguagePostProcessors
-        write_list = WriteList(self.site, self._config.get("resourcesbot", "username"),
-            self._config.get("resourcesbot", "password"), self._rewrite_all)
+        write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
+            self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         consistency_check = ConsistencyCheck()
+#        export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""))
         for lang in self._result:
             consistency_check.run(self._result[lang], ChangeLog())
-            if lang != 'en':
-                self._changelog[lang] = self.sync_and_compare(lang)
-                write_list.run(self._result[lang], self._changelog[lang])
+            self._changelog[lang] = self.sync_and_compare(lang)
+            write_list.run(self._result[lang], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
         # TODO move the following into a GlobalPostProcessor
@@ -153,56 +155,62 @@ class ResourcesBot:
         else:
             self.total_summary()
 
-    def query_translations(self, page: str):
+    def _add_file_type(self, worksheet: WorksheetInfo, file_type: str, file_name: str, unit: Optional[int] = None):
+        try:
+            file_page = pywikibot.FilePage(self.site, file_name)
+            if file_page.exists():
+                worksheet.add_file_info(file_type=file_type, from_pywikibot=file_page.latest_file_info,
+                                        unit=unit)
+            else:
+                self.logger.warning(f"Page {worksheet.page}/{worksheet.language_code}: Couldn't find {file_name}.")
+        except pywikibot.exceptions.Error as err:
+            self.logger.warning(f"Exception thrown for {file_type} file: {err}")
+
+    def _add_english_file_infos(self, worksheet: WorksheetInfo):
+        """
+        Finds out the names of the English downloadable files (originals)
+        and adds them to worksheet
+        """
+        page_source = fortraininglib.get_page_source(worksheet.page)
+        if page_source is None:
+            self.logger.warning(f"Couldn't find page {worksheet.page}!")
+            return
+        for file_type in self._file_types:
+            handler = re.search(r"\{\{" + file_type.capitalize() +
+                                r"Download\|<translate>*?<!--T:(\d+)-->\s*([^<]+)</translate>", page_source)
+            if handler:
+                self._add_file_type(worksheet, file_type, handler.group(2), int(handler.group(1)))
+
+
+    def _query_translations(self, page: str):
         """
         Go through one worksheet, check all existing translations and gather information into self._result
         @param: page: Name of the worksheet
         """
-        p = pywikibot.Page(self.site, page)
-        if not p.exists():
-            self.logger.warning(f'Warning: page {page} does not exist!')
-            return
-        # finding out the name of the English downloadable files (originals)
-        en_file_details: Dict[str, Dict[str, Any]] = {}
-        for file_type in self._file_types:
-            re_identifier: str = r"\d+"
-            re_name: str = r"[^<]+"
-            handler = re.search(r"\{\{" + file_type.capitalize() + r"Download\|<translate>*?<!--T:(" +
-                                re_identifier + r")-->\s*(" + re_name + ")</translate>", p.text)
-            # identifier of the translation section containing the name of that file
-            translation_section_identifier: int = 0
-            # name of the translation section containing the name of that file
-            translation_section_name: str = ""
-            if handler:
-                translation_section_identifier = handler.group(1)
-                translation_section_name = handler.group(2)
-            en_file_details[file_type] = {}
-            en_file_details[file_type]['number'] = translation_section_identifier
-            en_file_details[file_type]['name'] = translation_section_name
-        self.logger.info(f"Processing page {page}. PDF name: {en_file_details['pdf']['name']} "
-                         f"is in translation unit {str(en_file_details['pdf']['number'])}")
-
-        # Look up all existing translations of this worksheet
+        # This is querying more data than necessary when self._limit_to_lang is set. But to save time we'd need to find
+        # a different API call that is only requesting progress for one particular language... for now it's okay
         available_translations = fortraininglib.list_page_translations(page, include_unfinished=True)
-        self._translation_progress[page] = available_translations
+        english_title = fortraininglib.get_translated_title(page, "en")
+        if english_title is None:
+            self.logger.error(f"Couldn't get English title of {page}, skipping.")
+            return
+        english_page_info: WorksheetInfo = WorksheetInfo(page, "en", english_title, available_translations["en"])
+        self._add_english_file_infos(english_page_info)
+        self._result["en"].add_worksheet_info(page, english_page_info)
+        self._translation_progress[page] = available_translations   # TODO remove this
+
         finished_translations = []
         for language, progress in available_translations.items():
+            if (self._limit_to_lang is not None) and (self._limit_to_lang != language):
+                continue
+            if language == "en":    # We only want translations in finished_translations
+                continue
             if progress.is_unfinished():
                 self.logger.info(f"Ignoring translation {page}/{language} - ({progress} translation units translated)")
             else:
                 finished_translations.append(language)
                 if progress.is_incomplete():
                     self.logger.warning(f"Incomplete translation {page}/{language} - {progress}")
-
-        if self._limit_to_lang is not None:
-            # We could speed this up a bit by finding a different API call that isn't checking all translations
-            # but only looks at the translation progress for this language. For now it's okay
-            if self._limit_to_lang in finished_translations:
-                finished_translations = [self._limit_to_lang]
-            else:
-                finished_translations = []
-        if 'en' in finished_translations:
-            finished_translations.remove('en')
         self.logger.info(f"This worksheet is translated into: {str(finished_translations)}")
 
         # now let's retrieve the translated file names
@@ -212,38 +220,28 @@ class ResourcesBot:
                 self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
                 continue
             page_info: WorksheetInfo = WorksheetInfo(page, lang, translated_title, available_translations[lang])
-            for file_type in en_file_details:
-                if en_file_details[file_type]['number'] == 0:    # in English original this is not existing, skip it
-                    continue
-                translation = fortraininglib.get_translated_unit(page, lang, en_file_details[file_type]['number'])
-                self.logger.debug(f"{page}/{en_file_details[file_type]['number']}/{lang} is {translation}")
+            for file_type, file_info in english_page_info.get_file_infos().items():
+                assert file_info.translation_unit is not None   # TODO exception documentation
+                translation = fortraininglib.get_translated_unit(page, lang, file_info.translation_unit)
+#                self.logger.debug(f"{page}/{en_file_details[file_type]['number']}/{lang} is {translation}")
                 if translation is None:
-                    self.logger.warning(f"Warning: translation {page}/{en_file_details[file_type]['number']}/{lang} "
-                                f"(for file {file_type}) does not exist!")
+                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
+                                        f"(for file {file_type}) does not exist!")
                     # TODO fill it with "-"
                 elif (translation == '-') or (translation == '.'):
-                    self.logger.warning(f"Warning: translation {page}/{en_file_details[file_type]['number']}/{lang} "
+                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
                                 f"(for file {file_type}) is placeholder: {translation}")
                     # TODO fill it with "-"
-                elif translation == en_file_details[file_type]['name']:
-                    self.logger.warning(f"Warning: translation {page}/{en_file_details[file_type]['number']}/{lang} "
-                                f"(for file {file_type}) is identical with English original")
+                elif translation == file_info.get_file_name():
+                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
+                                        f"(for file {file_type}) is identical with English original")
                     # TODO fill it with "-"
                 else:
-                    # We have the name of the translated file, check if it actually exists
-                    try:
-                        file_page = pywikibot.FilePage(self.site, translation)
-                        if file_page.exists():
-                            page_info.add_file_info(file_type=file_type, from_pywikibot=file_page.latest_file_info)
-                        else:
-                            self.logger.info(f"Language {lang}, page {page}: File {translation} does not seem to exist")
-                    except pywikibot.exceptions.Error as err:
-                        self.logger.warning(f"Exception thrown for {file_type} file: {err}")
+                    self._add_file_type(page_info, file_type, translation)
 
             if lang not in self._result:
                 self._result[lang] = LanguageInfo(lang)
             self._result[lang].add_worksheet_info(page, page_info)
-
 
     def sync_and_compare(self, lang: str) -> ChangeLog:
         """

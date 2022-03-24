@@ -329,7 +329,11 @@ def list_page_translations(page: str, include_unfinished=False) -> Dict[str, Tra
     counter = 1
     while counter < 4:
         # Tricky: Often we need to run this query for a second time so that all data is gathered.
-        logger.info(f"Retrieving translation information of {page}, try #{counter}...")
+        if counter == 1:
+            logger.info(f"Retrieving translation information of {page}...")
+        else:
+            logger.info(f"Trying again to gather all data... (#{counter})")
+
         json = _get({
             'action': 'query',
             'meta': 'messagegroupstats',

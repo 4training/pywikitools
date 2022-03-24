@@ -37,6 +37,10 @@ class TestFileInfo(unittest.TestCase):
         file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME))
         self.assertEqual(str(file_info), f"pdf {TEST_URL} {TEST_TIME}")
 
+    def test_get_file_name(self):
+        file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME))
+        self.assertEqual(file_info.get_file_name(), "Gottes_Reden_wahrnehmen.pdf")
+
     def test_with_invalid_timestamp(self):
         with self.assertLogs('pywikitools.resourcesbot.fileinfo', level='ERROR'):
             file_info = FileInfo("odg", TEST_URL, "2018-12-20-12-58-57")
@@ -50,6 +54,14 @@ class TestFileInfo(unittest.TestCase):
         decoded_file_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_file_info, FileInfo)
         self.assertEqual(str(decoded_file_info), str(file_info))
+        self.assertEqual(DataStructureEncoder().encode(decoded_file_info), json_text)
+
+        # encode a FileInfo object with translation_unit information
+        file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME), 5)
+        json_text = DataStructureEncoder().encode(file_info)
+        decoded_file_info = json.loads(json_text, object_hook=json_decode)
+        self.assertIsInstance(decoded_file_info, FileInfo)
+        self.assertEqual(decoded_file_info.translation_unit, 5)
         self.assertEqual(DataStructureEncoder().encode(decoded_file_info), json_text)
 
 
@@ -131,6 +143,11 @@ class TestWorksheetInfo(unittest.TestCase):
         self.assertEqual(len(decoded_worksheet_info.get_file_infos()), 2)
         self.assertEqual(DataStructureEncoder().encode(decoded_worksheet_info), json_text)
 
+    def test_to_str(self):
+        self.test_add_file_info()
+        for file_type, file_info in self.worksheet_info.get_file_infos().items():
+            self.assertIn(f"{file_type} {file_info.url}", str(self.worksheet_info))
+        self.assertIn(self.worksheet_info.title, str(self.worksheet_info))
 
 class TestLanguageInfo(unittest.TestCase):
     def setUp(self):

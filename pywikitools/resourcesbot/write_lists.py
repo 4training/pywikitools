@@ -16,11 +16,10 @@ class WriteList(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
-    __slots__ = ['_site', '_force_rewrite', 'logger']
-
     def __init__(self, site: pywikibot.site.APISite, user_name: str, password: str, force_rewrite: bool=False):
         """
         @param user_name and password necessary to mark page for translation in case of changes
+               In case they're empty we won't try to mark pages for translation
         @param force_rewrite rewrite even if there were no (relevant) changes
         """
         self._site = site
@@ -32,9 +31,10 @@ class WriteList(LanguagePostProcessor):
     def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
         """Determine whether the list of available training resources needs to be rewritten."""
         lang = language_info.language_code
-        needs_rewrite = False
+        needs_rewrite = self._force_rewrite
         for change_item in change_log.get_all_changes():
-            if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF]:
+            if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF,
+                                           ChangeType.NEW_WORKSHEET, ChangeType.DELETED_WORKSHEET]:
                 needs_rewrite = True
             if (change_item.change_type in [ChangeType.NEW_ODT, ChangeType.DELETED_ODT]) \
                 and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
