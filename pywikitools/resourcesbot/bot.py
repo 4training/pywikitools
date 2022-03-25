@@ -4,7 +4,7 @@ import sys
 import logging
 import json
 from configparser import ConfigParser
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 import pywikibot
 
 from pywikitools import fortraininglib
@@ -47,7 +47,7 @@ class ResourcesBot:
         # TODO get rid of this - it's already stored in class WorksheetInfo
         self._translation_progress: Dict[str, Dict[str, TranslationProgress]] = {}
 
-        # Stores details on all other languages in a dictionary language code -> information about all worksheets in that language
+        # Stores details on all languages: language code -> information about all worksheets in that language
         self._result: Dict[str, LanguageInfo] = {}
 
         # Changes since the last run (will be filled after gathering of all information is done)
@@ -81,7 +81,7 @@ class ResourcesBot:
             self.logger.warning("We're not logged in. Trying to log in...")
             self.site.login()
             if not self.site.logged_in():
-                self.logger.error("We're not logged in! Won't be able to write updated language information pages. Exiting now.")
+                self.logger.error("Login with pywikibot failed! Exiting now.")
                 self.site.getuserinfo()
                 self.logger.warning(f"userinfo: {self.site.userinfo}")
                 sys.exit(2)
@@ -103,6 +103,17 @@ class ResourcesBot:
         else:
             self.total_summary()
 
+    def get_english_version(self, page_source: str) -> Tuple[str, int]:
+        """
+        Extract version of an English worksheet
+        @return Tuple of version string and the number of the translation unit where it is stored
+        """
+        handler = re.search(r"\{\{Version\|<translate>*?<!--T:(\d+)-->\s*([^<]+)</translate>", page_source)
+        if handler:
+            return (handler.group(2), int(handler.group(1)))
+        self.logger.warning("Couldn't retrieve version from English worksheet!")
+        return ("", 0)
+
     def _add_file_type(self, worksheet: WorksheetInfo, file_type: str, file_name: str, unit: Optional[int] = None):
         try:
             file_page = pywikibot.FilePage(self.site, file_name)
@@ -114,15 +125,11 @@ class ResourcesBot:
         except pywikibot.exceptions.Error as err:
             self.logger.warning(f"Exception thrown for {file_type} file: {err}")
 
-    def _add_english_file_infos(self, worksheet: WorksheetInfo):
+    def _add_english_file_infos(self, page_source: str, worksheet: WorksheetInfo):
         """
         Finds out the names of the English downloadable files (originals)
         and adds them to worksheet
         """
-        page_source = fortraininglib.get_page_source(worksheet.page)
-        if page_source is None:
-            self.logger.warning(f"Couldn't find page {worksheet.page}!")
-            return
         for file_type in self._file_types:
             handler = re.search(r"\{\{" + file_type.capitalize() +
                                 r"Download\|<translate>*?<!--T:(\d+)-->\s*([^<]+)</translate>", page_source)
@@ -139,11 +146,14 @@ class ResourcesBot:
         # a different API call that is only requesting progress for one particular language... for now it's okay
         available_translations = fortraininglib.list_page_translations(page, include_unfinished=True)
         english_title = fortraininglib.get_translated_title(page, "en")
-        if english_title is None:
-            self.logger.error(f"Couldn't get English title of {page}, skipping.")
+        page_source = fortraininglib.get_page_source(page)
+        if english_title is None or page_source is None:
+            self.logger.error(f"Couldn't get English page {page}, skipping.")
             return
-        english_page_info: WorksheetInfo = WorksheetInfo(page, "en", english_title, available_translations["en"])
-        self._add_english_file_infos(english_page_info)
+        version, version_unit = self.get_english_version(page_source)
+        english_page_info: WorksheetInfo = WorksheetInfo(page, "en", english_title, available_translations["en"],
+                                                         version, version_unit)
+        self._add_english_file_infos(page_source, english_page_info)
         self._result["en"].add_worksheet_info(page, english_page_info)
         self._translation_progress[page] = available_translations   # TODO remove this
 
@@ -167,7 +177,15 @@ class ResourcesBot:
             if translated_title is None:  # apparently this translation doesn't exist
                 self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
                 continue
-            page_info: WorksheetInfo = WorksheetInfo(page, lang, translated_title, available_translations[lang])
+            translated_version = fortraininglib.get_translated_unit(page, lang, version_unit)
+            if translated_version is None:
+                self.logger.warning(f"Language {lang}: Version of {page} not translated, skipping.")
+                translated_version = ""
+            elif translated_version != version:
+                self.logger.warning(f"Language {lang}: {translated_title} has version {translated_version}"
+                                    f" - {english_title} has version {version}")
+
+            page_info = WorksheetInfo(page, lang, translated_title, available_translations[lang], translated_version)
             for file_type, file_info in english_page_info.get_file_infos().items():
                 assert file_info.translation_unit is not None   # TODO exception documentation
                 translation = fortraininglib.get_translated_unit(page, lang, file_info.translation_unit)
@@ -382,4 +400,3 @@ class ResourcesBot:
     - Unfinished translations (ignored): {incomplete_translation_counter}"""
 
         self.log_languagereport("summary.txt", report)
-

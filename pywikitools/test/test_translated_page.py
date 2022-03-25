@@ -163,7 +163,7 @@ class TestTranslationUnit(unittest.TestCase):
         link_unit.remove_links()
         self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
         self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
-        (definition, translation) = next(snippet for snippet in link_unit)
+        (definition, translation) = next(iter(link_unit))
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 
@@ -172,7 +172,7 @@ class TestTranslationUnit(unittest.TestCase):
             link_unit.remove_links()
         self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
         self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
-        (definition, translation) = next(snippet for snippet in link_unit)
+        (definition, translation) = next(iter(link_unit))
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 
@@ -182,7 +182,7 @@ class TestTranslationUnit(unittest.TestCase):
             link_unit.remove_links()
         self.assertEqual(link_unit.get_definition(), DEFINITION_WITHOUT_LINK)
         self.assertEqual(link_unit.get_translation(), TRANSLATION_WITHOUT_LINK)
-        (definition, translation) = next(snippet for snippet in link_unit)
+        (definition, translation) = next(iter(link_unit))
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 

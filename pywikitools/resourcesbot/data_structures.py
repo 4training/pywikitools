@@ -32,11 +32,18 @@ class FileInfo:
         self.file_type: Final[str] = file_type
         self.url: Final[str] = url
         self.translation_unit: Final[Optional[int]] = translation_unit
-        if isinstance(timestamp, datetime):
+        if isinstance(timestamp, pywikibot.Timestamp):
+            # This is tricky: pywikibot.Timestamp derives from datetime
+            # but its isoformat() method formats the output with "Z" instead of "+00:00"
+            # That can lead to unexpected behavior during JSON export (sometimes using this style, sometimes the other)
+            # To avoid confusion we want to make sure that self.timestamp always holds a "normal" datetime object
+            # (never a pywikibot.Timestamp) - we'll always export the +00:00 format.
+            timestamp = timestamp.isoformat()
+        elif isinstance(timestamp, datetime):
             self.timestamp: datetime = timestamp
         else:
             try:
-                timestamp = timestamp.replace('Z', '+00:00')    # we want to support this format as well
+                timestamp = timestamp.replace('Z', '+00:00')    # we want to be able to read this format as well
                 self.timestamp = datetime.fromisoformat(timestamp)
             except (ValueError, TypeError):
                 logger = logging.getLogger('pywikitools.resourcesbot.fileinfo')
@@ -54,21 +61,28 @@ class FileInfo:
     def __str__(self):
         return f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
 
+
 class WorksheetInfo:
     """Holds information on one worksheet in one specific language
     Only for worksheets that are at least partially translated
     """
-    __slots__ = ['page', 'language_code', 'title', 'progress', '_files']
+    __slots__ = ['page', 'language_code', 'title', 'progress', 'version', 'version_unit', '_files']
 
-    def __init__(self, page: str, language_code: str, title: str, progress: TranslationProgress):
+    def __init__(self, page: str, language_code: str, title: str, progress: TranslationProgress,
+                 version: str, version_unit: Optional[int] = None):
         """
         @param page: English name of the worksheet
         @param title: translated worksheet title
+        @param version: Version number of the worksheet
+        @param version_unit: Number of the translation unit where version is to be found
+                             We only store this for English worksheets
         @param progress: how much is already translated"""
         self.page: Final[str] = page
         self.language_code: Final[str] = language_code
         self.title: Final[str] = title
         self.progress: Final[TranslationProgress] = progress
+        self.version: Final[str] = version
+        self.version_unit: Final[Optional[int]] = version_unit
         self._files: Dict[str, FileInfo] = {}
 
     def add_file_info(self, file_info: Optional[FileInfo] = None,
@@ -107,8 +121,10 @@ class WorksheetInfo:
 
     def __str__(self) -> str:
         """For debugging purposes: Format all data as a human-readable string"""
-        content: str = f"{self.page}/{self.language_code}: '{self.title}' with progress {self.progress}"
-        content += f" and {len(self._files)} files"
+        content: str = f"{self.page}/{self.language_code}: '{self.title}' with version {self.version}"
+        if self.version_unit is not None:
+            content += f" (in translation unit {self.version_unit})"
+        content += f" and progress {self.progress} and {len(self._files)} files"
         if len(self._files) > 0:
             content += ":\n"
         for file_info in self._files.values():
@@ -197,24 +213,30 @@ class LanguageInfo:
 
 def json_decode(data: Dict[str, Any]):
     """
-    Deserializes a JSON-formatted string back into FileInfo / WorksheetInfo / LanguageInfo objects.
+    Deserializes a JSON-formatted string back into
+    TranslationProgress / FileInfo / WorksheetInfo / LanguageInfo objects.
     @raises AssertionError if data is malformatted
     """
     if "file_type" in data:
         assert "url" in data and "timestamp" in data
         translation_unit: Optional[int] = int(data["translation_unit"]) if "translation_unit" in data else None
         return FileInfo(data["file_type"], data["url"], data["timestamp"], translation_unit)
+
     if "translated" in data:
         return fortraininglib.TranslationProgress(**data)
+
     if "page" in data:
-        assert "language_code" in data and "title" in data and "progress" in data
+        assert "language_code" in data and "title" in data and "version" in data and "progress" in data
         assert isinstance(data["progress"], TranslationProgress)
-        worksheet_info = WorksheetInfo(data["page"], data["language_code"], data["title"], data["progress"])
+        version_unit: Optional[int] = int(data["version_unit"]) if "version_unit" in data else None
+        worksheet_info = WorksheetInfo(data["page"], data["language_code"], data["title"], data["progress"],
+                                       data["version"], version_unit)
         if "files" in data:
             for file_info in data["files"]:
                 assert isinstance(file_info, FileInfo)
                 worksheet_info.add_file_info(file_info=file_info)
         return worksheet_info
+
     if "worksheets" in data:
         assert "language_code" in data
         language_info = LanguageInfo(data["language_code"])
@@ -222,6 +244,7 @@ def json_decode(data: Dict[str, Any]):
             assert isinstance(worksheet, WorksheetInfo)
             language_info.add_worksheet_info(worksheet.page, worksheet)
         return language_info
+
     return data
 
 
@@ -235,8 +258,11 @@ class DataStructureEncoder(json.JSONEncoder):
                 "page": obj.page,
                 "language_code": obj.language_code,
                 "title": obj.title,
+                "version": obj.version,
                 "progress": obj.progress
             }
+            if obj.version_unit is not None:
+                worksheet_json["version_unit"] = obj.version_unit
             file_infos: Dict[str, FileInfo] = obj.get_file_infos()
             if file_infos:
                 worksheet_json["files"] = list(file_infos.values())

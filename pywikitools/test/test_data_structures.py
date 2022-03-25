@@ -28,9 +28,10 @@ TEST_URL2: str = "https://www.4training.net/mediawiki/images/1/15/Gottes_Reden_w
 # An example translation progress (in the dict form returned by the mediawiki API)
 TEST_PROGRESS: dict = {"total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de"}
 
-TEST_EN_NAME: str = "Hearing from God"
+TEST_EN_NAME: str = "Hearing_from_God"
 TEST_LANG: str = "de"
 TEST_TITLE: str = "Gottes Reden wahrnehmen"
+TEST_VERSION: str = "1.2"
 
 class TestFileInfo(unittest.TestCase):
     def test_basic(self):
@@ -68,7 +69,7 @@ class TestFileInfo(unittest.TestCase):
 class TestWorksheetInfo(unittest.TestCase):
     def setUp(self):
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
-        self.worksheet_info = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress)
+        self.worksheet_info = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress, TEST_VERSION)
 
     def test_add_file_info(self):
         self.worksheet_info.add_file_info(FileInfo("pdf", TEST_URL, TEST_TIME))
@@ -115,20 +116,20 @@ class TestWorksheetInfo(unittest.TestCase):
         incomplete_raw_dict: dict = \
             {"total": 44, "translated": 40, "fuzzy": 2, "proofread": 0, "code": "ro", "language": "ro"}
         incomplete_progress = fortraininglib.TranslationProgress(**incomplete_raw_dict)
-        incomplete_worksheet = WorksheetInfo(TEST_EN_NAME, "ro", "random", incomplete_progress)
+        incomplete_worksheet = WorksheetInfo(TEST_EN_NAME, "ro", "random", incomplete_progress, TEST_VERSION)
         self.assertTrue(incomplete_worksheet.is_incomplete())
 
         # An unfinished translation: does not even count as incomplete and will be ignored by resourcesbot
         unfinished_raw_dict: dict = \
             {"total": 44, "translated": 20, "fuzzy": 2, "proofread": 0, "code": "ru", "language": "ru"}
         unfinished_progress = fortraininglib.TranslationProgress(**unfinished_raw_dict)
-        unfinished_worksheet = WorksheetInfo(TEST_EN_NAME, "ru", "random", unfinished_progress)
+        unfinished_worksheet = WorksheetInfo(TEST_EN_NAME, "ru", "random", unfinished_progress, TEST_VERSION)
         self.assertFalse(unfinished_worksheet.is_incomplete())
 
     def test_serialization(self):
         # encode a WorksheetInfo object to JSON and decode it again: Make sure the result is the same
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
-        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
+        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress, "TEST_VERSION")
         json_text = DataStructureEncoder().encode(worksheet_info)
         decoded_worksheet_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_worksheet_info, WorksheetInfo)
@@ -148,6 +149,11 @@ class TestWorksheetInfo(unittest.TestCase):
         for file_type, file_info in self.worksheet_info.get_file_infos().items():
             self.assertIn(f"{file_type} {file_info.url}", str(self.worksheet_info))
         self.assertIn(self.worksheet_info.title, str(self.worksheet_info))
+        self.assertNotIn("translation unit", str(self.worksheet_info))
+        progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
+        with_unit = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress, TEST_VERSION, "2")
+        self.assertIn("translation unit", str(with_unit))
+
 
 class TestLanguageInfo(unittest.TestCase):
     def setUp(self):
@@ -155,7 +161,7 @@ class TestLanguageInfo(unittest.TestCase):
 
     def test_basic_functionality(self):
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
-        worksheet_info = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress)
+        worksheet_info = WorksheetInfo(TEST_EN_NAME, TEST_LANG, TEST_TITLE, progress, TEST_VERSION)
         self.assertEqual(self.language_info.language_code, TEST_LANG)
         self.language_info.add_worksheet_info(TEST_EN_NAME, worksheet_info)
         self.assertTrue(self.language_info.has_worksheet(TEST_EN_NAME))
@@ -176,7 +182,7 @@ class TestLanguageInfo(unittest.TestCase):
         self.language_info.get_worksheet(TEST_EN_NAME).add_file_info(FileInfo("pdf", TEST_URL, TEST_TIME))
         self.language_info.get_worksheet(TEST_EN_NAME).add_file_info(FileInfo("odt", TEST_URL2, TEST_TIME))
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
-        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
+        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress, TEST_VERSION)
         self.language_info.add_worksheet_info("Prayer", worksheet_info)
         json_text = DataStructureEncoder().encode(self.language_info)
 
@@ -188,8 +194,7 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertTrue(decoded_language_info.has_worksheet(TEST_EN_NAME))
         self.assertTrue(decoded_language_info.worksheet_has_type(TEST_EN_NAME, "odt"))
 
-    def test_compare(self):
-        # TODO: Have 2-3 real (more complex) examples that should cover all cases and test with them
+    def test_basic_comparison(self):
         self.test_basic_functionality()
         basic_json = DataStructureEncoder().encode(self.language_info)
         self.assertTrue(self.language_info.compare(self.language_info).is_empty())
@@ -200,27 +205,27 @@ class TestLanguageInfo(unittest.TestCase):
         self.language_info.worksheets[TEST_EN_NAME].add_file_info(FileInfo('odt', TEST_URL2, TEST_TIME))
         comparison = self.language_info.compare(old_language_info)
         self.assertFalse(comparison.is_empty())
-        self.assertEqual(len(comparison.get_all_changes()), 1)
-        self.assertEqual(comparison.get_all_changes().pop().change_type, ChangeType.NEW_ODT)
+        self.assertEqual(comparison.count_changes(), 1)
+        self.assertEqual(next(iter(comparison)).change_type, ChangeType.NEW_ODT)
 
         # Add a worksheet
         self.language_info = json.loads(basic_json, object_hook=json_decode)
         progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
-        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress)
+        worksheet_info = WorksheetInfo("Prayer", TEST_LANG, "Gebet", progress, TEST_VERSION)
         self.language_info.add_worksheet_info("Prayer", worksheet_info)
         comparison = self.language_info.compare(old_language_info)
-        self.assertEqual(len(comparison.get_all_changes()), 1)
-        self.assertEqual(comparison.get_all_changes().pop().change_type, ChangeType.NEW_WORKSHEET)
+        self.assertEqual(comparison.count_changes(), 1)
+        self.assertEqual(next(iter(comparison)).change_type, ChangeType.NEW_WORKSHEET)
+
+    def test_compare(self):
+        pass
+        # TODO: Have 2-3 real (more complex) examples that should cover all cases and test with them
+
 
     # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
     # and count_finished_translations()
     # For meaningful tests we would need more complex examples as well (see compare())
     # TODO: add several json files with complex examples to repo and decode them here to run tests
-
-class TestResourcesBot(unittest.TestCase):
-    # use this to see logging messages (can be increased to logging.DEBUG)
-    def setUp(self):
-        logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
     unittest.main()
