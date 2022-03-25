@@ -11,6 +11,7 @@ from pywikitools import fortraininglib
 from pywikitools.fortraininglib import TranslationProgress
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
+from pywikitools.resourcesbot.export_html import ExportHTML
 from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
 
@@ -90,10 +91,11 @@ class ResourcesBot:
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
             self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         consistency_check = ConsistencyCheck()
-#        export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""))
+        export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""), self._rewrite_all)
         for lang in self._result:
             consistency_check.run(self._result[lang], ChangeLog())
             self._changelog[lang] = self.sync_and_compare(lang)
+            export_html.run(self._result[lang], ChangeLog())
             write_list.run(self._result[lang], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
