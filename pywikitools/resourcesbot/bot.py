@@ -4,7 +4,7 @@ import sys
 import logging
 import json
 from configparser import ConfigParser
-from typing import Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple
 import pywikibot
 
 from pywikitools import fortraininglib
@@ -56,19 +56,28 @@ class ResourcesBot:
 
     def run(self):
         if self._read_from_cache:
-            if self._limit_to_lang is not None:
-                page = pywikibot.Page(self.site, f"4training:{self._limit_to_lang}.json")
-                if not page.exists():
-                    raise RuntimeError(f"Couldn't load from cache for language {self._limit_to_lang}")
-                try:
+            try:
+                language_list: List[str] = []   # List of languages to be read from cache
+                if self._limit_to_lang is None:
+                    page = pywikibot.Page(self.site, "4training:languages.json")
+                    if not page.exists():
+                        raise RuntimeError(f"Couldn't load list of languages from 4training:languages.json")
+                    language_list = json.loads(page.text)
+                    assert isinstance(language_list, list)
+                else:
+                    language_list.append(self._limit_to_lang)
+
+                for lang in language_list:      # Now we read the details for each language
+                    self.logger.info(f"Reading details for language {lang} from cache...")
+                    page = pywikibot.Page(self.site, f"4training:{lang}.json")
+                    if not page.exists():
+                        raise RuntimeError(f"Couldn't load from cache for language {lang}")
                     language_info = json.loads(page.text, object_hook=json_decode)
                     assert isinstance(language_info, LanguageInfo)
-                    assert self._limit_to_lang == language_info.language_code
-                    self._result[self._limit_to_lang] = language_info
-                except AssertionError:
-                    raise RuntimeError(f"Unexpected error while parsing JSON data from cache.")
-            else:
-                raise NotImplementedError("Please run the script with --limit-to-lang [lang]")
+                    assert language_info.language_code == lang
+                    self._result[lang] = language_info
+            except AssertionError:
+                raise RuntimeError(f"Unexpected error while parsing JSON data from cache.")
 
         else:
             self._result["en"] = LanguageInfo("en")
@@ -87,16 +96,23 @@ class ResourcesBot:
                 self.logger.warning(f"userinfo: {self.site.userinfo}")
                 sys.exit(2)
 
-        # Find out what has been changed since our last run and run all LanguagePostProcessors
+        if not self._read_from_cache:   # Find out what has been changed since our last run
+            for lang, language_info in self._result.items():
+                self._changelog[lang] = self._sync_and_compare(language_info)
+            if self._limit_to_lang is None:
+                self._save_languages_list()
+                self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
+
+        # Run all LanguagePostProcessors
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
             self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         consistency_check = ConsistencyCheck()
         export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""), self._rewrite_all)
         for lang in self._result:
+            change_log = self._changelog[lang] if not self._read_from_cache else ChangeLog()
             consistency_check.run(self._result[lang], ChangeLog())
-            self._changelog[lang] = self.sync_and_compare(lang)
-            export_html.run(self._result[lang], ChangeLog())
-            write_list.run(self._result[lang], self._changelog[lang])
+            export_html.run(self._result[lang], change_log)
+            write_list.run(self._result[lang], change_log)
 
         # Now run all GlobalPostProcessors
         # TODO move the following into a GlobalPostProcessor
@@ -211,7 +227,7 @@ class ResourcesBot:
                 self._result[lang] = LanguageInfo(lang)
             self._result[lang].add_worksheet_info(page, page_info)
 
-    def sync_and_compare(self, lang: str) -> ChangeLog:
+    def _sync_and_compare(self, language_info: LanguageInfo) -> ChangeLog:
         """
         Synchronize our generated data on this language with our "database" and return the changes.
 
@@ -220,12 +236,9 @@ class ResourcesBot:
         @param lang language code
         @return comparison to what was previously stored in our database
         """
-        if lang not in self._result:
-            self.logger.warning(f"Internal error: {lang} not in _result. Not doing anything for this language.")
-            return ChangeLog()
-
-        encoded_json = DataStructureEncoder().encode(self._result[lang])
-        language_info: LanguageInfo = LanguageInfo(lang)
+        lang = language_info.language_code
+        encoded_json = DataStructureEncoder().encode(language_info)
+        old_language_info: LanguageInfo = LanguageInfo(lang)
         rewrite_json: bool = self._rewrite_all
 
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
@@ -239,18 +252,17 @@ class ResourcesBot:
         else:
             # Load "old" data structure of this language (from previous resourcesbot run)
             try:
-                language_info = json.loads(page.text, object_hook=json_decode)
-                assert isinstance(language_info, LanguageInfo)
-                assert language_info.language_code == lang
+                old_language_info = json.loads(page.text, object_hook=json_decode)
+                assert isinstance(old_language_info, LanguageInfo)
+                assert old_language_info.language_code == lang
             except AssertionError:
                 self.logger.warning(f"Error while trying to load {lang}.json")
-                language_info = LanguageInfo(lang)
 
             if encoded_json != page.text:
                 rewrite_json = True
 
         # compare and find out if new worksheets have been added
-        changes: ChangeLog = self._result[lang].compare(language_info)
+        changes: ChangeLog = language_info.compare(old_language_info)
         if changes.is_empty():
             self.logger.info(f"No changes in language {lang} since last run.")
         else:
@@ -263,6 +275,62 @@ class ResourcesBot:
             self.logger.info(f"Updated 4training:{lang}.json")
 
         return changes
+
+    def _save_languages_list(self):
+        """
+        Save a list of language codes of all our languages to the mediawiki server
+        We want this list so that the bot can be run with --read-from-cache for all languages
+
+        The list is stored to https://www.4training.net/4training:languages.json in alphabetical order
+        """
+        language_list = list(self._result)
+        language_list.sort()
+        encoded_json: str = json.dumps(language_list)
+        previous_json: str = ""
+
+        page = pywikibot.Page(self.site, f"4training:languages.json")
+        if not page.exists():
+            self.logger.warning("languages.json doesn't seem to exist yet. Creating...")
+        else:
+            previous_json = page.text
+
+        # TODO compare language_list and json.loads(previous_json) to find out if a new language was added
+        if previous_json != encoded_json:
+            page.text = encoded_json
+            page.save("Updated list of languages")
+            self.logger.info(f"Updated 4training:languages.json")
+
+    def _save_number_of_languages(self):
+        """
+        Count number of languages we have and save them to https://www.4training.net/MediaWiki:Numberoflanguages
+        Language variants (any language code containing a "-") are not counted extra.
+        TODO: Discuss how we want to count in some edge cases, e.g. count pt-br always extra as we have a
+        separate page for Brazilian Portuguese?
+        @param language_list: List of language codes
+        """
+        language_list: List[str] = list(self._result)
+        number_of_languages = 0
+        for lang in language_list:
+            if "-" not in lang:
+                number_of_languages += 1
+            else:
+                self.logger.debug(f"Not counting {lang} into the number of languages we have")
+        self.logger.info(f"Number of languages: {number_of_languages}")
+
+        previous_number_of_languages: int = 0
+        page = pywikibot.Page(self.site, f"MediaWiki:Numberoflanguages")
+        if page.exists():
+            previous_number_of_languages = int(page.text)
+        else:
+            self.logger.warning("MediaWiki:Numberoflanguages doesn't seem to exist yet. Creating...")
+
+        if previous_number_of_languages != number_of_languages:
+            try:
+                page.text = number_of_languages
+                page.save("Updated number of languages")
+                self.logger.info(f"Updated MediaWiki:Numberoflanguages to {number_of_languages}")
+            except pywikibot.exceptions.PageSaveRelatedError as err:
+                self.logger.warning(f"Error while trying to update MediaWiki:Numberoflanguages: {err}")
 
     def set_loglevel(self, loglevel=None):
         """
