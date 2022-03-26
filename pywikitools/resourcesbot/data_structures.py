@@ -39,12 +39,13 @@ class FileInfo:
             # To avoid confusion we want to make sure that self.timestamp always holds a "normal" datetime object
             # (never a pywikibot.Timestamp) - we'll always export the +00:00 format.
             timestamp = timestamp.isoformat()
-        elif isinstance(timestamp, datetime):
+
+        if isinstance(timestamp, datetime):
             self.timestamp: datetime = timestamp
-        else:
+        else:   # timestamp is str
             try:
-                timestamp = timestamp.replace('Z', '+00:00')    # we want to be able to read this format as well
-                self.timestamp = datetime.fromisoformat(timestamp)
+                timestamp = timestamp.replace('Z', '+00:00')        # fromisoformat() wouldn't understand the Z format
+                self.timestamp = datetime.fromisoformat(timestamp)  # But we want to be able to read that format also
             except (ValueError, TypeError):
                 logger = logging.getLogger('pywikitools.resourcesbot.fileinfo')
                 logger.error("Invalid timestamp {timestamp}. {file_type}: {url}.")
