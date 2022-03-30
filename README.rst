@@ -41,21 +41,21 @@ Setup:
    	    * To activate the virtual environment: ``source new_venv_name/bin/activate``
    	    * Change into pywikitools base path and run ``pip install -r requirements.txt``.
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
-   (same directory where the python scripts you want to run are located). Alternatively you can generate it yourself:
-   * You need a "full" pywikibot installation:
-	* Step 2a: Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
-	* Step 2b: If you are using Python 3, download current Pywikibot stable branch: ``https://pywikibot.toolforge.org/core_stable.tar.gz``
-		   If you are using Python 2, you can use this link to download pywikibot: ``https://pywikibot.toolforge.org/core_python2.tar.gz``
-	* Step 2c: Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (for example: core_stable for Python3 users).
-	* Step 2d: Copy the file `4training_family.py` from `~/pywikitools/pywikibot/families` into `~/pywikitools/pywikibot/core_stable/pywikibot/families`.
-	* Step 2e: Change into the `~/pywikitools/pywikibot/core_stable` directory, where you can also find the file `pwb.py`.
-   * Run this command from the terminal: ``python3 pwb.py generate_user_files``
+   (same directory where the python scripts you want to run are located).
+
+#. Alternatively you can generate it yourself by using a "full" pywikibot installation:
+	* Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
+	* If you are using Python 3, download current Pywikibot stable branch: ``https://pywikibot.toolforge.org/core_stable.tar.gz``. If you are using Python 2, you can use this link to download pywikibot: ``https://pywikibot.toolforge.org/core_python2.tar.gz``
+	* Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (for example: core_stable for Python3 users).
+	* Copy the file `4training_family.py` from `~/pywikitools/pywikibot/families` into `~/pywikitools/pywikibot/core_stable/pywikibot/families`.
+	* Change into the `~/pywikitools/pywikibot/core_stable` directory, where you can also find the file `pwb.py`.
+    * Run this command from the terminal: ``python3 pwb.py generate_user_files``
    	* select 1: 4training family
    	* enter the bot user name (Request the username from Samuel)
    	* don't enter a new password here
-#. Set up configuration in ``config.ini``:
-   * ``cp config.example.ini config.ini``
-   * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
+    * Set up configuration in ``config.ini``:
+    * ``cp config.example.ini config.ini``
+    * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
 #. Make sure the pywikitools package is found by python. Options:
    * Create a new PTH file in the site-packages directory:
    	* If you do not use a virtual environment: ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it
