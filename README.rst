@@ -48,18 +48,19 @@ Setup:
 
 #. Alternatively you can generate it yourself by using a "full" pywikibot installation:
 
-    * Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
-    * If you are using Python 3, download current Pywikibot stable branch: ``https://pywikibot.toolforge.org/core_stable.tar.gz``. If you are using Python 2, you can use this link to download pywikibot: ``https://pywikibot.toolforge.org/core_python2.tar.gz``
-    * Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (for example: core_stable for Python3 users).
-    * Copy the file `4training_family.py` from `~/pywikitools/pywikibot/families` into `~/pywikitools/pywikibot/core_stable/pywikibot/families`.
-    * Change into the `~/pywikitools/pywikibot/core_stable` directory, where you can also find the file `pwb.py`.
+    * Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation and either download tar.gz / zip file or clone the git repository.
+    * Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (``core_stable``).
+    * Copy the file ``4training_family.py`` from ``~/pywikitools/pywikibot/families`` into ``~/pywikitools/pywikibot/core_stable/pywikibot/families``.
+    * Change into the ``~/pywikitools/pywikibot/core_stable`` directory, where you can also find the file ``pwb.py``.
     * Run this command from the terminal: ``python3 pwb.py generate_user_files``
-    * select 1: 4training family
-    * enter the bot user name (Request the username from Samuel)
-    * don't enter a new password here
+    
+        * select 1: 4training family
+        * enter the bot user name (Request the username from Samuel)
+        * don't enter a new password here
     * Set up configuration in ``config.ini``:
-    * ``cp config.example.ini config.ini``
-    * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
+    
+        * ``cp config.example.ini config.ini``
+        * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
 
 #. Make sure the pywikitools package is found by python. Options:
 
@@ -68,7 +69,8 @@ Setup:
         * If you do not use a virtual environment: ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it
         * If you use a virtual environment: ``~/your_env_name/lib/python3.8/site-packages``
         * Create a new PTH file ``pywikitools.pth`` and copy the base path into the new file: ``/YOUR_HOME_PATH/pywikitools/``.
-        * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
+    * Appending it to PYTHONPATH
+    * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
 
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
