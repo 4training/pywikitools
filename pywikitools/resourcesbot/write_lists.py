@@ -31,7 +31,7 @@ class WriteList(LanguagePostProcessor):
         if user_name == "" or password == "":
             self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
-    def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog) -> bool:
         """Determine whether the list of available training resources needs to be rewritten."""
         lang = language_info.language_code
         needs_rewrite = self._force_rewrite
@@ -67,7 +67,7 @@ class WriteList(LanguagePostProcessor):
             self.logger.warning(f"Couldn't find / in {file_name}")
         return f" [[File:{file_info.file_type}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
 
-    def create_mediawiki(self, language_info: LanguageInfo):
+    def create_mediawiki(self, language_info: LanguageInfo) -> str:
         """
         Create the mediawiki string for the list of available training resources
 
@@ -76,7 +76,7 @@ class WriteList(LanguagePostProcessor):
           [[File:pdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] \
           [[File:odticon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).odt}}]]
         """
-        content = ''
+        content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
             if not worksheet_info.has_file_type('pdf'):
                 # Only show worksheets where we have a PDF file in the list
@@ -93,7 +93,7 @@ class WriteList(LanguagePostProcessor):
         self.logger.debug(content)
         return content
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, change_log: ChangeLog) -> None:
         if not self.needs_rewrite(language_info, change_log):
             return
 
