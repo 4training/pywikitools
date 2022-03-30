@@ -64,21 +64,34 @@ class ExportHTML(LanguagePostProcessor):
         filename += ".html"
         return filename
 
-    def download_file(self, files_folder: str, filename: str):
-        """Download a file from the mediawiki server"""
+    def download_file(self, files_folder: str, filename: str) -> bool:
+        """Download a file from the mediawiki server
+
+        If a file already exists locally, we don't download it again because usually those
+        files (graphics) don't change.
+        TODO: Implement a way to force re-downloading of files (in case a file was updated in the mediawiki system).
+        Two possible ways:
+        - an extra flag (e.g. --force-rewrite-files)
+        - by getting the time stamp of the file in the mediawiki system, comparing it with the last
+        modified timestamp of the local file and download again if the first is newer
+        (would require adjustments of get_file_url() to also request timestamp)
+
+        @return True if we actually downloaded the file, False if not
+        """
         file_path = os.path.join(files_folder, filename)
         if os.path.isfile(file_path):
-            self.logger.warning(f"File {file_path} already exists locally, not downloading.")
+            self.logger.info(f"File {file_path} already exists locally, not downloading.")
         else:
             url = fortraininglib.get_file_url(filename)
             if url is None:
                 self.logger.error(f"Could not get URL of file {filename}, skipping.")
-                return
+                return False
 
             response = requests.get(url, allow_redirects=True)
             with open(file_path, 'wb') as fh:
                 fh.write(response.content)
             self.logger.info(f"Successfully downloaded and saved {file_path}")
+            return True
 
     def run(self, language_info: LanguageInfo, change_log: ChangeLog):
         if self._base_folder == "":
@@ -98,11 +111,14 @@ class ExportHTML(LanguagePostProcessor):
                                 f"Won't export HTML files for language {language_info.language_code}.")
             return
 
-        change_hrefs: Dict[str, str] = {}
+        change_hrefs: Dict[str, str] = {}   # Dictionary to set correct targets for links in the HTML files
         for worksheet, info in language_info.worksheets.items():
             change_hrefs[f"/{worksheet}/{language_info.language_code}"] = self.make_html_name(info.title)
         file_collector: Set[str] = set()
         beautifyhtml = CustomBeautifyHTML(change_hrefs=change_hrefs, file_collector=file_collector)
+
+        html_counter: int = 0   # Counting exported HTML files
+        file_counter: int = 0   # Counting downloaded files (images)
 
         # Download all worksheets and save the transformed HTML
         for worksheet, info in language_info.worksheets.items():
@@ -111,21 +127,27 @@ class ExportHTML(LanguagePostProcessor):
                 if content is None:
                     self.logger.warning(f"Couldn't get content of {worksheet}/{language_info.language_code}. Skipping")
                     continue
+                html_counter += 1
                 filename = self.make_html_name(info.title)
                 with open(os.path.join(folder, filename), "w") as f:
                     self.logger.info(f"Exporting HTML to {filename}")
                     content = f"<h1>{info.title}</h1>" + beautifyhtml.process_html(content)
                     f.write(content)
 
-        # Download all images
+        # Download all images we came across in the previous step
         for file in file_collector:
-            self.download_file(files_folder, file)
+            if self.download_file(files_folder, file):
+                file_counter += 1
 
         # Write contents.json
         # TODO define specifications for contents.json (similar to language jsons?) - for now just a simple structure
-        structure = []
-        for worksheet, info in language_info.worksheets.items():
-            structure.append({worksheet: self.make_html_name(info.title)})
-        with open(os.path.join(structure_folder, "contents.json"), "w") as f:
-            self.logger.info(f"Exporting contents.json")
-            f.write(json.dumps(structure))
+        if self._force_rewrite or html_counter > 0:
+            structure = []
+            for worksheet, info in language_info.worksheets.items():
+                structure.append({worksheet: self.make_html_name(info.title)})
+            with open(os.path.join(structure_folder, "contents.json"), "w") as f:
+                self.logger.info(f"Exporting contents.json")
+                f.write(json.dumps(structure))
+
+        self.logger.info(f"ExportHTML {language_info.language_code}: "
+                         f"Downloaded {html_counter} HTML files, {file_counter} images")

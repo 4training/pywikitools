@@ -68,4 +68,6 @@ class ExportRepository(LanguagePostProcessor):
             repo.index.commit(f"{commit_message}\n\nTODO details", author=self._author)
             result = repo.remotes.origin.push()
             self.logger.info(f"Pushed to remote, result: {result[0].summary}")
+        else:
+            self.logger.info(f"ExportRepository {language_info.language_code}: No changes.")
 
