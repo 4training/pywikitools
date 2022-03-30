@@ -38,10 +38,11 @@ class ChangeLog:
     """
     Holds all changes that happened in one language since the last resourcesbot run
     """
-    __slots__ = ['_changes']
+    __slots__ = ['_changes', '_iterate_pos']
 
     def __init__(self):
         self._changes: List[ChangeItem] = []
+        self._iterate_pos: int = 0
 
     def add_change(self, worksheet: str, change_type: ChangeType):
         change_item = ChangeItem(worksheet, change_type)
@@ -50,11 +51,23 @@ class ChangeLog:
     def is_empty(self):
         return len(self._changes) == 0
 
-    def get_all_changes(self) -> List[ChangeItem]:
-        return self._changes
+    def count_changes(self) -> int:
+        return len(self._changes)
 
     def __str__(self) -> str:
         output = ""
         for change_item in self._changes:
             output += f"{change_item}\n"
         return output
+
+    def __iter__(self):
+        """Make this class iterable in a simple way (not suitable for concurrency!)"""
+        self._iterate_pos = 0
+        return self
+
+    def __next__(self) -> ChangeItem:
+        """Return a next ChangeItem"""
+        while self._iterate_pos < len(self._changes):
+            self._iterate_pos += 1
+            return self._changes[self._iterate_pos - 1]
+        raise StopIteration

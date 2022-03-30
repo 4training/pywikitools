@@ -1,5 +1,6 @@
 import logging
 from typing import Dict
+from urllib.parse import unquote
 from bs4 import BeautifulSoup, Comment
 
 class BeautifyHTML:
@@ -62,8 +63,9 @@ class BeautifyHTML:
                 continue
             # Rewrite hrefs
             if self._change_hrefs is not None:
-                if element['href'] in self._change_hrefs:
-                    new_href = self._change_hrefs[element['href']]
+                href = unquote(element['href'])
+                if href in self._change_hrefs:
+                    new_href = self._change_hrefs[href]
                     self.logger.info(f"Rewriting a href source {element['href']} with {new_href}")
                     element['href'] = new_href
                 else:

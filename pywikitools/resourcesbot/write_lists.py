@@ -1,10 +1,11 @@
 import re
 import logging
+from typing import Optional
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.data_structures import LanguageInfo
+from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools import fortraininglib
 
 
@@ -16,11 +17,10 @@ class WriteList(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
-    __slots__ = ['_site', '_force_rewrite', 'logger']
-
     def __init__(self, site: pywikibot.site.APISite, user_name: str, password: str, force_rewrite: bool=False):
         """
         @param user_name and password necessary to mark page for translation in case of changes
+               In case they're empty we won't try to mark pages for translation
         @param force_rewrite rewrite even if there were no (relevant) changes
         """
         self._site = site
@@ -28,13 +28,16 @@ class WriteList(LanguagePostProcessor):
         self._password = password
         self._force_rewrite = force_rewrite
         self.logger = logging.getLogger('pywikitools.resourcesbot.write_lists')
+        if user_name == "" or password == "":
+            self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
-    def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog) -> bool:
         """Determine whether the list of available training resources needs to be rewritten."""
         lang = language_info.language_code
-        needs_rewrite = False
-        for change_item in change_log.get_all_changes():
-            if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF]:
+        needs_rewrite = self._force_rewrite
+        for change_item in change_log:
+            if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF,
+                                           ChangeType.NEW_WORKSHEET, ChangeType.DELETED_WORKSHEET]:
                 needs_rewrite = True
             if (change_item.change_type in [ChangeType.NEW_ODT, ChangeType.DELETED_ODT]) \
                 and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
@@ -47,14 +50,33 @@ class WriteList(LanguagePostProcessor):
 
         return needs_rewrite
 
-    def create_mediawiki(self, language_info: LanguageInfo):
+    def _create_file_mediawiki(self, file_info: Optional[FileInfo]) -> str:
+        """
+        Return string with mediawiki code to display a downloadable file
+
+        Example: [[File:pdficon_small.png|link={{filepath:Gebet.pdf}}]]
+        @return empty string if file_info is None
+        """
+        if file_info is None:
+            return ""
+        file_name: str = file_info.url
+        pos: int = file_name.rfind('/')
+        if pos > -1:
+            file_name = file_name[pos+1:]
+        else:
+            self.logger.warning(f"Couldn't find / in {file_name}")
+        return f" [[File:{file_info.file_type}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
+
+    def create_mediawiki(self, language_info: LanguageInfo) -> str:
         """
         Create the mediawiki string for the list of available training resources
 
         Output should look like the following line:
-        * [[God's_Story_(five_fingers)/de|{{int:sidebar-godsstory-fivefingers}}]] [[File:pdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] [[File:odticon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).odt}}]]
+        * [[God's_Story_(five_fingers)/de|{{int:sidebar-godsstory-fivefingers}}]] \
+          [[File:pdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] \
+          [[File:odticon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).odt}}]]
         """
-        content = ''
+        content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
             if not worksheet_info.has_file_type('pdf'):
                 # Only show worksheets where we have a PDF file in the list
@@ -64,43 +86,23 @@ class WriteList(LanguagePostProcessor):
 
             content += f"* [[{worksheet}/{language_info.language_code}|"
             content += "{{int:" + fortraininglib.title_to_message(worksheet) + "}}]]"
-            if worksheet_info.has_file_type('pdf'):
-                pdfname = worksheet_info.get_file_type_info('pdf').url
-                pos = pdfname.rfind('/')
-                if pos > -1:
-                    pdfname = pdfname[pos+1:]
-                else:
-                    self.logger.warning(f"Couldn't find / in {pdfname}")
-                content += " [[File:pdficon_small.png|link={{filepath:"
-                content += pdfname
-                content += "}}]]"
-
-            if worksheet_info.has_file_type('odt'):
-                odtname = worksheet_info.get_file_type_info('odt').url
-                pos = odtname.rfind('/')
-                if pos > -1:
-                    odtname = odtname[pos+1:]
-                else:
-                    self.logger.warning(f"Couldn't find / in {odtname}")
-                content += " [[File:odticon_small.png|link={{filepath:"
-                content += odtname
-                content += "}}]]"
+            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
+            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
             content += "\n"
 
         self.logger.debug(content)
         return content
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, change_log: ChangeLog) -> None:
         if not self.needs_rewrite(language_info, change_log):
             return
-        lang = language_info.language_code
-        self.logger.debug(f"Writing list of available resources in {lang}...")
 
         # Saving this to the language information page, e.g. https://www.4training.net/German
-        language = fortraininglib.get_language_name(lang, 'en')
+        language = fortraininglib.get_language_name(language_info.language_code, 'en')
         if language is None:
-            self.logger.warning(f"Error while trying to get language name of {lang}! Skipping")
+            self.logger.warning(f"Error while trying to get language name of {language_info.language_code}! Skipping")
             return
+        self.logger.debug(f"Writing list of available resources in {language}...")
         page = pywikibot.Page(self._site, language)
         if not page.exists():
             self.logger.warning(f"Language information page {language} doesn't exist!")
@@ -147,4 +149,3 @@ class WriteList(LanguagePostProcessor):
             self.logger.info(f"Updated language information page {language} and marked it for translation.")
         else:
             self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")
-
