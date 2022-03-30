@@ -35,17 +35,21 @@ Setup:
 **Note**: pywikitools base path refers to the directory, where you can find ``README.rst``, ``CONTRIBUTING.rst`` and ``requirements.txt``. 
 
 #. Install required libraries: ``pip install -r requirements.txt``:
+
     * Follow these steps if you are using a virtual environment on a Linux machine:
+    
    	    * To install ``virtualenv``: ``sudo python3 -m pip install virtualenv``
    	    * To create a new virtual environment: ``virtualenv --system-site-packages new_venv_name``. It is important to include the tag ``--system-site-packages``, else the virtual environment will not be able to import the uno package into your working environment.
    	    * To activate the virtual environment: ``source new_venv_name/bin/activate``
    	    * Change into pywikitools base path and run ``pip install -r requirements.txt``.
+        
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located).
 
 #. Alternatively you can generate it yourself by using a "full" pywikibot installation:
-	* Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
-	* If you are using Python 3, download current Pywikibot stable branch: ``https://pywikibot.toolforge.org/core_stable.tar.gz``. If you are using Python 2, you can use this link to download pywikibot: ``https://pywikibot.toolforge.org/core_python2.tar.gz``
+
+    * Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation
+    * If you are using Python 3, download current Pywikibot stable branch: ``https://pywikibot.toolforge.org/core_stable.tar.gz``. If you are using Python 2, you can use this link to download pywikibot: ``https://pywikibot.toolforge.org/core_python2.tar.gz``
 	* Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (for example: core_stable for Python3 users).
 	* Copy the file `4training_family.py` from `~/pywikitools/pywikibot/families` into `~/pywikitools/pywikibot/core_stable/pywikibot/families`.
 	* Change into the `~/pywikitools/pywikibot/core_stable` directory, where you can also find the file `pwb.py`.
@@ -56,13 +60,15 @@ Setup:
     * Set up configuration in ``config.ini``:
     * ``cp config.example.ini config.ini``
     * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
+
 #. Make sure the pywikitools package is found by python. Options:
-   * Create a new PTH file in the site-packages directory:
+
+    * Create a new PTH file in the site-packages directory:
    	* If you do not use a virtual environment: ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it
    	* If you use a virtual environment: ``~/your_env_name/lib/python3.8/site-packages``
    	* Create a new PTH file ``pywikitools.pth`` and copy the base path into the new file: ``/YOUR_HOME_PATH/pywikitools/``.
-   * Appending it to PYTHONPATH
-   * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
+    * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
+
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
 
