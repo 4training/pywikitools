@@ -35,11 +35,11 @@ Setup:
 **Note**: pywikitools base path refers to the directory, where you can find ``README.rst``, ``CONTRIBUTING.rst`` and ``requirements.txt``. 
 
 #. Install required libraries: ``pip install -r requirements.txt``:
-   * Follow these steps if you are using a virtual environment on a Linux machine:
-   	* To install ``virtualenv``: ``sudo python3 -m pip install virtualenv``
-   	* To create a new virtual environment: ``virtualenv --system-site-packages new_venv_name``. It is important to include the tag ``--system-site-packages``, else the virtual environment will not be able to import the uno package into your working environment.
-   	* To activate the virtual environment: ``source new_venv_name/bin/activate``
-   	* Change into pywikitools base path and run ``pip install -r requirements.txt``.
+    * Follow these steps if you are using a virtual environment on a Linux machine:
+   	    * To install ``virtualenv``: ``sudo python3 -m pip install virtualenv``
+   	    * To create a new virtual environment: ``virtualenv --system-site-packages new_venv_name``. It is important to include the tag ``--system-site-packages``, else the virtual environment will not be able to import the uno package into your working environment.
+   	    * To activate the virtual environment: ``source new_venv_name/bin/activate``
+   	    * Change into pywikitools base path and run ``pip install -r requirements.txt``.
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located). Alternatively you can generate it yourself:
    * You need a "full" pywikibot installation:
