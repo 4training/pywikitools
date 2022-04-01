@@ -54,7 +54,19 @@
           "translated": 59,
           "fuzzy": 0,
           "total": 59
-        }
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/b/be/Слышание_Бога.pdf",
+            "timestamp": "2022-03-18T14:56:27+00:00"
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/8/85/Слышание_Бога.odt",
+            "timestamp": "2022-03-18T14:56:42+00:00"
+          }
+        ]
       },
       {
         "page": "Church",
@@ -67,6 +79,11 @@
           "total": 44
         },
         "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/d/de/Церковь.pdf",
+            "timestamp": "2021-10-16T04:05:14+00:00"
+          },
           {
             "file_type": "odt",
             "url": "https://www.4training.net/mediawiki/images/7/7b/Церковь.odt",
@@ -89,6 +106,11 @@
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/f/f0/Исцеление.pdf",
             "timestamp": "2022-03-18T14:55:22+00:00"
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/e/e8/Исцеление.odt",
+            "timestamp": "2022-03-18T14:55:37+00:00"
           }
         ]
       },

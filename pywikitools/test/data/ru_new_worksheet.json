@@ -35,6 +35,40 @@
         }
       },
       {
+        "page": "Forgiving_Step_by_Step",
+        "language_code": "ru",
+        "title": "Шаги прощения",
+        "version": "1.1",
+        "progress": {
+          "translated": 44,
+          "fuzzy": 0,
+          "total": 44
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/7/77/Шаги_прощения.pdf",
+            "timestamp": "2022-04-01T10:00:00+00:00"
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/1/1f/Шаги_прощения.odt",
+            "timestamp": "2022-04-01T10:10:00+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Confessing_Sins_and_Repenting",
+        "language_code": "ru",
+        "title": "Исповедание грехов и Покаяние",
+        "version": "1. 1",
+        "progress": {
+          "translated": 38,
+          "fuzzy": 0,
+          "total": 38
+        }
+      },
+      {
         "page": "Time_with_God",
         "language_code": "ru",
         "title": "Время с Богом",

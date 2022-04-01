@@ -8,12 +8,13 @@ Run tests:
 """
 from base64 import decode
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Set
 import unittest
 import logging
 import json
+from os.path import abspath, dirname, join
 from pywikitools import fortraininglib
-from pywikitools.resourcesbot.changes import ChangeType
+from pywikitools.resourcesbot.changes import ChangeItem, ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
@@ -217,15 +218,70 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertEqual(comparison.count_changes(), 1)
         self.assertEqual(next(iter(comparison)).change_type, ChangeType.NEW_WORKSHEET)
 
-    def test_compare(self):
-        pass
-        # TODO: Have 2-3 real (more complex) examples that should cover all cases and test with them
+class TestLanguageInfoComparison(unittest.TestCase):
+    """Testing all the different possible outcomes of comparing two LanguageInfo objects"""
+    def setUp(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
+            self.language_info = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(self.language_info, LanguageInfo)
+
+    def test_added_files(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_added_files.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        self.assertSetEqual(changes, set([ChangeItem("Church", ChangeType.NEW_PDF),
+                                          ChangeItem("Healing", ChangeType.NEW_ODT),
+                                          ChangeItem("Hearing_from_God", ChangeType.NEW_ODT),
+                                          ChangeItem("Hearing_from_God", ChangeType.NEW_PDF)]))
+
+    def test_deleted_files(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_deleted_files.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        self.assertSetEqual(changes, set([ChangeItem("Church", ChangeType.DELETED_ODT),
+                                           ChangeItem("Healing", ChangeType.DELETED_PDF)]))
+
+    def test_deleted_worksheet(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_deleted_worksheet.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        # If a worksheet with files gets deleted, only one DELETED_WORKSHEET change item should be emitted
+        # (no DELETED_PDF and DELETED_ODT items as well)
+        self.assertSetEqual(changes, set([ChangeItem("Prayer", ChangeType.DELETED_WORKSHEET),
+                                          ChangeItem("My_Story_with_God", ChangeType.DELETED_WORKSHEET)]))
+
+    def test_new_worksheet(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_new_worksheet.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        # If a new worksheet together with files get added, only one NEW_WORKSHEET change item should be emitted
+        # (no NEW_PDF and NEW_ODT as well)
+        self.assertSetEqual(changes, set([ChangeItem("Confessing_Sins_and_Repenting", ChangeType.NEW_WORKSHEET),
+                                          ChangeItem("Forgiving_Step_by_Step", ChangeType.NEW_WORKSHEET)]))
+
+    def test_updated_files(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_updated_files.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        self.assertSetEqual(changes, set([ChangeItem("Church", ChangeType.UPDATED_ODT),
+                                          ChangeItem("Healing", ChangeType.UPDATED_PDF)]))
+
+    def test_updated_worksheet(self):
+        with open(join(dirname(abspath(__file__)), "data", "ru_updated_worksheet.json"), 'r') as f:
+            language_info2 = json.load(f, object_hook=json_decode)
+        self.assertIsInstance(language_info2, LanguageInfo)
+        changes = set([change_item for change_item in language_info2.compare(self.language_info)])
+        self.assertSetEqual(changes, set([ChangeItem("Hearing_from_God", ChangeType.UPDATED_WORKSHEET),
+                                          ChangeItem("Church", ChangeType.UPDATED_WORKSHEET)]))
 
 
     # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
     # and count_finished_translations()
-    # For meaningful tests we would need more complex examples as well (see compare())
-    # TODO: add several json files with complex examples to repo and decode them here to run tests
 
 if __name__ == '__main__':
     unittest.main()

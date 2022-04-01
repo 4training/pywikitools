@@ -49,7 +49,7 @@
         "page": "Hearing_from_God",
         "language_code": "ru",
         "title": "Слышание Бога",
-        "version": "1.2",
+        "version": "1.2b",
         "progress": {
           "translated": 59,
           "fuzzy": 0,
@@ -60,7 +60,7 @@
         "page": "Church",
         "language_code": "ru",
         "title": "Церковь",
-        "version": "2.0",
+        "version": "2.1",
         "progress": {
           "translated": 44,
           "fuzzy": 0,

@@ -162,6 +162,8 @@ class LanguageInfo:
         """
         Compare ourselves to another (older) LanguageInfo object: have there been changes / updates?
 
+        In case of NEW_WORKSHEET, no NEW_PDF / NEW_ODT will be emitted (even if files got added)
+        In case of DELETED_WORKSHEET, no DELETED_PDF / DELETED_ODT will be emitted (even if files existed before)
         @return data structure with all changes
         """
         change_log = ChangeLog()
@@ -171,30 +173,34 @@ class LanguageInfo:
             return change_log
         for title, info in self.worksheets.items():
             if title in old.worksheets:
-                if info.has_file_type('pdf'):
-                    if not old.worksheets[title].has_file_type('pdf'):
+                pdf_info = info.get_file_type_info("pdf")
+                if pdf_info is not None:
+                    old_pdf_info = old.worksheets[title].get_file_type_info('pdf')
+                    if old_pdf_info is None:
                         change_log.add_change(title, ChangeType.NEW_PDF)
-                    # TODO resolve TypeError: can't compare offset-naive and offset-aware datetimes
-#                    elif old.worksheets[title].get_file_type_info('pdf').timestamp < info.get_file_type_info('pdf').timestamp:
-#                        change_log.add_change(title, ChangeType.UPDATED_PDF)
+                    elif old_pdf_info.timestamp < pdf_info.timestamp:
+                        change_log.add_change(title, ChangeType.UPDATED_PDF)
                 elif old.worksheets[title].has_file_type('pdf'):
                     change_log.add_change(title, ChangeType.DELETED_PDF)
 
-                if info.has_file_type('odt'):
-                    if not old.worksheets[title].has_file_type('odt'):
+                odt_info = info.get_file_type_info("odt")
+                if odt_info is not None:
+                    old_odt_info = old.worksheets[title].get_file_type_info('odt')
+                    if old_odt_info is None:
                         change_log.add_change(title, ChangeType.NEW_ODT)
-                    # TODO resolve TypeError: can't compare offset-naive and offset-aware datetimes
-#                    elif old.worksheets[title].get_file_type_info('odt').timestamp < info.get_file_type_info('odt').timestamp:
-#                        change_log.add_change(title, ChangeType.UPDATED_ODT)
+                    elif old_odt_info.timestamp < odt_info.timestamp:
+                        change_log.add_change(title, ChangeType.UPDATED_ODT)
                 elif old.worksheets[title].has_file_type('odt'):
                     change_log.add_change(title, ChangeType.DELETED_ODT)
+                if info.version != old.worksheets[title].version:
+                    # We don't check whether the new version is higher than the old one - maybe warn if not?
+                    change_log.add_change(title, ChangeType.UPDATED_WORKSHEET)
             else:
                 change_log.add_change(title, ChangeType.NEW_WORKSHEET)
         for worksheet in old.worksheets:
             if worksheet not in self.worksheets:
                 change_log.add_change(worksheet, ChangeType.DELETED_WORKSHEET)
 
-        # TODO Emit also ChangeType.UPDATED_WORKSHEET by saving and comparing version number
         return change_log
 
     def list_worksheets_with_missing_pdf(self) -> List[str]:

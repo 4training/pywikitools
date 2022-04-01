@@ -34,6 +34,12 @@ class ChangeItem:
     def __str__(self) -> str:
         return f"{self.change_type}: {self.worksheet}"
 
+    def __eq__(self, other) -> bool:
+        return self.worksheet == other.worksheet and self.change_type == other.change_type
+
+    def __hash__(self) -> int:
+        return hash((self.worksheet, self.change_type))
+
 class ChangeLog:
     """
     Holds all changes that happened in one language since the last resourcesbot run
