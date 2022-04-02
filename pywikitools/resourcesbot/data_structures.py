@@ -5,10 +5,49 @@ from typing import Any, Dict, Final, List, Optional, Union
 
 import pywikibot
 from urllib.parse import unquote
-from pywikitools import fortraininglib
+from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
-from pywikitools.fortraininglib import TranslationProgress
+class TranslationProgress:
+    __slots__ = ["translated", "fuzzy", "total"]
+
+    def __init__(self, translated, fuzzy, total, **kwargs):
+        """
+        The constructor can take a dictionary as returned when doing a translation progress query:
+        { "total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de" },
+        from https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+        """
+        self.translated: Final[int] = int(translated)
+        self.fuzzy: Final[int] = int(fuzzy)
+        self.total: Final[int] = int(total)
+
+    def is_unfinished(self) -> bool:
+        """
+        Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
+        Unfinished translations are not shown on language information pages
+        """
+        if (self.total - self.fuzzy - self.translated) > 4:
+            return True
+        return False
+
+    def is_incomplete(self) -> bool:
+        """
+        A translation is incomplete if it is not unfinished (!) but still there is at least
+        one translation unit which is neither translated nor fuzzy
+        """
+        if self.is_unfinished():    # We don't consider unfinished translations as incomplete!
+            return False
+        if self.translated + self.fuzzy < self.total:
+            return True
+        return False
+
+    def __str__(self) -> str:
+        """
+        Print the translation progress
+        e.g. "13+1/14" is short for 13 translated units and one outdated (fuzzy) translation unit,
+        out of 14 translation units total
+        """
+        return f"{self.translated}+{self.fuzzy}/{self.total}"
 
 
 class FileInfo:
@@ -116,9 +155,36 @@ class WorksheetInfo:
             return self._files[file_type]
         return None
 
+    def get_file_type_name(self, file_type: str) -> str:
+        """Returns name of the file of the specified type (e.g. "pdf")
+        @return only name (not full URL)
+        @return empty string if we don't have the specified file type"""
+        if file_type in self._files:
+            return self._files[file_type].get_file_name()
+        return ""
+
     def is_incomplete(self) -> bool:
         """A translation is incomplete if most units are translated but at least one is not translated or fuzzy"""
         return self.progress.is_incomplete()
+
+    def has_same_version(self, english_info) -> bool:
+        """
+        Compare our version string with the version string of the English original: is it the same?
+        Native numerals will be converted to standard numerals.
+        One additional character in our version will be ignored (e.g. "1.2b" is the same as "1.2")
+        @param english_info: WorksheetInfo
+        """
+        if self.version == "":
+            return False
+        assert isinstance(english_info, WorksheetInfo)
+        our_version = native_to_standard_numeral(self.language_code, self.version)
+        # Ignore one trailing character in our version
+        if our_version[-1:].isalpha():
+            our_version = our_version[:-1]
+        if our_version == english_info.version:
+            return True
+        return False
+
 
     def __str__(self) -> str:
         """For debugging purposes: Format all data as a human-readable string"""
@@ -230,7 +296,7 @@ def json_decode(data: Dict[str, Any]):
         return FileInfo(data["file_type"], data["url"], data["timestamp"], translation_unit)
 
     if "translated" in data:
-        return fortraininglib.TranslationProgress(**data)
+        return TranslationProgress(**data)
 
     if "page" in data:
         assert "language_code" in data and "title" in data and "version" in data and "progress" in data

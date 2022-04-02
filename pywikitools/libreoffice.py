@@ -7,6 +7,8 @@ import uno                                              # type: ignore
 from com.sun.star.connection import NoConnectException  # type: ignore
 from com.sun.star.beans import PropertyValue            # type: ignore
 from com.sun.star.lang import Locale                    # type: ignore
+from com.sun.star.task import ErrorCodeIOException      # type: ignore
+from com.sun.star.io import IOException                 # type: ignore
 
 from pywikitools.lang.libreoffice_lang import LANG_LOCALE
 
@@ -105,6 +107,7 @@ class LibreOffice:
         """
         Save the currently opened document as ODT file.
         @param filename: where to save the odt file (full URL, e.g. "/path/to/file.odt" )
+        @raises FileExistsError if file already exists and is currently opened; OSError
         """
         uri = f"file://{file_name}"
         args = []   # arguments for saving
@@ -116,7 +119,12 @@ class LibreOffice:
         args.append(arg0)
 
         assert self._model is not None
-        self._model.storeAsURL(uri, args) # save as ODT
+        try:
+            self._model.storeAsURL(uri, args) # save as ODT
+        except ErrorCodeIOException as err:
+            raise FileExistsError(err)
+        except IOException as err:
+            raise OSError(err)
 
     def export_pdf(self, file_name: str):
         """

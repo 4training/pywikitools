@@ -1,9 +1,12 @@
 
+from datetime import datetime
 import difflib
 from enum import Enum
 import logging
 import re
-from typing import Dict, Final, List, Optional
+from typing import Final, List, Optional
+
+from pywikitools.resourcesbot.data_structures import TranslationProgress, FileInfo, WorksheetInfo
 
 class SnippetType(Enum):
     """
@@ -297,73 +300,72 @@ class TranslatedPage:
     Also there is no persistence: If you make changes it's your responsibility to write them back
     to the mediawiki system.
     """
-    __slots__ = ["page", "language_code", "units", "_infos", "_iterate_pos"]
+    __slots__ = ["page", "language_code", "units", "_english_info", "_worksheet_info", "_iterate_pos"]
 
     def __init__(self, page: str, language_code: str, units: List[TranslationUnit]):
         self.page: Final[str] = page                    # Name of the worksheet
         self.language_code: Final[str] = language_code
         self.units: List[TranslationUnit] = units       # Our translation units
-        self._infos: Optional[Dict[str, str]] = None    # Storing results of analyze_units()
-        self._iterate_pos = 0      # For iterating over all translation units in this TranslatedPage
+        self._english_info: Optional[WorksheetInfo] = None      # WorksheetInfo of English original
+        self._worksheet_info: Optional[WorksheetInfo] = None    # WorksheetInfo of translation
+        self._iterate_pos: int = 0      # For iterating over all translation units in this TranslatedPage
+
+    def get_english_info(self) -> WorksheetInfo:
+        if self._english_info is None:
+            self._analyze_units()
+        assert self._english_info is not None
+        return self._english_info
+
+    def get_worksheet_info(self) -> WorksheetInfo:
+        if self._worksheet_info is None:
+            self._analyze_units()
+        assert self._worksheet_info is not None
+        return self._worksheet_info
 
     def is_untranslated(self) -> bool:
-        """A TranslatedPage is untranslated if there is not a single translation unit with a translation in it"""
-        for translation_unit in self.units:
-            if translation_unit.get_translation() != "":
-                return False
-        return True
+        return self.get_worksheet_info().progress.translated == 0
 
     def _analyze_units(self):
         """
-        Analyzes translation units to fill our self._infos data structure.
+        Analyzes translation units to fill our self._english_info and self._worksheet_info
 
         Previously extracted information is discarded.
-        Currently this is implemented as Dict[str, str] - an alternative would be to make it
-        Dict[str, TranslationUnit]: that would probably save a little memory and be a bit more elegant,
-        on the other hand it maybe needs some more lines of code?
+        Information on ODT files is added (if existing) with url = filename (no full URL) and incorrect timestamp
+        Information information on PDF files is not extracted as it is currently not needed.
+        As we don't know here whether a translation is fuzzy (possible outdated) or not, the generated
+        TranslationProgress will always have fuzzy = 0.
+        Currently we are not giving any warnings even if headline_original or version_original is empty
         """
-        self._infos = {}
-        # find out version, name of original odt-file and name of translated odt-file
+        # find out headline, version, name of original odt-file and name of translated odt-file
+        translated_units: int = 0
+        headline_original: str = ""
+        headline_translation: str = ""
+        odt_original: str = ""
+        odt_translation: str = ""
+        version_original: str = ""
+        version_translation: str = ""
         for u in self.units:
+            if u.get_translation() != "":
+                translated_units += 1
             if u.is_title():
-                self._infos["headline_original"] = u.get_definition()
-                self._infos["headline_translation"] = u.get_translation()
+                headline_original = u.get_definition()
+                headline_translation = u.get_translation()
             if re.search(r"\.odt$", u.get_definition()):
-                self._infos["odt_original"] = u.get_definition()
-                self._infos["odt_translation"] = u.get_translation()
+                odt_original = u.get_definition()
+                odt_translation = u.get_translation()
             # Searching for version number (valid examples: 1.0; 2.1; 0.7b; 1.5a)
             if re.search(r"^\d\.\d[a-zA-Z]?$", u.get_definition()):
-                self._infos["version_original"] = u.get_definition()
-                self._infos["version_translation"] = u.get_translation()
-            # TODO extract also PDF files?
+                version_original = u.get_definition()
+                version_translation = u.get_translation()
 
-    def _get_info(self, key: str) -> str:
-        """
-        Return the value of an item of our information storage.
-        If the key doesn't exist, an empty string is returned.
-        """
-        if self._infos is None:
-            self._analyze_units()
-        assert self._infos is not None
-        return self._infos[key] if key in self._infos else ""
-
-    def get_original_headline(self) -> str:
-        return self._get_info("headline_original")
-
-    def get_translated_headline(self) -> str:
-        return self._get_info("headline_translation")
-
-    def get_original_version(self) -> str:
-        return self._get_info("version_original")
-
-    def get_translated_version(self) -> str:
-        return self._get_info("version_translation")
-
-    def get_original_odt(self) -> str:
-        return self._get_info("odt_original")
-
-    def get_translated_odt(self) -> str:
-        return self._get_info("odt_translation")
+        self._english_info = WorksheetInfo(self.page, "en", headline_original,
+            TranslationProgress(len(self.units), 0, len(self.units)), version_original)
+        if odt_original != "":
+            self._english_info.add_file_info(FileInfo("odt", odt_original, datetime(1970, 1, 1)))
+        self._worksheet_info = WorksheetInfo(self.page, self.language_code, headline_translation,
+            TranslationProgress(translated_units, 0, len(self.units)), version_translation)
+        if odt_translation != "":
+            self._worksheet_info.add_file_info(FileInfo("odt", odt_translation, datetime(1970, 1, 1)))
 
     def add_translation_unit(self, unit: TranslationUnit):
         """Append a translation unit. Infos are not invalidated"""

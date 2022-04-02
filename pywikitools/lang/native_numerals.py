@@ -44,22 +44,21 @@ class NativeNumerals:
 
     languages: Dict[str, Dict] = {
         'hi': hindi,
-        'ka': kannada,
+        'kn': kannada,
         'ta': tamil
     }
 
-    @staticmethod
-    def native_to_standard_numeral(language_code: str, native_text: str) -> str:
-        """
-        Replace native numerals in a str with standard numerals.
+def native_to_standard_numeral(language_code: str, native_text: str) -> str:
+    """
+    Replace native numerals in a str with standard numerals.
 
-        @param language_code Selects which languages numerals are to be replaced
-        @param native_text Text in which native numerals are to be replaced
-        @return str with native numerals replaced by standard numerals
-        """
-        if language_code in NativeNumerals.languages.keys():
-            for native_numeral, standard_numeral in NativeNumerals.languages[language_code].items():
-                native_text = native_text.replace(native_numeral, standard_numeral)
+    @param language_code Selects which languages numerals are to be replaced
+    @param native_text Text in which native numerals are to be replaced
+    @return str with native numerals replaced by standard numerals
+    """
+    if language_code in NativeNumerals.languages.keys():
+        for native_numeral, standard_numeral in NativeNumerals.languages[language_code].items():
+            native_text = native_text.replace(native_numeral, standard_numeral)
 
-        return native_text
+    return native_text
 

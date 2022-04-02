@@ -11,6 +11,7 @@ from typing import Any, List, Optional, Dict
 import requests
 
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+from pywikitools.resourcesbot.data_structures import TranslationProgress
 
 BASEURL: str = "https://www.4training.net"
 APIURL: str = BASEURL + "/mediawiki/api.php"
@@ -19,46 +20,6 @@ CONNECT_RETRIES: int = 3    # In case a request timed out, let's try again up to
 logger = logging.getLogger('pywikitools.lib')
 # Language codes of all right-to-left languages we currently have
 RTL_LANGUAGES = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"]
-
-
-class TranslationProgress:
-    def __init__(self, translated, fuzzy, total, **kwargs):
-        """
-        The constructor can take a dictionary as returned when doing a translation progress query:
-        { "total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de" },
-        from https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
-        """
-        self.translated = int(translated)
-        self.fuzzy = int(fuzzy)
-        self.total = int(total)
-
-    def is_unfinished(self) -> bool:
-        """
-        Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
-        Unfinished translations are not shown on language information pages
-        """
-        if (self.total - self.fuzzy - self.translated) > 4:
-            return True
-        return False
-
-    def is_incomplete(self) -> bool:
-        """
-        A translation is incomplete if it is not unfinished but still there is at least
-        one translation unit which is neither translated nor fuzzy
-        """
-        if self.is_unfinished():
-            return False
-        if self.translated + self.fuzzy < self.total:
-            return True
-        return False
-
-    def __str__(self) -> str:
-        """
-        Print the translation progress
-        e.g. "13+1/14" is short for 13 translated units and one outdated (fuzzy) translation unit,
-        out of 14 translation units total
-        """
-        return f"{self.translated}+{self.fuzzy}/{self.total}"
 
 
 def _get(params: Dict[str, str]) -> Any:
@@ -312,8 +273,6 @@ def get_version(page: str, language_code: str) -> Optional[str]:
 
     # now we just need to look up the translation of this translation unit
     return get_page_source(f"Translations:{page}/{translation_unit}/{language_code}")
-
-
 
 def list_page_translations(page: str, include_unfinished=False) -> Dict[str, TranslationProgress]:
     """ Returns all the existing translations of a page

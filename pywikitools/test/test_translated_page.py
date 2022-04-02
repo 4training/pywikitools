@@ -222,19 +222,21 @@ class TestTranslatedPage(unittest.TestCase):
         # Constructing a strange TranslatedPage that doesn't even have a headline
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         translated_page = TranslatedPage("Test", "de", [with_lists])
-        self.assertEqual(translated_page.get_original_headline(), "")
-        self.assertEqual(translated_page.get_translated_headline(), "")
+        self.assertEqual(translated_page.get_english_info().title, "")
+        self.assertEqual(translated_page.get_worksheet_info().title, "")
         # We construct a TranslatedPage with a headline but no version and ODT file information
         headline = TranslationUnit("Test/Page_display_title", "de", "Test headline", "Test-Überschrift")
         unit1 = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         unit2 = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
         translated_page = TranslatedPage("Test", "de", [headline, unit1, unit2])
-        self.assertEqual(translated_page.get_original_headline(), headline.get_definition())
-        self.assertEqual(translated_page.get_translated_headline(), headline.get_translation())
-        self.assertEqual(translated_page.get_original_odt(), "")
-        self.assertEqual(translated_page.get_translated_odt(), "")
-        self.assertEqual(translated_page.get_original_version(), "")
-        self.assertEqual(translated_page.get_translated_version(), "")
+        self.assertEqual(translated_page.get_english_info().title, headline.get_definition())
+        self.assertEqual(translated_page.get_worksheet_info().title, headline.get_translation())
+        self.assertFalse(translated_page.get_english_info().has_file_type("odt"))
+        self.assertFalse(translated_page.get_worksheet_info().has_file_type("odt"))
+        self.assertEqual(translated_page.get_english_info().version, "")
+        self.assertEqual(translated_page.get_worksheet_info().version, "")
+        self.assertEqual(translated_page.get_worksheet_info().progress.total, 3)
+        self.assertEqual(translated_page.get_worksheet_info().progress.translated, 3)
 
     def test_with_real_data(self):
         # TODO this test is closely tied to content on 4training.net that might change in the future
@@ -242,16 +244,18 @@ class TestTranslatedPage(unittest.TestCase):
         self.assertIsNotNone(translated_page)
         self.assertEqual(translated_page.page, "Forgiving_Step_by_Step")
         self.assertEqual(translated_page.language_code, "de")
-        self.assertEqual(translated_page.get_original_headline(), "Forgiving Step by Step")
-        self.assertEqual(translated_page.get_original_odt(), "Forgiving_Step_by_Step.odt")
-        self.assertEqual(translated_page.get_original_version(), "1.3")
-        self.assertEqual(translated_page.get_translated_headline(), "Schritte der Vergebung")
-        self.assertEqual(translated_page.get_translated_odt(), "Schritte_der_Vergebung.odt")
-        self.assertEqual(translated_page.get_translated_version(), "1.3")
+        self.assertEqual(translated_page.get_english_info().title, "Forgiving Step by Step")
+        self.assertEqual(translated_page.get_english_info().get_file_type_name("odt"), "Forgiving_Step_by_Step.odt")
+        self.assertEqual(translated_page.get_english_info().version, "1.3")
+        self.assertEqual(translated_page.get_worksheet_info().title, "Schritte der Vergebung")
+        self.assertEqual(translated_page.get_worksheet_info().get_file_type_name("odt"), "Schritte_der_Vergebung.odt")
+        self.assertEqual(translated_page.get_worksheet_info().version, "1.3")
         unit_counter: int = 0
         for unit in translated_page:
             self.assertTrue(unit.get_name().startswith("Translations:Forgiving_Step_by_Step"))
             unit_counter += 1
+        self.assertEqual(translated_page.get_english_info().progress.total, unit_counter)
+        self.assertEqual(translated_page.get_worksheet_info().progress.translated, unit_counter)
 
         # Now let's load the translation units of one template and add them to our translated_page
         template_unit_counter: int = 0

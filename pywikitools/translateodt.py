@@ -29,6 +29,7 @@ from configparser import ConfigParser
 from typing import List, Optional
 import requests
 from pywikitools import fortraininglib
+from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 
@@ -141,7 +142,7 @@ class TranslateODT:
             if t.get_translation() == "":
                 self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
                 continue
-            if t.get_definition() == translated_page.get_original_version():
+            if t.get_definition() == translated_page.get_english_info().version:
                 # We don't try to do search and replace with the version string. We later process the whole CC0 notice
                 continue
 
@@ -197,12 +198,12 @@ class TranslateODT:
         E.g. page "Hearing from God" -> "Hearing_from_God.odt"
         Compares it to the translated file name and gives a warning if it doesn't match"""
         # TODO correct wrong filename translations automatically in the system?
-        filename: str = re.sub(" ", '_', translated_page.get_translated_headline())
+        filename: str = re.sub(" ", '_', translated_page.get_worksheet_info().title)
         filename = re.sub("[':]", "", filename)
         filename += ".odt"
-        if translated_page.get_translated_odt() != filename:
+        if translated_page.get_worksheet_info().get_file_type_name("odt") != filename:
             self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
-                                f"Translation: {translated_page.get_translated_odt()}, "
+                                f"Translation: {translated_page.get_worksheet_info().get_file_type_name('odt')}, "
                                 f"according to the headline it should be: {filename}")
         return filename
 
@@ -231,31 +232,31 @@ class TranslateODT:
                 for translation_unit in template_page:
                     translated_page.add_translation_unit(translation_unit)
 
-        translated_version: str = translated_page.get_translated_version()
+        translated_version: str = translated_page.get_worksheet_info().version
         if translated_version == "":
             self.logger.warning("Translation of version is missing!")
-            translated_version = translated_page.get_original_version()
-        elif not translated_version.startswith(translated_page.get_original_version()):
-            self.logger.warning(f"English original has version {translated_page.get_original_version()}, "
+            translated_version = translated_page.get_english_info().version
+        elif not translated_page.get_worksheet_info().has_same_version(translated_page.get_english_info()):
+            self.logger.warning(f"English original has version {translated_page.get_english_info().version}, "
                                 f"translation has version {translated_version}. "
                                 "Please update translation. "
                                 "Ask an administrator for a list of changes in the English original.")
 
-        if translated_page.get_original_odt() == "":
+        if translated_page.get_english_info().get_file_type_name("odt") == "":
             self.logger.error(f"Couldn't find name of odt file in page {worksheet}")
             return None
-        if translated_page.get_original_version() == "":
+        if translated_page.get_english_info().version == "":
             self.logger.error(f"Couldn't find version number in page {worksheet}")
             return None
-        if translated_page.get_translated_odt() == "":
+        if translated_page.get_worksheet_info().get_file_type_name("odt") == "":
             self.logger.warning("Translation of file name is missing!")
 
         # Add footer (Template:CC0Notice) to translation list
         translated_page.add_translation_unit(TranslationUnit("Template:CC0Notice", language_code,
-            fortraininglib.get_cc0_notice(translated_page.get_original_version(), 'en'),
+            fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),
             fortraininglib.get_cc0_notice(translated_version, language_code)))
 
-        odt_path = self._fetch_english_file(translated_page.get_original_odt())
+        odt_path = self._fetch_english_file(translated_page.get_english_info().get_file_type_name("odt"))
         if not odt_path:
             return None
 
@@ -278,7 +279,10 @@ class TranslateODT:
         file_path = f"{save_path}/{filename}"
 
         self.logger.info(f"Saving translated document to {file_path}...")
-        self._loffice.save_odt(file_path)
+        try:
+            self._loffice.save_odt(file_path)
+        except FileExistsError as err:
+            self.logger.error(f"Couldn't save {file_path}: File exists and is currently opened.")
         pdf_path = file_path.replace(".odt", ".pdf")
         self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
         self._loffice.export_pdf(pdf_path)
@@ -312,7 +316,7 @@ class TranslateODT:
                 subtitle_lan = " - " + page.units[1].get_translation()
 
         # Title: [translated Title]
-        headline = page.get_translated_headline()
+        headline = page.get_worksheet_info().title
         if headline == "":
             # TODO: Check that already in the beginning
             self.logger.error("Headline doesn't seem to be translated. Exiting now.")
@@ -320,23 +324,18 @@ class TranslateODT:
         headline += subtitle_lan
 
         # Subject: [English title] [Languagename in English] [Languagename autonym]
-        subject  = page.get_original_headline()
+        subject  = page.get_english_info().title
         subject += subtitle_en
         subject += " " + str(fortraininglib.get_language_name(page.language_code, 'en'))
         subject += " " + str(fortraininglib.get_language_name(page.language_code))
 
         # Keywords: [Translated no-copyright notice + version] - copyright-free, version [original version]
         # ",version [original version]" is omitted in languages where the translation of "version" is very similar
-        cc0_notice = fortraininglib.get_cc0_notice(page.get_translated_version(), page.language_code)
+        cc0_notice = fortraininglib.get_cc0_notice(page.get_worksheet_info().version, page.language_code)
         cc0_notice += " - copyright-free"
         if page.language_code not in NO_ADD_ENGLISH_VERSION:
-            if re.search(r"^[0-9]\.[0-9][a-zA-Z]?$", page.get_translated_version()):
-                cc0_notice += f", version {page.get_translated_version()}"
-            else:
-                cc0_notice += f", version {page.get_original_version()}"
-                self.logger.warning("Version number seems not to use standard decimal numbers."
-                                    f"Assuming this is identical to {page.get_original_version()}."
-                                    "Please check File->Properties->Keywords")
+            cc0_notice += ", version "
+            cc0_notice += native_to_standard_numeral(page.language_code, page.get_worksheet_info().version)
 
         self._loffice.set_properties(headline, subject, cc0_notice)
 
@@ -352,5 +351,6 @@ if __name__ == '__main__':
                         help="Don't delete the downloaded English ODT file after we're finished")
 
     args = parser.parse_args()
+
     translateodt = TranslateODT(args.keep_english_file, args.loglevel)
-    translateodt.translate_odt(args.worksheet, args.language_code, )
+    translateodt.translate_odt(args.worksheet, args.language_code)

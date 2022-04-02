@@ -8,13 +8,12 @@ from typing import List, Optional, Dict, Tuple
 import pywikibot
 
 from pywikitools import fortraininglib
-from pywikitools.fortraininglib import TranslationProgress
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
 from pywikitools.resourcesbot.export_repository import ExportRepository
 from pywikitools.resourcesbot.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
 
 
 class ResourcesBot:
@@ -89,7 +88,7 @@ class ResourcesBot:
         # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
         # "No user is logged in on site 4training:en" -> better check and try to log in if necessary
         if not self.site.logged_in():
-            self.logger.warning("We're not logged in. Trying to log in...")
+            self.logger.info("We're not logged in. Trying to log in...")
             self.site.login()
             if not self.site.logged_in():
                 self.logger.error("Login with pywikibot failed! Exiting now.")
@@ -182,7 +181,7 @@ class ResourcesBot:
         for language, progress in available_translations.items():
             if (self._limit_to_lang is not None) and (self._limit_to_lang != language):
                 continue
-            if language == "en":    # We only want translations in finished_translations
+            if language == "en":    # We saved information on the English originals already, don't do that again
                 continue
             if progress.is_unfinished():
                 self.logger.info(f"Ignoring translation {page}/{language} - ({progress} translation units translated)")
@@ -201,12 +200,13 @@ class ResourcesBot:
             translated_version = fortraininglib.get_translated_unit(page, lang, version_unit)
             if translated_version is None:
                 self.logger.warning(f"Language {lang}: Version of {page} not translated, skipping.")
-                translated_version = ""
-            elif translated_version != version:
+                continue
+
+            page_info = WorksheetInfo(page, lang, translated_title, available_translations[lang], translated_version)
+            if not page_info.has_same_version(english_page_info):
                 self.logger.warning(f"Language {lang}: {translated_title} has version {translated_version}"
                                     f" - {english_title} has version {version}")
 
-            page_info = WorksheetInfo(page, lang, translated_title, available_translations[lang], translated_version)
             for file_type, file_info in english_page_info.get_file_infos().items():
                 assert file_info.translation_unit is not None   # TODO exception documentation
                 translation = fortraininglib.get_translated_unit(page, lang, file_info.translation_unit)

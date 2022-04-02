@@ -11,9 +11,8 @@ from unittest.mock import patch
 
 import pywikibot
 
-from pywikitools import fortraininglib
 from pywikitools.resourcesbot.bot import ResourcesBot
-from pywikitools.resourcesbot.data_structures import WorksheetInfo
+from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo
 from pywikitools.test.test_data_structures import TEST_PROGRESS, TEST_TIME, TEST_URL
 
 HEARING_FROM_GOD = """[...]
@@ -39,7 +38,7 @@ class TestResourcesBot(unittest.TestCase):
         mock_filepage.return_value.latest_file_info.url = TEST_URL
         mock_filepage.return_value.latest_file_info.timestamp = datetime.fromisoformat(TEST_TIME)
 
-        progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
+        progress = TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress, "1.2")
         self.bot._add_english_file_infos(HEARING_FROM_GOD, worksheet_info)
         self.assertTrue(worksheet_info.has_file_type("pdf"))
@@ -53,7 +52,7 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikibot.FilePage")
     def test_add_file_type_not_existing(self, mock_filepage):
         mock_filepage.return_value.exists.return_value = False
-        progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
+        progress = TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress, "1.2")
         with self.assertLogs("pywikitools.resourcesbot", level="WARNING"):
             self.bot._add_file_type(worksheet_info, "pdf", "Hearing_from_God.pdf")
@@ -62,7 +61,7 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikibot.FilePage")
     def test_add_file_type_exception(self, mock_filepage):
         mock_filepage.side_effect = pywikibot.exceptions.Error("Test error")
-        progress = fortraininglib.TranslationProgress(**TEST_PROGRESS)
+        progress = TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress, "1.2")
         with self.assertLogs("pywikitools.resourcesbot", level="WARNING"):
             self.bot._add_file_type(worksheet_info, "pdf", "Hearing_from_God.pdf")
