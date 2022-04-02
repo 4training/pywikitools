@@ -45,7 +45,7 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
 
 class TranslateODT:
-    def __init__(self, keep_english_file: bool = False, loglevel: Optional[str] = None):
+    def __init__(self, keep_english_file: bool = False):
         """Variable initializations (no connection to LibreOffice here)
         @param keep_english_file Don't delete English ODT file afterwards (command line option)
         """
@@ -57,14 +57,6 @@ class TranslateODT:
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
         self.logger = logging.getLogger('pywikitools.translateodt')
-
-        if loglevel is not None:
-            numeric_level = getattr(logging, loglevel.upper(), None)
-            if not isinstance(numeric_level, int):
-                raise ValueError(f"Invalid log level: {loglevel}")
-            logging.basicConfig(level=numeric_level)
-            self.logger.setLevel(numeric_level)
-
         self.keep_english_file: bool = keep_english_file
 
         self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
@@ -346,11 +338,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="python3 translateodt.py", description=msg)
     parser.add_argument("worksheet", help="Name of the mediawiki page")
     parser.add_argument("language_code", help="Language code of the translation language")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, help="set loglevel for the script")
+    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
     parser.add_argument("--keep-english-file", dest="keep_english_file", action="store_true",
                         help="Don't delete the downloaded English ODT file after we're finished")
 
     args = parser.parse_args()
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(sys.stdout)
+    fformatter = logging.Formatter('%(levelname)s: %(message)s')
+    sh.setFormatter(fformatter)
+    numeric_level = getattr(logging, args.loglevel.upper(), None)
+    assert isinstance(numeric_level, int)
+    sh.setLevel(numeric_level)
+    root.addHandler(sh)
 
-    translateodt = TranslateODT(args.keep_english_file, args.loglevel)
+    translateodt = TranslateODT(args.keep_english_file)
     translateodt.translate_odt(args.worksheet, args.language_code)

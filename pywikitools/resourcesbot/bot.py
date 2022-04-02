@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import logging
 import json
 from configparser import ConfigParser
@@ -13,26 +12,25 @@ from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
 from pywikitools.resourcesbot.export_repository import ExportRepository
 from pywikitools.resourcesbot.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo, LanguageInfo, \
+                                                     DataStructureEncoder, json_decode
 
 
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
     def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite_all: bool = False,
-                 read_from_cache: bool = False, loglevel: Optional[str] = None):
+                 read_from_cache: bool = False):
         """
         @param limit_to_lang: limit processing to one language (string with a language code)
         @param rewrite_all: Rewrite all language information less, regardless if we find changes or not
         @param read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
-        @param loglevel: define how much logging output should be written
         """
         # read-only list of download file types
         self._file_types = fortraininglib.get_file_types()
         # Read the configuration from config.ini in the same directory
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
-        self.set_loglevel(loglevel)
         self.site: pywikibot.site.APISite = pywikibot.Site()
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
@@ -91,10 +89,9 @@ class ResourcesBot:
             self.logger.info("We're not logged in. Trying to log in...")
             self.site.login()
             if not self.site.logged_in():
-                self.logger.error("Login with pywikibot failed! Exiting now.")
                 self.site.getuserinfo()
                 self.logger.warning(f"userinfo: {self.site.userinfo}")
-                sys.exit(2)
+                raise RuntimeError("Login with pywikibot failed.")
 
         if not self._read_from_cache:   # Find out what has been changed since our last run
             for lang, language_info in self._result.items():
@@ -334,50 +331,6 @@ class ResourcesBot:
                 self.logger.info(f"Updated MediaWiki:Numberoflanguages to {number_of_languages}")
             except pywikibot.exceptions.PageSaveRelatedError as err:
                 self.logger.warning(f"Error while trying to update MediaWiki:Numberoflanguages: {err}")
-
-    def set_loglevel(self, loglevel=None):
-        """
-        Setting loglevel
-            logging.WARNING is standard,
-            logging.INFO for more details,
-            logging.DEBUG for a lot of output
-        @param: loglevel_arg (str): loglevel argument
-        @return: -
-        """
-        root = logging.getLogger()
-        root.setLevel(logging.DEBUG)
-        self.logger.setLevel(logging.DEBUG)  # This is necessary so that debug messages go to debuglogfile
-        sh = logging.StreamHandler(sys.stdout)
-        sh.setLevel(logging.WARNING)
-        if loglevel is not None:
-            numeric_level = getattr(logging, loglevel.upper(), None)
-            if not isinstance(numeric_level, int):
-                raise ValueError(f'Invalid log level: {loglevel}')
-            sh.setLevel(numeric_level)
-        fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
-        sh.setFormatter(fformatter)
-        root.addHandler(sh)
-
-        log_path = self._config.get('Paths', 'logs', fallback='')
-        if log_path == '':
-            self.logger.warning('No log directory specified in configuration. Using current working directory')
-        # Logging output to files with different verbosity
-        if self._config.has_option("resourcesbot", "logfile"):
-            fh = logging.FileHandler(f"{log_path}{self._config['resourcesbot']['logfile']}")
-            fh.setLevel(logging.WARNING)
-            fh.setFormatter(fformatter)
-            root.addHandler(fh)
-        if self._config.has_option("resourcesbot", "infologfile"):
-            fh_info = logging.FileHandler(f"{log_path}{self._config['resourcesbot']['infologfile']}")
-            fh_info.setLevel(logging.INFO)
-            fh_info.setFormatter(fformatter)
-            root.addHandler(fh_info)
-        if self._config.has_option("resourcesbot", "debuglogfile"):
-            fh_debug = logging.FileHandler(f"{log_path}{self._config['resourcesbot']['debuglogfile']}")
-            fh_debug.setLevel(logging.DEBUG)
-            fh_debug.setFormatter(fformatter)
-            root.addHandler(fh_debug)
-
 
     def create_summary(self, lang: str):
         """

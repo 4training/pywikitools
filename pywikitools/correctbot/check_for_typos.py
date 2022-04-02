@@ -7,6 +7,8 @@ python3 check_for_typos.py language_code
 """
 
 import argparse
+import logging
+import sys
 from typing import List
 from pywikitools import fortraininglib
 
@@ -23,13 +25,23 @@ def parse_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("language_code", help="Language code")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, help="set loglevel for the script")
+    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_arguments()
-    correctbot = CorrectBot(simulate=True, loglevel=args.loglevel)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(sys.stdout)
+    fformatter = logging.Formatter('%(levelname)s: %(message)s')
+    sh.setFormatter(fformatter)
+    numeric_level = getattr(logging, args.loglevel.upper(), None)
+    assert isinstance(numeric_level, int)
+    sh.setLevel(numeric_level)
+    root.addHandler(sh)
+
+    correctbot = CorrectBot(simulate=True)
     for worksheet in fortraininglib.get_worksheet_list():
         correctbot.check_page(worksheet, args.language_code)
         print(f"{worksheet}: {correctbot.get_correction_counter()} corrections")

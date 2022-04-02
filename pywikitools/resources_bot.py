@@ -48,7 +48,9 @@ This is only the wrapper script, all main logic is in resourcesbot/bot.py
 """
 import argparse
 from configparser import ConfigParser
+import logging
 import os
+import sys
 from typing import List
 
 from pywikitools.resourcesbot.bot import ResourcesBot
@@ -65,7 +67,7 @@ def parse_arguments() -> ResourcesBot:
 
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=msg, epilog=epi_msg)
     parser.add_argument('--lang', help='run script for only one language')
-    parser.add_argument('-l', '--loglevel', choices=log_levels, help='set loglevel for the script')
+    parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
     parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
     parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists, also if there have been no changes')
 
@@ -75,8 +77,50 @@ def parse_arguments() -> ResourcesBot:
         limit_to_lang = str(args.lang)
     config = ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+    numeric_level = getattr(logging, args.loglevel.upper(), None)
+    assert isinstance(numeric_level, int)
+    set_loglevel(config, numeric_level)
     return ResourcesBot(config, limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all,
-                        read_from_cache=args.read_from_cache, loglevel=args.loglevel)
+                        read_from_cache=args.read_from_cache)
+
+def set_loglevel(config: ConfigParser, loglevel: int):
+    """
+    Setting up logging to three log files and to stdout.
+
+    The file paths for the three log files (for each log level WARNING, INFO and DEBUG) are
+    configured in the config.ini
+    @param loglevel: logging.WARNING is standard, logging.INFO for more details, logging.DEBUG for a lot of output
+    """
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    # The following is necessary so that debug messages go to debuglogfile
+    logging.getLogger('pywikitools.resourcesbot').setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setLevel(loglevel)
+    fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
+    sh.setFormatter(fformatter)
+    root.addHandler(sh)
+
+    log_path = config.get('Paths', 'logs', fallback='')
+    if log_path == '':
+        root.warning('No log directory specified in configuration. Using current working directory')
+    # Logging output to files with different verbosity
+    if config.has_option("resourcesbot", "logfile"):
+        fh = logging.FileHandler(f"{log_path}{config['resourcesbot']['logfile']}")
+        fh.setLevel(logging.WARNING)
+        fh.setFormatter(fformatter)
+        root.addHandler(fh)
+    if config.has_option("resourcesbot", "infologfile"):
+        fh_info = logging.FileHandler(f"{log_path}{config['resourcesbot']['infologfile']}")
+        fh_info.setLevel(logging.INFO)
+        fh_info.setFormatter(fformatter)
+        root.addHandler(fh_info)
+    if config.has_option("resourcesbot", "debuglogfile"):
+        fh_debug = logging.FileHandler(f"{log_path}{config['resourcesbot']['debuglogfile']}")
+        fh_debug.setLevel(logging.DEBUG)
+        fh_debug.setFormatter(fformatter)
+        root.addHandler(fh_debug)
+
 
 if __name__ == "__main__":
     resourcesbot = parse_arguments()

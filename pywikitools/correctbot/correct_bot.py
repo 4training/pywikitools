@@ -15,26 +15,20 @@ TODO: Not yet operational
 import argparse
 import logging
 import importlib
+import sys
 from typing import Callable, List, Optional
 
 from pywikitools import fortraininglib
-from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+from pywikitools.lang.translated_page import TranslatedPage
 
 class CorrectBot:
     """Main class for doing corrections"""
-    def __init__(self, simulate: bool = False, loglevel: Optional[str] = None):
+    def __init__(self, simulate: bool = False):
         self.logger = logging.getLogger("pywikitools.correctbot")
         self._simulate: bool = simulate
         self._diff: str = ""
         self._stats: Optional[str] = None
         self._correction_counter: int = 0
-
-        if loglevel is not None:
-            numeric_level = getattr(logging, loglevel.upper(), None)
-            if not isinstance(numeric_level, int):
-                raise ValueError(f"Invalid log level: {loglevel}")
-            logging.basicConfig(level=numeric_level)
-            self.logger.setLevel(numeric_level)
 
     def _load_corrector(self, language_code: str) -> Callable:
         """Load the corrector class for the specified language and return it.
@@ -59,6 +53,7 @@ class CorrectBot:
 
         This does not write anything back to the server. Changes can be read with
         get_stats(), get_correction_counter() and get_diff()
+        @returns True on success, False if an error occurred
         """
         self._diff = ""
         self._stats = None
@@ -119,11 +114,21 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("language_code", help="Language code")
     parser.add_argument("-s", "--simulate", type=bool, default=False, required=False,
                         help="Simulates the corrections but does not apply them to the webpage.")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, help="set loglevel for the script")
+    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_arguments()
-    correctbot = CorrectBot(args.simulate, args.loglevel)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    sh = logging.StreamHandler(sys.stdout)
+    fformatter = logging.Formatter('%(levelname)s: %(message)s')
+    sh.setFormatter(fformatter)
+    numeric_level = getattr(logging, args.loglevel.upper(), None)
+    assert isinstance(numeric_level, int)
+    sh.setLevel(numeric_level)
+    root.addHandler(sh)
+
+    correctbot = CorrectBot(args.simulate)
     correctbot.run(args.page, args.language_code)
