@@ -21,7 +21,10 @@ class UniversalCorrector():
 #        return text.replace("e", "i")
 
     def correct_wrong_capitalization(self, text: str) -> str:
-        """Fix wrong capitalization at the beginning of a sentence or after a colon"""
+        """
+        Fix wrong capitalization at the beginning of a sentence or after a colon.
+        Only do that if our text ends with a dot to avoid correcting single words / short phrases
+        """
         # Or to say it differently: the letter following a .!?;: will be capitalized
 
         # TODO maybe this needs to be cut out of UniversalCorrector into a separate class
@@ -30,9 +33,14 @@ class UniversalCorrector():
         # TODO: Quotation marks are not yet covered - double check if necessary
         if len(text) > 1:
             find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
+            result: str = text
             for match in re.finditer(find_wrong_capitalization, text):
-                text = text[:match.end() - 1] + match.group(1).upper() + text[match.end():]
-            text = text[0].upper() + text[1:]
+                result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
+            result = result[0].upper() + result[1:]
+            if text.endswith("."):
+                return result
+            elif result != text:
+                logging.getLogger('pywikitools.correctbot.universal').warning(f"Please check capitalization in {text}")
         return text
 
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:

@@ -63,6 +63,8 @@ class CorrectBot:
             return False
         corrector = self._load_corrector(language_code)()
         for translation_unit in translated_page:
+            if translation_unit.get_translation() == "":
+                continue
             if translation_unit.is_translation_well_structured():
                 for orig_snippet, trans_snippet in translation_unit:
                     trans_snippet.content = corrector.correct(trans_snippet.content, orig_snippet.content)

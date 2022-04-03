@@ -10,6 +10,7 @@ from pywikitools import fortraininglib
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
+from pywikitools.correctbot.correctors.fr import FrenchCorrector
 from pywikitools.correctbot.correctors.universal import RTLCorrector, UniversalCorrector
 
 from typing import Callable, List
@@ -274,17 +275,20 @@ class TestEnglishCorrector(unittest.TestCase):
             self.assertEqual(corrector.correct(wrong), '“Test”')
 """
 
-"""TODO
 class TestFrenchCorrector(unittest.TestCase):
     def test_false_friends_replacement(self):
         corrector = FrenchCorrector()
-        self.assertEqual(corrector.correct("example"), "exemple")
+        self.assertEqual(corrector.correct("Example"), "Exemple")
 
     def test_correct_quotation_marks(self):
         corrector = FrenchCorrector()
-        for wrong in ["“Test”", '"Test"', "« Test »", "«Test»"]
+        wrongs: List[str] = ['"Test"', "« Test »", "«Test»"]
+        for wrong in wrongs:
             self.assertEqual(corrector.correct(wrong), "«\u00a0Test\u00a0»")
-"""
+        # Make sure several corrections in one longer string also work correctly
+        self.assertEqual(corrector.correct(" Connect ".join(wrongs)), " Connect ".join(["«\u00a0Test\u00a0»"] * 3))
+        with self.assertLogs('pywikitools.correctbot.fr', level="WARNING"):
+            self.assertEqual(corrector.correct("“Test”"), "“Test”")
 
 class TestArabicCorrector(CorrectorTestCase):
     # TODO research which of these changes to improve Arabic language quality could be automated:
