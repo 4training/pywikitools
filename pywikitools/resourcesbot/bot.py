@@ -12,9 +12,8 @@ from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
 from pywikitools.resourcesbot.export_repository import ExportRepository
 from pywikitools.resourcesbot.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo, LanguageInfo, \
+from pywikitools.resourcesbot.data_structures import FileInfo, TranslationProgress, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
-
 
 class ResourcesBot:
     """Contains all the logic of our bot"""
@@ -131,7 +130,32 @@ class ResourcesBot:
         self.logger.warning("Couldn't retrieve version from English worksheet!")
         return ("", 0)
 
+    def _query_translated_file(self, worksheet: WorksheetInfo, english_file_info: FileInfo) -> None:
+        """
+        Query the name of the translated file and see if it is valid. If yes, go ahead and see if such a file exists
+        """
+        if english_file_info.translation_unit is None:
+            self.logger.warning(f"Internal error: translation unit is None in {english_file_info}, ignoring.")
+            return
+        file_name = fortraininglib.get_translated_unit(worksheet.page, worksheet.language_code,
+                                                       english_file_info.translation_unit)
+        warning: str = ""
+        if file_name is None:
+            warning = "does not exist"
+        elif (file_name == '-') or (file_name == '.'):
+            warning = f"is placeholder: {file_name}"
+        elif file_name == english_file_info.get_file_name():
+            warning = "is identical with English original"
+        if warning != "":
+            # TODO fill that translation unit with "-"
+            if not worksheet.progress.is_unfinished:    # No need write warnings if the translation is unfinished
+                self.logger.warning(f"Warning: translation {worksheet.page}/{english_file_info.translation_unit}/"
+                                    f"{worksheet.language_code} (for {english_file_info.file_type} file) {warning}")
+            return
+        self._add_file_type(worksheet, english_file_info.file_type, file_name)   # type:ignore (file_name is not None)
+
     def _add_file_type(self, worksheet: WorksheetInfo, file_type: str, file_name: str, unit: Optional[int] = None):
+        """Try to add details on this translated file to worksheet - warn if it doesn't exist."""
         try:
             file_page = pywikibot.FilePage(self.site, file_name)
             if file_page.exists():
@@ -142,7 +166,7 @@ class ResourcesBot:
         except pywikibot.exceptions.Error as err:
             self.logger.warning(f"Exception thrown for {file_type} file: {err}")
 
-    def _add_english_file_infos(self, page_source: str, worksheet: WorksheetInfo):
+    def _add_english_file_infos(self, page_source: str, worksheet: WorksheetInfo) -> None:
         """
         Finds out the names of the English downloadable files (originals)
         and adds them to worksheet
@@ -175,57 +199,43 @@ class ResourcesBot:
         self._translation_progress[page] = available_translations   # TODO remove this
 
         finished_translations = []
-        for language, progress in available_translations.items():
-            if (self._limit_to_lang is not None) and (self._limit_to_lang != language):
+        for lang, progress in available_translations.items():
+            if (self._limit_to_lang is not None) and (self._limit_to_lang != lang):
                 continue
-            if language == "en":    # We saved information on the English originals already, don't do that again
+            if lang == "en":    # We saved information on the English originals already, don't do that again
                 continue
-            if progress.is_unfinished():
-                self.logger.info(f"Ignoring translation {page}/{language} - ({progress} translation units translated)")
-            else:
-                finished_translations.append(language)
-                if progress.is_incomplete():
-                    self.logger.warning(f"Incomplete translation {page}/{language} - {progress}")
-        self.logger.info(f"This worksheet is translated into: {str(finished_translations)}")
+            if progress.is_incomplete():
+                self.logger.warning(f"Incomplete translation {page}/{lang} - {progress}")
 
-        # now let's retrieve the translated file names
-        for lang in finished_translations:
             translated_title = fortraininglib.get_translated_title(page, lang)
             if translated_title is None:  # apparently this translation doesn't exist
-                self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
+                if not progress.is_unfinished():
+                    self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
                 continue
             translated_version = fortraininglib.get_translated_unit(page, lang, version_unit)
             if translated_version is None:
-                self.logger.warning(f"Language {lang}: Version of {page} not translated, skipping.")
+                if not progress.is_unfinished():
+                    self.logger.warning(f"Language {lang}: Version of {page} not translated, skipping.")
                 continue
 
-            page_info = WorksheetInfo(page, lang, translated_title, available_translations[lang], translated_version)
+            if progress.is_unfinished():
+                self.logger.info(f"Ignoring translation {page}/{lang} - ({progress} translation units translated)")
+            else:
+                finished_translations.append(lang)
+            page_info = WorksheetInfo(page, lang, translated_title, progress, translated_version)
             if not page_info.has_same_version(english_page_info):
                 self.logger.warning(f"Language {lang}: {translated_title} has version {translated_version}"
                                     f" - {english_title} has version {version}")
 
-            for file_type, file_info in english_page_info.get_file_infos().items():
-                assert file_info.translation_unit is not None   # TODO exception documentation
-                translation = fortraininglib.get_translated_unit(page, lang, file_info.translation_unit)
-#                self.logger.debug(f"{page}/{en_file_details[file_type]['number']}/{lang} is {translation}")
-                if translation is None:
-                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
-                                        f"(for file {file_type}) does not exist!")
-                    # TODO fill it with "-"
-                elif (translation == '-') or (translation == '.'):
-                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
-                                f"(for file {file_type}) is placeholder: {translation}")
-                    # TODO fill it with "-"
-                elif translation == file_info.get_file_name():
-                    self.logger.warning(f"Warning: translation {page}/{file_info.translation_unit}/{lang} "
-                                        f"(for file {file_type}) is identical with English original")
-                    # TODO fill it with "-"
-                else:
-                    self._add_file_type(page_info, file_type, translation)
+            for file_info in english_page_info.get_file_infos().values():
+                self._query_translated_file(page_info, file_info)
 
             if lang not in self._result:
                 self._result[lang] = LanguageInfo(lang)
             self._result[lang].add_worksheet_info(page, page_info)
+
+        self.logger.info(f"Worksheet {page} is translated into: {finished_translations}, "
+                         f"ignored {set(available_translations.keys()) - set(finished_translations)}")
 
     def _sync_and_compare(self, language_info: LanguageInfo) -> ChangeLog:
         """

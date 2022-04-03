@@ -78,6 +78,8 @@ class WriteList(LanguagePostProcessor):
         """
         content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
+            if worksheet_info.progress.is_unfinished():
+                continue
             if not worksheet_info.has_file_type('pdf'):
                 # Only show worksheets where we have a PDF file in the list
                 self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"

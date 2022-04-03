@@ -122,6 +122,9 @@ class ExportHTML(LanguagePostProcessor):
 
         # Download all worksheets and save the transformed HTML
         for worksheet, info in language_info.worksheets.items():
+            # As elsewhere, we ignore unfinished worksheets and worksheets without PDF
+            if info.progress.is_unfinished() or not info.has_file_type("pdf"):
+                continue
             if self._force_rewrite or self.has_relevant_change(worksheet, change_log):
                 content = fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")
                 if content is None:
