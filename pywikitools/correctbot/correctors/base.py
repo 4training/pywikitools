@@ -11,6 +11,11 @@ Functions starting with "correct_": applied to every translation unit
 Functions ending with "_title": applied only to the title translation unit
 Functions ending with "_filename": applied only to translation units containing a file name
 
+All correction functions must take one string and return the corrected string.
+In case the correction function needs also the original string to decide what to do, it
+takes two strings as parameters (the original string is the second parameter).
+Most of the correction functions don't need to look at the original string, so they only take one parameter
+
 Implementation notes:
 The alternative to using introspection would have been to register the correction functions
 introduced by each class during initialization. That would be more explicit but
@@ -18,8 +23,9 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+from inspect import signature
 import logging
-from typing import Generator
+from typing import Callable, Generator, Optional
 from collections import defaultdict
 
 class CorrectorBase:
@@ -34,15 +40,15 @@ class CorrectorBase:
         # Counter for how often a particular rule (function) corrected something
         self._stats = defaultdict(int)
 
-    def correct(self, text: str) -> str:
+    def correct(self, text: str, original: Optional[str] = None) -> str:
         """ Call all available correction functions one after the other and return the corrected string. """
-        return self._run_correction_functions(text, (s for s in dir(self) if s.startswith("correct_")))
+        return self._run_correction_functions(text, original, (s for s in dir(self) if s.startswith("correct_")))
 
-    def title_correct(self, text: str) -> str:
+    def title_correct(self, text: str, original: Optional[str] = None) -> str:
         """ Call all correction functions for titles one after the other and return the corrected string. """
-        return self._run_correction_functions(text, (s for s in dir(self) if s.endswith("_title")))
+        return self._run_correction_functions(text, original, (s for s in dir(self) if s.endswith("_title")))
 
-    def filename_correct(self, text: str) -> str:
+    def filename_correct(self, text: str, original: Optional[str] = None) -> str:
         """
         Call all correction functions for filenames one after the other and return the corrected string.
 
@@ -53,9 +59,10 @@ class CorrectorBase:
             logger.warning(f"Input parameter does not seem to be a file name: {text}")
             return text
 
-        return self._run_correction_functions(text, (s for s in dir(self) if s.endswith("_filename")))
+        return self._run_correction_functions(text, original, (s for s in dir(self) if s.endswith("_filename")))
 
-    def _run_correction_functions(self, text: str, functions: Generator[str, None, None]) -> str:
+    def _run_correction_functions(self, text: str, original: Optional[str],
+                                  functions: Generator[str, None, None]) -> str:
         """
         Call all the functions given by the generator one after the other and return the corrected string.
 
@@ -63,11 +70,19 @@ class CorrectorBase:
         """
         result = text
 
-        for corrector_function in functions:
-            # calling each function
-            result = getattr(self, corrector_function)(text)
+        for function_name in functions:
+            corrector_function: Callable = getattr(self, function_name)
+            # calling each function: Check with introspection if we need to give both parameters or just one
+            if len(signature(corrector_function).parameters) == 2:
+                if original is None:
+                    original = ""
+                result = corrector_function(text, original)
+            else:
+                assert len(signature(corrector_function).parameters) == 1
+                result = corrector_function(text)
+
             if text != result:
-                self._stats[corrector_function] += 1
+                self._stats[function_name] += 1
             text = result
 
         return result

@@ -28,30 +28,38 @@ class UniversalCorrector():
         # because there may be languages where this doesn't work
 
         # TODO: Quotation marks are not yet covered - double check if necessary
-        find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
-        for match in re.finditer(find_wrong_capitalization, text):
-            text = text[:match.end() - 1] + match.group(1).upper() + text[match.end():]
-        text = text[0].upper() + text[1:]
+        if len(text) > 1:
+            find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
+            for match in re.finditer(find_wrong_capitalization, text):
+                text = text[:match.end() - 1] + match.group(1).upper() + text[match.end():]
+            text = text[0].upper() + text[1:]
         return text
 
-    def correct_multiple_spaces(self, text: str) -> str:
+    def correct_multiple_spaces_also_in_title(self, text: str) -> str:
         """Reduce multiple spaces to one space"""
         check_multiple_spaces = re.compile(r'( ){2,}')
         return re.sub(check_multiple_spaces, ' ', text)
 
     def correct_missing_spaces(self, text: str) -> str:
         """Insert missing spaces between punctuation and characters"""
-        check_missing_spaces = re.compile(r'([.!?;,])(\w)')
+        check_missing_spaces = re.compile(r'([.!?;,؛،؟])(\w)')
         return re.sub(check_missing_spaces, r'\1 \2', text)
 
     def correct_wrong_spaces(self, text: str) -> str:
         """Erase redundant spaces before punctuation"""
-        check_wrong_spaces = re.compile(r'\s+([.!?;,])')
+        check_wrong_spaces = re.compile(r'\s+([.!?;,؛،؟])')
         return re.sub(check_wrong_spaces, r'\1', text)
 
-    def correct_wrong_dash(self, text: str) -> str:
+    def correct_wrong_dash_also_in_title(self, text: str) -> str:
         """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
         return re.sub(' - ', ' – ', text)
+
+    def correct_missing_final_dot(self, text: str, original: str) -> str:
+        """If the original has a trailing dot, the translation also needs one at the end."""
+        if original.endswith("."):
+            if len(text.strip()) > 1 and not text.strip().endswith("."):
+                return text.strip() + "."
+        return text
 
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""

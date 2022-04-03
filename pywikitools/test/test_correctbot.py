@@ -1,11 +1,13 @@
 """
 Test cases for CorrectBot: Testing core functionality as well as language-specific rules
 """
+from inspect import signature
 import logging
 import unittest
 import importlib
 import os
 from pywikitools import fortraininglib
+from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.universal import RTLCorrector, UniversalCorrector
@@ -108,7 +110,7 @@ class TestLanguageCorrectors(unittest.TestCase):
             self.flexible_correctors.append(getattr(universal_module, class_name))
 
     def test_for_meaningful_names(self):
-        """Make sure each function either starts with "correct_" or ends with "_title" or with "_filename"""
+        """Make sure each function either starts with "correct_" or ends with "_title" or with "_filename."""
         for language_corrector in self.language_correctors:
             for function_name in dir(language_corrector):
                 # Ignore private functions
@@ -120,6 +122,26 @@ class TestLanguageCorrectors(unittest.TestCase):
                 self.assertTrue(function_name.startswith("correct_")
                                 or function_name.endswith("_title")
                                 or function_name.endswith("_filename"))
+
+    def test_for_correct_parameters(self):
+        """Make sure all correction functions take either one or two strings as parameters."""
+        for language_corrector in self.language_correctors:
+            for function_name in dir(language_corrector):
+                # Ignore private functions
+                if function_name.startswith('_'):
+                    continue
+                corrector_function = getattr(language_corrector, function_name)
+                # Ignore everything inherited from CorrectorBase
+                if corrector_function.__module__ == MOD_BASE:
+                    continue
+                count_parameters: int = 0
+                for parameter in signature(corrector_function).parameters:
+                    if parameter != "self":
+                        count_parameters += 1
+                        self.assertEqual(signature(corrector_function).parameters[parameter].annotation, str)
+                self.assertGreaterEqual(count_parameters, 1)
+                self.assertLessEqual(count_parameters, 2)
+
 
     def test_for_unique_function_names(self):
         """Make sure that there are no functions with the same name in a language-specific corrector
@@ -175,6 +197,12 @@ class TestUniversalCorrector(unittest.TestCase):
     def test_dash_correction(self):
         corrector = UniversalCorrectorTester()
         self.assertEqual(corrector.correct("Using long dash - not easy."), "Using long dash – not easy.")
+
+    def test_final_dot_correction(self):
+        corrector = UniversalCorrectorTester()
+        self.assertEqual(corrector.correct("Ein ganzer Satz", "A full sentence."), "Ein ganzer Satz.")
+        self.assertEqual(corrector.correct("Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
+
 
 # TODO    def test_correct_ellipsis(self):
 #        corrector = UniversalCorrectorTester()
@@ -258,28 +286,30 @@ class TestFrenchCorrector(unittest.TestCase):
             self.assertEqual(corrector.correct(wrong), "«\u00a0Test\u00a0»")
 """
 
-"""TODO
 class TestArabicCorrector(CorrectorTestCase):
     # TODO research which of these changes to improve Arabic language quality could be automated:
     # https://www.4training.net/mediawiki/index.php?title=Forgiving_Step_by_Step%2Far&type=revision&diff=29760&oldid=29122
     @classmethod
     def setUpClass(cls):
-        cls.corrector = RTLCorrectorTester()
+        cls.corrector = ArabicCorrector()
 
-    def test_correct_comma(self):
+    def test_correct_punctuation(self):
         self.assertEqual(self.corrector.correct(","), "،")
         self.assertEqual(self.corrector.correct("منهم،حتى"), "منهم، حتى")
+        self.assertEqual(self.corrector.correct(";"),  "؛")
+        self.assertEqual(self.corrector.correct("ما هو من عند الله?"), "ما هو من عند الله؟")
 
     def test_correct_spaces(self):
         self.assertEqual(self.corrector.correct("يدعي  و يصلي"), "يدعي و يصلي")
         self.assertEqual(self.corrector.correct("بحرص ،  أن"), "بحرص، أن")
 
     def test_real_life_examples(self):
-        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 4, 62201, 62260)
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 16, 62225, 62270)
         self.compare_title_revisions("How to Continue After a Prayer Time", "ar", 62193, 62274)
-"""
+#       TODO this would require passing the original text as well so that final dot gets added
+#        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
+
 
 if __name__ == '__main__':
     unittest.main()

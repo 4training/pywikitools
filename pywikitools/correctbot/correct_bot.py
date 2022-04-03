@@ -64,12 +64,13 @@ class CorrectBot:
         corrector = self._load_corrector(language_code)()
         for translation_unit in translated_page:
             if translation_unit.is_translation_well_structured():
-                for _, snippet in translation_unit:
-                    snippet.content = corrector.correct(snippet.content)
+                for orig_snippet, trans_snippet in translation_unit:
+                    trans_snippet.content = corrector.correct(trans_snippet.content, orig_snippet.content)
                 translation_unit.sync_from_snippets()
             else:
                 self.logger.warning(f"{translation_unit.get_name()} is not well structured.")
-                translation_unit.set_translation(corrector.correct(translation_unit.get_translation()))
+                translation_unit.set_translation(corrector.correct(translation_unit.get_translation(),
+                                                                   translation_unit.get_definition()))
 
             diff = translation_unit.get_translation_diff()
             if diff != "":
