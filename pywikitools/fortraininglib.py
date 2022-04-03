@@ -76,11 +76,12 @@ def get_file_types() -> List[str]:
 
 
 def get_language_direction(language_code: str) -> str:
-    """ Returns language direction 'rtl' or 'ltr'
-    This is hard-coded here.
-    It is possible to request this from the mediawiki API e.g. with
-    https://www.4training.net/mediawiki/api.php?action=query&titles=Prayer/ckb&prop=info
-    but this has the cost of an extra API call...
+    """
+    Returns language direction 'rtl' or 'ltr'
+
+    This is hard-coded here to save time.
+    See tools/check_language_directions.py for checking this for correctness
+    by requesting language directions from the mediawiki API.
     """
     if language_code in RTL_LANGUAGES:
         return "rtl"

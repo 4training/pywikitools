@@ -85,6 +85,15 @@ class TestFortrainingLib(unittest.TestCase):
         # Check correct error handling for non-existing page
         self.assertEqual(len(fortraininglib.list_page_translations("NotExisting", "de")), 0)
 
+    def test_list_page_templates(self):
+        result = fortraininglib.list_page_templates('Polish')
+        result_de = fortraininglib.list_page_templates('Polish/de')
+        self.assertListEqual(result, result_de)     # Make sure that language codes at the end are removed
+        self.assertIn("Template:BibleTranslation", result)
+        self.assertIn("Template:JesusFilm", result)
+        self.assertIn("Template:Translatable template", result)
+        self.assertEqual(len(fortraininglib.list_page_templates('NotExisting')), 0)
+
     def test_get_pdf_name(self):
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'en'), 'Forgiving_Step_by_Step.pdf')
         self.assertEqual(fortraininglib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')
