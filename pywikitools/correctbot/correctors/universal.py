@@ -53,9 +53,9 @@ class UniversalCorrector():
         check_missing_spaces = re.compile(r'([.!?;,؛،؟])(\w)')
         return re.sub(check_missing_spaces, r'\1 \2', text)
 
-    def correct_wrong_spaces(self, text: str) -> str:
-        """Erase redundant spaces before punctuation"""
-        check_wrong_spaces = re.compile(r'\s+([.!?;,؛،؟])')
+    def correct_spaces_before_comma_and_dot(self, text: str) -> str:
+        """Erase redundant spaces before commas and dots"""
+        check_wrong_spaces = re.compile(r'\s+([.,])')
         return re.sub(check_wrong_spaces, r'\1', text)
 
     def correct_wrong_dash_also_in_title(self, text: str) -> str:
@@ -85,8 +85,26 @@ class UniversalCorrector():
         return re.sub(r"_+", '_', text)
 
 
+class NoSpaceBeforePunctuationCorrector():
+    """
+    This is an extra class only for !?:; punctuation marks that must not be preceded by a space.
+    Removing spaces before comma and dot is already covered by UniversalCorrector.correct_spaces_before_comma_and_dot()
+    This class is extra as e.g. French requires non-breaking spaces before them
+    (in contrast to most other languages which have no spaces before these punctuation marks as well)
+    """
+    def correct_no_spaces_before_punctuation(self, text: str) -> str:
+        """Erase redundant spaces before punctuation marks."""
+        check_wrong_spaces = re.compile(r'\s+([!?;:])')
+        return re.sub(check_wrong_spaces, r'\1', text)
+
+
 class RTLCorrector():
     """Corrections for right-to-left languages"""
+
+    def correct_wrong_spaces_in_rtl(self, text: str) -> str:
+        """Erase redundant spaces before RTL punctuation marks"""
+        check_wrong_spaces = re.compile(r'\s+([؛،؟])')
+        return re.sub(check_wrong_spaces, r'\1', text)
 
     def fix_rtl_title(self, text: str) -> str:
         """When title ends with closing parenthesis, add a RTL mark at the end"""

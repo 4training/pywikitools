@@ -15,11 +15,13 @@ TODO: Not yet operational
 import argparse
 import logging
 import importlib
+import re
 import sys
 from typing import Callable, List, Optional
 
 from pywikitools import fortraininglib
-from pywikitools.lang.translated_page import TranslatedPage
+from pywikitools.correctbot.correctors.base import CorrectorBase
+from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 class CorrectBot:
     """Main class for doing corrections"""
@@ -47,6 +49,36 @@ class CorrectBot:
 
         raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
+    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> None:
+        """
+        Check one specific translation unit: Run the right correction rules on it.
+        For this we analyze: Is it a title, a file name or a "normal" translation unit?
+
+        Changes will be directly stored in this TranslationUnit.
+        """
+        if unit.get_translation() == "":
+            return
+        if unit.is_title():
+            # translation unit holds the title -> no need to split into snippets
+            unit.set_translation(corrector.title_correct(unit.get_translation(), unit.get_definition()))
+            return
+        if re.search(r"\.(odt|pdf|odg)$", unit.get_definition()):
+            # translation unit holds a filename -> no need to split into snippets
+            unit.set_translation(corrector.filename_correct(unit.get_translation(), unit.get_definition()))
+            return
+        if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
+            # translation unit holds the version number -> ignore it
+            return
+
+        # This is a "normal" translation unit with content -> if possible run rules on snippets
+        if unit.is_translation_well_structured():
+            for orig_snippet, trans_snippet in unit:
+                trans_snippet.content = corrector.correct(trans_snippet.content, orig_snippet.content)
+            unit.sync_from_snippets()
+        else:   # fallback: Run rules on the whole translation unit
+            self.logger.warning(f"{unit.get_name()} is not well structured.")
+            unit.set_translation(corrector.correct(unit.get_translation(), unit.get_definition()))
+
     def check_page(self, page: str, language_code: str) -> bool:
         """
         Check one specific page and store the results in this class
@@ -63,19 +95,8 @@ class CorrectBot:
             return False
         corrector = self._load_corrector(language_code)()
         for translation_unit in translated_page:
-            if translation_unit.get_translation() == "":
-                continue
-            if translation_unit.is_translation_well_structured():
-                for orig_snippet, trans_snippet in translation_unit:
-                    trans_snippet.content = corrector.correct(trans_snippet.content, orig_snippet.content)
-                translation_unit.sync_from_snippets()
-            else:
-                self.logger.warning(f"{translation_unit.get_name()} is not well structured.")
-                translation_unit.set_translation(corrector.correct(translation_unit.get_translation(),
-                                                                   translation_unit.get_definition()))
-
-            diff = translation_unit.get_translation_diff()
-            if diff != "":
+            self.check_unit(corrector, translation_unit)
+            if (diff := translation_unit.get_translation_diff()) != "":
                 self._diff += f"{translation_unit.get_name()}: {diff}\n"
         self._stats = corrector.print_stats()
         self._correction_counter = corrector.count_corrections()

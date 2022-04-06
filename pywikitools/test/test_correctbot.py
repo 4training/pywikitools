@@ -13,9 +13,11 @@ from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
 from pywikitools.correctbot.correctors.universal import RTLCorrector, UniversalCorrector
 
-from typing import Callable, List
+from typing import Callable, List, Optional
 from os import listdir
 from os.path import isfile, join
+
+from pywikitools.lang.translated_page import TranslationUnit
 
 # Package and module names
 PKG_CORRECTORS = "pywikitools.correctbot.correctors"
@@ -165,6 +167,7 @@ class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
     """With this class we can test the rules of UniversalCorrector"""
     pass
 
+
 class TestUniversalCorrector(unittest.TestCase):
     def test_spaces(self):
         corrector = UniversalCorrectorTester()
@@ -172,8 +175,8 @@ class TestUniversalCorrector(unittest.TestCase):
                                         "This entry contains too many spaces.")
         self.assertEqual(corrector.correct("Missing.Spaces,after punctuation?Behold,again."),
                                            "Missing. Spaces, after punctuation? Behold, again.")
-        self.assertEqual(corrector.correct("This entry contains redundant spaces.  Before.   Punctuation."),
-                                           "This entry contains redundant spaces. Before. Punctuation.")
+        self.assertEqual(corrector.correct("This entry contains redundant spaces , before , punctuation ."),
+                                           "This entry contains redundant spaces, before, punctuation.")
 
     def test_capitalization(self):
         corrector = UniversalCorrectorTester()
@@ -237,17 +240,11 @@ class TestGermanCorrector(CorrectorTestCase):
             self.assertEqual(corrector.correct(f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
 
         with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
-            self.assertEqual(corrector.correct(' " “ ” „'), ' " “ ” „')
-        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
-            self.assertEqual(corrector.correct('"f“al"sc”h"'), '„f“al"sc”h“')
-        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
-            self.assertEqual(corrector.correct('"Das ist" seltsam"'), '„Das ist“ seltsam“')
+            self.assertEqual(corrector.correct('"Das ist" seltsam"'), '"Das ist" seltsam"')
 
-    def test_correct_quotes_todo(self):
-        corrector = GermanCorrector()
-        valid_strings: List[str] = [
+        valid_strings: List[str] = [    # Some more complex examples
             "(siehe Arbeitsblatt „[[Forgiving Step by Step/de|Schritte der Vergebung]]“)",
-            "[[How to Continue After a Prayer Time/de|“Wie es nach einer Gebetszeit weitergeht”]]",
+            "[[How to Continue After a Prayer Time/de|„Wie es nach einer Gebetszeit weitergeht“]]",
             "(indem er sagt: „Ich vergebe mir.“)",
             "(Zum Beispiel: „Gott, wir kommen zu dir als den Richter[...] hilf du ____ in diesem Prozess.“)",
             "(„Was heißt Vergeben?“)",
@@ -255,12 +252,12 @@ class TestGermanCorrector(CorrectorTestCase):
             "Vergebung bedeutet nicht zu sagen „das war ja nur eine Kleinigkeit“."
         ]
         for valid in valid_strings:
-            # TODO: all these strings shouldn't give warnings
-            self.assertEqual(corrector.correct(valid), valid)
-            # TODO: In fact they should receive corrections
-            #needs_correction = valid.replace("„", '"')
-            #needs_correction = needs_correction.replace("”", '"')
-            #self.assertEqual(corrector.correct(needs_correction), valid)
+            # with self.assertNoLogs(): # Available from Python 3.10
+            self.assertEqual(corrector.correct(valid), valid)   # Check that correct strings remain correct
+            needs_correction = valid.replace("„", '"')
+            needs_correction = needs_correction.replace("”", '"')
+            # Now make sure this problematic version gets corrected back to the correct form
+            self.assertEqual(corrector.correct(needs_correction), valid)
 
 
 """TODO
@@ -276,6 +273,22 @@ class TestEnglishCorrector(unittest.TestCase):
 """
 
 class TestFrenchCorrector(unittest.TestCase):
+    def test_punctuation(self):
+        """
+        Ensure correct spaces around punctuation:
+
+        No space before comma and dot, space before ; : ! ?
+        Space after all punctuation marks.
+        """
+        corrector = FrenchCorrector()
+        self.assertEqual(corrector.correct("Mais moi , je vous dis: Si"), "Mais moi, je vous dis\u00a0: Si")
+        self.assertEqual(corrector.correct("Si quelqu’un dit à son frère: “Imbécile!”"),
+                                           "Si quelqu’un dit à son frère\u00a0: “Imbécile\u00a0!”")
+        self.assertEqual(corrector.correct("Comment prier?<br/>Comment jeûner?"),
+                                           "Comment prier\u00a0?<br/>Comment jeûner\u00a0?")
+        self.assertEqual(corrector.correct("Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu"),
+                                           "Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu")
+
     def test_false_friends_replacement(self):
         corrector = FrenchCorrector()
         self.assertEqual(corrector.correct("Example"), "Exemple")
