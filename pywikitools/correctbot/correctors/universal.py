@@ -11,6 +11,8 @@ Each function should have a documentation string which will be used for print_st
 import logging
 import re
 
+from pywikitools.correctbot.correctors.base import use_snippets
+
 class UniversalCorrector():
     """Has language-independent correction functions"""
     # TODO: Instead of ellipsis (…), use "..." - write a function for it.
@@ -20,6 +22,7 @@ class UniversalCorrector():
 #        """TODO for testing only: Replace e with i"""
 #        return text.replace("e", "i")
 
+    @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
         """
         Fix wrong capitalization at the beginning of a sentence or after a colon.
@@ -37,10 +40,10 @@ class UniversalCorrector():
             for match in re.finditer(find_wrong_capitalization, text):
                 result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
             result = result[0].upper() + result[1:]
-            if text.endswith("."):
+            if text.strip().endswith((".", "!", "?")):
                 return result
             elif result != text:
-                logging.getLogger('pywikitools.correctbot.universal').warning(f"Please check capitalization in {text}")
+                logging.getLogger('pywikitools.correctbot.universal').warning(f"Please check capitalization in {repr(text)}")
         return text
 
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:
@@ -79,6 +82,7 @@ class UniversalCorrector():
         """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
         return re.sub(' - ', ' – ', text)
 
+    @use_snippets
     def correct_missing_final_dot(self, text: str, original: str) -> str:
         """If the original has a trailing dot, the translation also needs one at the end."""
         if original.endswith("."):

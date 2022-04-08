@@ -206,13 +206,18 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
         self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
         self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
+        # Testing also print_stats()
+        self.assertIn("6 corrections", corrector.print_stats())
+        self.assertIn("Reduce multiple spaces", corrector.print_stats())
+        self.assertIn("Insert missing spaces", corrector.print_stats())
+        self.assertIn("Erase redundant spaces", corrector.print_stats())
 
     def test_capitalization(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "lowercase start. and lowercase after full stop."),
-                                            "Lowercase start. And lowercase after full stop.")
-        self.assertEqual(correct(corrector, "Question? answer! more lowercase. why? didn't check."),
-                                            "Question? Answer! More lowercase. Why? Didn't check.")
+        self.assertEqual(correct(corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
+                                            "Lowercase start.<br/>And lowercase after full stop. Yes.")
+        self.assertEqual(correct(corrector, "Question? answer!<br/>more lowercase. <b>why?</b> didn't check."),
+                                            "Question? Answer!<br/>More lowercase. <b>Why?</b> didn't check.")
         self.assertEqual(correct(corrector, "After colons: and semicolons; we don't correct."),
                                             "After colons: and semicolons; we don't correct.")
 
@@ -233,8 +238,10 @@ class TestUniversalCorrector(unittest.TestCase):
 
     def test_final_dot_correction(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence."), "Ein ganzer Satz.")
+        self.assertEqual(correct(corrector, "<b>Ein ganzer Satz</b>", "<b>A full sentence.</b>"),
+                                            "<b>Ein ganzer Satz.</b>")
         self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
+
 
 
 # TODO    def test_correct_ellipsis(self):
@@ -280,7 +287,7 @@ class TestGermanCorrector(CorrectorTestCase):
             "(„Was heißt Vergeben?“)",
             "„ich habe mich missverstanden gefühlt“,",
             "Vergebung bedeutet nicht zu sagen „das war ja nur eine Kleinigkeit“.",
-            "„Gott, bitte <b>hilf</b> mir zu vergeben. Amen.“"
+            "„Gott, bitte <b>Hilf</b> mir zu vergeben. Amen.“"
         ]
         for valid in valid_strings:
             # with self.assertNoLogs(): # Available from Python 3.10
@@ -344,7 +351,8 @@ class TestArabicCorrector(CorrectorTestCase):
     def test_correct_punctuation(self):
         self.assertEqual(correct(self.corrector, ","), "،")
         self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
-        self.assertEqual(correct(self.corrector, ";"),  "؛")
+        with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
+            self.assertEqual(correct(self.corrector, ";"),  "؛")
         self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
 
     def test_correct_spaces(self):

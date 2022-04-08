@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List
 
-from .base import CorrectorBase, use_snippets
+from .base import CorrectorBase
 from .universal import NoSpaceBeforePunctuationCorrector, UniversalCorrector
 
 class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector):
