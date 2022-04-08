@@ -60,6 +60,8 @@ class TranslateODT:
         self.keep_english_file: bool = keep_english_file
 
         self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
+        self._original_page_count: int = 0          # How many pages did the currently opened file have originally?
+        self._did_page_count_change: bool = False   # Did the page count of the currently opened file change?
 
     def _is_search_and_replace_necessary(self, orig: str, trans: str) -> bool:
         """
@@ -98,7 +100,7 @@ class TranslateODT:
             return
         # if translation snippet can be found in document, replace
         try:
-            replaced = self._loffice.search_and_replace(orig, trans)
+            replaced = self._loffice.search_and_replace(orig, trans, not self._did_page_count_change)
             if replaced:
                 self.logger.info(f"Replaced: {orig} with: {trans}")
             else:
@@ -115,7 +117,7 @@ class TranslateODT:
                 for search, replace in zip(orig_split, trans_split):
                     if not self._is_search_and_replace_necessary(search.strip(), replace.strip()):
                         continue
-                    replaced = self._loffice.search_and_replace(search, replace)
+                    replaced = self._loffice.search_and_replace(search, replace, not self._did_page_count_change)
                     if replaced:
                         self.logger.info(f"Replaced: {search} with: {replace}")
                     else:
@@ -123,6 +125,9 @@ class TranslateODT:
 
         except AttributeError as error:
             self.logger.error(f"AttributeError: {error}")  # todo: wait some seconds and try again
+
+        if self._loffice.get_page_count() != self._original_page_count:
+            self._did_page_count_change = True
 
     def _search_and_replace(self, translated_page: TranslatedPage):
         """Go through the whole document, search for original text snippets and replace them
@@ -161,6 +166,15 @@ class TranslateODT:
             for (search, replace) in t:     # for each snippet of translation unit:
                 self._process_snippet(search.content, replace.content)
 
+        if self._did_page_count_change:
+            if self._loffice.get_page_count() > self._original_page_count:
+                self.logger.warning(f"Page count of translation is {self._loffice.get_page_count()}. "
+                                    f"Please edit and fit it to {self._original_page_count} pages like the original.")
+            else:
+                # in the (rare) case that first translations were longer so that page count increased
+                # but later translations were shorter so that page count decreased again.
+                self.logger.warning("Page structure change detected. Did the position of the page break change? "
+                                    "Please check and correct if necessary.")
 
     def _fetch_english_file(self, odt_file: str) -> str:
         """Download the specified file from the mediawiki server
@@ -199,8 +213,19 @@ class TranslateODT:
                                 f"according to the headline it should be: {filename}")
         return filename
 
-    def translate_odt(self, worksheet: str, language_code: str) -> Optional[str]:
-        """Central function to process the given worksheet
+    def translate_odt(self, odt_path: str, translated_page: TranslatedPage) -> None:
+        """Open the specified ODT file and replace contents with translation
+        @param odt_path: Path of the ODT file
+        @param translated_page: Contains all translation units we'll do search&replace with
+        Raises ConnectionError (coming from LibreOffice.open_file) if LibreOffice connection didn't work
+        """
+        self._loffice.open_file(odt_path)
+        self._did_page_count_change = False
+        self._original_page_count = self._loffice.get_page_count()
+        self._search_and_replace(translated_page)
+
+    def translate_worksheet(self, worksheet: str, language_code: str) -> Optional[str]:
+        """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT
         @param worksheet name of the worksheet (e.g. "Forgiving_Step_by_Step")
         @param language_code what language we should translate to (e.g. "de")
         @return file name of the created ODT file (or None in case of error)
@@ -252,16 +277,10 @@ class TranslateODT:
         if not odt_path:
             return None
 
-        try:
-            self._loffice.open_file(odt_path)
-        except ConnectionError as err:
-            self.logger.error(err)
-            sys.exit(2)
-
-        self._search_and_replace(translated_page)
-
+        self.translate_odt(odt_path, translated_page)
         self._set_properties(translated_page)
-        self._loffice.set_default_style(language_code, fortraininglib.get_language_direction(language_code) == "rtl")
+        self._loffice.set_default_style(translated_page.language_code,
+            fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
         save_path = self.config['Paths']['worksheets'] + translated_page.language_code
@@ -273,7 +292,7 @@ class TranslateODT:
         self.logger.info(f"Saving translated document to {file_path}...")
         try:
             self._loffice.save_odt(file_path)
-        except FileExistsError as err:
+        except FileExistsError:
             self.logger.error(f"Couldn't save {file_path}: File exists and is currently opened.")
         pdf_path = file_path.replace(".odt", ".pdf")
         self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
@@ -354,4 +373,4 @@ if __name__ == '__main__':
     root.addHandler(sh)
 
     translateodt = TranslateODT(args.keep_english_file)
-    translateodt.translate_odt(args.worksheet, args.language_code)
+    translateodt.translate_worksheet(args.worksheet, args.language_code)

@@ -86,9 +86,15 @@ class LibreOffice:
             raise ConnectionError("Error trying to access the LibreOffice document."
                                   f"Tried {retries} times, giving up now.")
 
-    def search_and_replace(self, search: str, replace: str) -> bool:
+    def get_page_count(self) -> int:
+        assert self._model is not None
+        return self._model.getCurrentController().PageCount
+
+    def search_and_replace(self, search: str, replace: str, warn_if_pages_change: bool = False) -> bool:
         """
         Replaces first occurence of search with replace in the currently opened LibreOffice document
+        @param warn_if_pages_change: Log a warning if start and end of the passage aren't on the same page(s) as
+                                     it was before the replace
         @return True if successful
         """
         # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
@@ -97,11 +103,31 @@ class LibreOffice:
         searcher.SearchCaseSensitive = True
         searcher.SearchString = search
 
-        found = bool(self._model.findFirst(searcher))
-        if found:
-            found_x = self._model.findFirst(searcher)
-            found_x.setString(replace)
-        return found
+        found = self._model.findFirst(searcher)
+        if found is not None:
+            if warn_if_pages_change:
+                # Checking the page number(s) of what we found
+                view_cursor = self._model.getCurrentController().getViewCursor()
+                view_cursor.gotoRange(found.getStart(), False)
+                start_page_before = view_cursor.getPage()
+                view_cursor.gotoRange(found.getEnd(), False)
+                end_page_before = view_cursor.getPage()
+                self.logger.debug(f"Found {search} on page(s) {start_page_before} to {end_page_before}")
+
+            found.setString(replace)
+
+            if warn_if_pages_change:
+                # Checking whether the page number(s) are still the same
+                view_cursor.gotoRange(found.getStart(), False)
+                start_page_after = view_cursor.getPage()
+                view_cursor.gotoRange(found.getEnd(), False)
+                end_page_after = view_cursor.getPage()
+                if (start_page_before != start_page_after) or (end_page_before != end_page_after):
+                    self.logger.warning(f"Page structure changed while replacing '{search}' with '{replace}'. "
+                                         "Please check and correct manually (is the page break at the right place?)")
+
+        return found is not None
+
 
     def save_odt(self, file_name: str):
         """
