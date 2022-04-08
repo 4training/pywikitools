@@ -59,25 +59,18 @@ class CorrectBot:
         if unit.get_translation() == "":
             return
         if unit.is_title():
-            # translation unit holds the title -> no need to split into snippets
-            unit.set_translation(corrector.title_correct(unit.get_translation(), unit.get_definition()))
+            # translation unit holds the title
+            corrector.title_correct(unit)
             return
         if re.search(r"\.(odt|pdf|odg)$", unit.get_definition()):
-            # translation unit holds a filename -> no need to split into snippets
-            unit.set_translation(corrector.filename_correct(unit.get_translation(), unit.get_definition()))
+            # translation unit holds a filename
+            corrector.filename_correct(unit)
             return
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
             return
 
-        # This is a "normal" translation unit with content -> if possible run rules on snippets
-        if unit.is_translation_well_structured():
-            for orig_snippet, trans_snippet in unit:
-                trans_snippet.content = corrector.correct(trans_snippet.content, orig_snippet.content)
-            unit.sync_from_snippets()
-        else:   # fallback: Run rules on the whole translation unit
-            self.logger.warning(f"{unit.get_name()} is not well structured.")
-            unit.set_translation(corrector.correct(unit.get_translation(), unit.get_definition()))
+        corrector.correct(unit)
 
     def check_page(self, page: str, language_code: str) -> bool:
         """

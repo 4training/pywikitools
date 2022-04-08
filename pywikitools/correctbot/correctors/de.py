@@ -1,24 +1,15 @@
-import functools
 import logging
 import re
 from typing import List
 
-from .base import CorrectorBase
+from .base import CorrectorBase, use_snippets
 from .universal import NoSpaceBeforePunctuationCorrector, UniversalCorrector
-
-def use_snippets(func):
-    @functools.wraps(func)
-    def decorator_use_snippets(*args, **kwargs):
-        return func(*args, **kwargs)
-    decorator_use_snippets.use_snippets = True
-    return decorator_use_snippets
 
 class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector):
     """
     Correct typical German typos. Currently one rule is implemented
     * German quotations start with „ and end with “ („Beispiel“)
     """
-    @use_snippets
     def correct_quotes(self, text: str) -> str:
         """Ensure correct German quotes (example: „korrekt“)"""
         splitted_text: List[str] = re.split('[„“”"]', text)

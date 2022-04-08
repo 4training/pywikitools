@@ -14,7 +14,13 @@ Functions ending with "_filename": applied only to translation units containing 
 All correction functions must take one string and return the corrected string.
 In case the correction function needs also the original string to decide what to do, it
 takes two strings as parameters (the original string is the second parameter).
-Most of the correction functions don't need to look at the original string, so they only take one parameter
+Most of the correction functions don't need to look at the original string, so they only take one parameter.
+
+By default, a correction function is run on the whole content of a translation unit. This is necessary
+for some rules like correcting quotation marks in 'he says, "<b>very</b> confusing".': This would be split into
+5 snippets which have 0 or 1 quotation marks, but the function needs to have both quotation marks in one string.
+If a function is decorated with @use_snippets, the translation unit is split into snippets and the correction
+function runs on all snippets.
 
 Implementation notes:
 The alternative to using introspection would have been to register the correction functions
@@ -23,10 +29,22 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+import functools
 from inspect import signature
 import logging
-from typing import Callable, Generator, Optional
+from typing import Callable, Generator
 from collections import defaultdict
+
+from pywikitools.lang.translated_page import TranslationUnit
+
+def use_snippets(func):
+    """Decorator: indicate that a correction function should run on the snippets of a translation unit"""
+    @functools.wraps(func)
+    def decorator_use_snippets(*args, **kwargs):
+        return func(*args, **kwargs)
+    decorator_use_snippets.use_snippets = True
+    return decorator_use_snippets
+
 
 class CorrectorBase:
     """
@@ -40,51 +58,68 @@ class CorrectorBase:
         # Counter for how often a particular rule (function) corrected something
         self._stats = defaultdict(int)
 
-    def correct(self, text: str, original: Optional[str] = None) -> str:
+    def correct(self, unit: TranslationUnit) -> None:
         """ Call all available correction functions one after the other and return the corrected string. """
-        return self._run_correction_functions(text, original, (s for s in dir(self) if s.startswith("correct_")))
+        self._run_correction_functions(unit, (s for s in dir(self) if s.startswith("correct_")))
 
-    def title_correct(self, text: str, original: Optional[str] = None) -> str:
+    def title_correct(self, unit: TranslationUnit) -> None:
         """ Call all correction functions for titles one after the other and return the corrected string. """
-        return self._run_correction_functions(text, original, (s for s in dir(self) if s.endswith("_title")))
+        self._run_correction_functions(unit, (s for s in dir(self) if s.endswith("_title")))
 
-    def filename_correct(self, text: str, original: Optional[str] = None) -> str:
+    def filename_correct(self, unit: TranslationUnit) -> None:
         """
         Call all correction functions for filenames one after the other and return the corrected string.
 
         Only correct if we have a file name with one of the following extensions: '.doc', '.odg', '.odt', '.pdf'
         """
-        if not text.lower().endswith(('.doc', '.odg', '.odt', '.pdf')):
+        if not unit.get_translation().lower().endswith(('.doc', '.odg', '.odt', '.pdf')):
             logger = logging.getLogger("pywikitools.correctbot.base")
-            logger.warning(f"Input parameter does not seem to be a file name: {text}")
-            return text
+            logger.warning(f"No file name: {unit.get_translation()} (in {unit.get_name()})")
+        else:
+            self._run_correction_functions(unit, (s for s in dir(self) if s.endswith("_filename")))
 
-        return self._run_correction_functions(text, original, (s for s in dir(self) if s.endswith("_filename")))
-
-    def _run_correction_functions(self, text: str, original: Optional[str],
-                                  functions: Generator[str, None, None]) -> str:
+    def _run_correction_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> None:
         """
         Call all the functions given by the generator one after the other and return the corrected string.
 
         Caution: the generator must not yield any function from this class, otherwise we run into indefinite recursion
         """
-        result = text
-
         for function_name in functions:
             corrector_function: Callable = getattr(self, function_name)
-            # calling each function: Check with introspection if we need to give both parameters or just one
-            if len(signature(corrector_function).parameters) == 2:
-                if original is None:
-                    original = ""
-                result = corrector_function(text, original)
-            else:
-                assert len(signature(corrector_function).parameters) == 1
-                result = corrector_function(text)
+            if hasattr(corrector_function, "use_snippets"):
+                if unit.is_translation_well_structured():
+                    # run correction function on snippets
+                    for orig_snippet, trans_snippet in unit:
+                        trans_snippet.content = self._call_function(corrector_function,
+                                                                    trans_snippet.content, orig_snippet.content)
+                    unit.sync_from_snippets()
+                    continue
+                else:
+                    logger = logging.getLogger("pywikitools.correctbot.base")
+                    logger.warning(f"{unit.get_name()} is not well structured.")
+                    counter = 0
+                    for snippet in unit:
+                        logger.warning(f"snippet {counter}: {snippet}")
+            # otherwise run correction function on the whole translation unit
+            unit.set_translation(self._call_function(corrector_function,
+                                                     unit.get_translation(), unit.get_definition()))
 
-            if text != result:
-                self._stats[function_name] += 1
-            text = result
+    def _call_function(self, corrector_function: Callable, text: str, original: str) -> str:
+        """
+        Call a correction function with the correct number of parameters, update statistics if necessary
 
+        We check with introspection if we need to give both parameters or just one.
+        @return corrected text
+        """
+        if len(signature(corrector_function).parameters) == 2:
+            result = corrector_function(text, original)
+        else:
+            assert len(signature(corrector_function).parameters) == 1
+            result = corrector_function(text)
+
+        # Update statistics if the correction function changed something
+        if text != result:
+            self._stats[corrector_function.__name__] += 1
         return result
 
     def reset_stats(self) -> None:

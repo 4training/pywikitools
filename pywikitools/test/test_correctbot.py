@@ -27,6 +27,31 @@ MOD_BASE = f"{PKG_CORRECTORS}.base"
 # Caution: This needs to be converted to an absolute path so that tests can be run safely from any folder
 CORRECTORS_FOLDER = "../correctbot/correctors"
 
+def correct(corrector: CorrectorBase, text: str, original: Optional[str] = None) -> str:
+    """Shorthand function for running a test with CorrectorBase.correct()"""
+    if original is None:
+        original = text     # original will be ignored but make sure we have a well-structured translation unit
+    unit = TranslationUnit("Test/1", "test", original, text)
+    corrector.correct(unit)
+    return unit.get_translation()
+
+def title_correct(corrector: CorrectorBase, text: str, original: Optional[str] = None) -> str:
+    """Shorthand function for running a test with CorrectorBase.title_correct()"""
+    if original is None:
+        original = ""       # title correcting functions should never use @use_snippets
+    unit = TranslationUnit("Test/Page display title", "test", original, text)
+    corrector.title_correct(unit)
+    return unit.get_translation()
+
+def filename_correct(corrector: CorrectorBase, text: str, original: Optional[str] = None) -> str:
+    """Shorthand function for running a test with CorrectorBase.filename_correct()"""
+    if original is None:
+        original = ""       # filename correcting functions should never use @use_snippets
+    unit = TranslationUnit("Test/3", "test", original, text)
+    corrector.filename_correct(unit)
+    return unit.get_translation()
+
+
 class CorrectorTestCase(unittest.TestCase):
     """
     Adds functions to check corrections against revisions made in the mediawiki system
@@ -55,7 +80,7 @@ class CorrectorTestCase(unittest.TestCase):
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
-        self.assertEqual(self.corrector.correct(old_content), new_content)
+        self.assertEqual(correct(self.corrector, old_content), new_content)
 
     def compare_title_revisions(self, page: str, language_code: str, old_revision: int, new_revision):
         """Calls CorrectBase.title_correct()"""
@@ -63,7 +88,7 @@ class CorrectorTestCase(unittest.TestCase):
         new_content = fortraininglib.get_translated_title(page, language_code, new_revision)
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
-        self.assertEqual(self.corrector.title_correct(old_content), new_content)
+        self.assertEqual(title_correct(self.corrector, old_content), new_content)
 
     def compare_filename_revisions(self, page: str, language_code: str, identifier: int,
                                          old_revision: int, new_revision):
@@ -75,7 +100,7 @@ class CorrectorTestCase(unittest.TestCase):
         # Check that we really have a translation unit with a file name. TODO use the following line instead:
         # with self.assertNoLogs(): # Available from Python 3.10
         self.assertIn(new_content[-3:], fortraininglib.get_file_types())
-        self.assertEqual(self.corrector.filename_correct(old_content), new_content)
+        self.assertEqual(filename_correct(self.corrector, old_content), new_content)
 
 
 class TestLanguageCorrectors(unittest.TestCase):
@@ -171,46 +196,50 @@ class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
 class TestUniversalCorrector(unittest.TestCase):
     def test_spaces(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(corrector.correct("This entry   contains     too  many spaces."),
-                                        "This entry contains too many spaces.")
-        self.assertEqual(corrector.correct("Missing.Spaces,after punctuation?Behold,again."),
-                                           "Missing. Spaces, after punctuation? Behold, again.")
-        self.assertEqual(corrector.correct("This entry contains redundant spaces , before , punctuation ."),
-                                           "This entry contains redundant spaces, before, punctuation.")
+        self.assertEqual(correct(corrector, "This entry   contains     too  many spaces."),
+                                            "This entry contains too many spaces.")
+        self.assertEqual(correct(corrector, "Missing.Spaces,after punctuation?Behold,again."),
+                                            "Missing. Spaces, after punctuation? Behold, again.")
+        self.assertEqual(correct(corrector, "This entry contains redundant spaces , before , punctuation ."),
+                                            "This entry contains redundant spaces, before, punctuation.")
+        # now let's try if exceptions are correctly respected:
+        self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
+        self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
+        self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
 
     def test_capitalization(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(corrector.correct("lowercase start. and lowercase after full stop."),
-                                           "Lowercase start. And lowercase after full stop.")
-        self.assertEqual(corrector.correct("Question? answer! more lowercase. why? didn't check."),
-                                           "Question? Answer! More lowercase. Why? Didn't check.")
-        self.assertEqual(corrector.correct("After colons: and semicolons; we don't correct."),
-                                           "After colons: and semicolons; we don't correct.")
+        self.assertEqual(correct(corrector, "lowercase start. and lowercase after full stop."),
+                                            "Lowercase start. And lowercase after full stop.")
+        self.assertEqual(correct(corrector, "Question? answer! more lowercase. why? didn't check."),
+                                            "Question? Answer! More lowercase. Why? Didn't check.")
+        self.assertEqual(correct(corrector, "After colons: and semicolons; we don't correct."),
+                                            "After colons: and semicolons; we don't correct.")
 
     def test_filename_corrections(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(corrector.filename_correct("dummy file name.pdf"), "dummy_file_name.pdf")
-        self.assertEqual(corrector.filename_correct("too__many___underscores.odt"), "too_many_underscores.odt")
-        self.assertEqual(corrector.filename_correct("capitalized_extension.PDF"), "capitalized_extension.pdf")
-        self.assertEqual(corrector.filename_correct("capitalized_extension.Pdf"), "capitalized_extension.pdf")
+        self.assertEqual(filename_correct(corrector, "dummy file name.pdf"), "dummy_file_name.pdf")
+        self.assertEqual(filename_correct(corrector, "too__many___underscores.odt"), "too_many_underscores.odt")
+        self.assertEqual(filename_correct(corrector, "capitalized_extension.PDF"), "capitalized_extension.pdf")
+        self.assertEqual(filename_correct(corrector, "capitalized_extension.Pdf"), "capitalized_extension.pdf")
         with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
-            self.assertEqual(corrector.filename_correct("Not a filename"), "Not a filename")
+            self.assertEqual(filename_correct(corrector, "Not a filename"), "Not a filename")
         with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
-            self.assertEqual(corrector.filename_correct("other extension.exe"), "other extension.exe")
+            self.assertEqual(filename_correct(corrector, "other extension.exe"), "other extension.exe")
 
     def test_dash_correction(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(corrector.correct("Using long dash - not easy."), "Using long dash – not easy.")
+        self.assertEqual(correct(corrector, "Using long dash - not easy."), "Using long dash – not easy.")
 
     def test_final_dot_correction(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(corrector.correct("Ein ganzer Satz", "A full sentence."), "Ein ganzer Satz.")
-        self.assertEqual(corrector.correct("Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
+        self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence."), "Ein ganzer Satz.")
+        self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
 
 
 # TODO    def test_correct_ellipsis(self):
 #        corrector = UniversalCorrectorTester()
-#        self.assertEqual(corrector.correct("…"), "...")
+#        self.assertEqual(correct(corrector, "…"), "...")
 
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
@@ -234,13 +263,14 @@ class TestGermanCorrector(CorrectorTestCase):
     def test_correct_quotes(self):
         corrector = GermanCorrector()
         for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
-            self.assertEqual(corrector.correct(wrong), '„Test“')
-            self.assertEqual(corrector.correct(f"Beginn und {wrong}"), 'Beginn und „Test“')
-            self.assertEqual(corrector.correct(f"{wrong} und Ende."), '„Test“ und Ende.')
-            self.assertEqual(corrector.correct(f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
+            self.assertEqual(correct(corrector, wrong), '„Test“')
+            self.assertEqual(correct(corrector, f"Beginn und {wrong}"), 'Beginn und „Test“')
+            self.assertEqual(correct(corrector, f"{wrong} und Ende."), '„Test“ und Ende.')
+            self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
+            self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
 
         with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
-            self.assertEqual(corrector.correct('"Das ist" seltsam"'), '"Das ist" seltsam"')
+            self.assertEqual(correct(corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"')
 
         valid_strings: List[str] = [    # Some more complex examples
             "(siehe Arbeitsblatt „[[Forgiving Step by Step/de|Schritte der Vergebung]]“)",
@@ -249,27 +279,28 @@ class TestGermanCorrector(CorrectorTestCase):
             "(Zum Beispiel: „Gott, wir kommen zu dir als den Richter[...] hilf du ____ in diesem Prozess.“)",
             "(„Was heißt Vergeben?“)",
             "„ich habe mich missverstanden gefühlt“,",
-            "Vergebung bedeutet nicht zu sagen „das war ja nur eine Kleinigkeit“."
+            "Vergebung bedeutet nicht zu sagen „das war ja nur eine Kleinigkeit“.",
+            "„Gott, bitte <b>hilf</b> mir zu vergeben. Amen.“"
         ]
         for valid in valid_strings:
             # with self.assertNoLogs(): # Available from Python 3.10
-            self.assertEqual(corrector.correct(valid), valid)   # Check that correct strings remain correct
+            self.assertEqual(correct(corrector, valid), valid)   # Check that correct strings remain correct
             needs_correction = valid.replace("„", '"')
             needs_correction = needs_correction.replace("”", '"')
             # Now make sure this problematic version gets corrected back to the correct form
-            self.assertEqual(corrector.correct(needs_correction), valid)
+            self.assertEqual(correct(corrector, needs_correction), valid)
 
 
 """TODO
 class TestEnglishCorrector(unittest.TestCase):
     def test_correct_apostrophe(self):
         corrector = EnglishCorrector()
-        self.assertEqual(corrector.correct("God's"), "God’s")
+        self.assertEqual(correct(corrector, "God's"), "God’s")
 
     def test_correct_quotation_marks(self):
         corrector = EnglishCorrector()
         for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
-            self.assertEqual(corrector.correct(wrong), '“Test”')
+            self.assertEqual(correct(corrector, wrong), '“Test”')
 """
 
 class TestFrenchCorrector(unittest.TestCase):
@@ -281,27 +312,27 @@ class TestFrenchCorrector(unittest.TestCase):
         Space after all punctuation marks.
         """
         corrector = FrenchCorrector()
-        self.assertEqual(corrector.correct("Mais moi , je vous dis: Si"), "Mais moi, je vous dis\u00a0: Si")
-        self.assertEqual(corrector.correct("Si quelqu’un dit à son frère: “Imbécile!”"),
+        self.assertEqual(correct(corrector, "Mais moi , je vous dis: Si"), "Mais moi, je vous dis\u00a0: Si")
+        self.assertEqual(correct(corrector, "Si quelqu’un dit à son frère: “Imbécile!”"),
                                            "Si quelqu’un dit à son frère\u00a0: “Imbécile\u00a0!”")
-        self.assertEqual(corrector.correct("Comment prier?<br/>Comment jeûner?"),
+        self.assertEqual(correct(corrector, "Comment prier?<br/>Comment jeûner?"),
                                            "Comment prier\u00a0?<br/>Comment jeûner\u00a0?")
-        self.assertEqual(corrector.correct("Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu"),
+        self.assertEqual(correct(corrector, "Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu"),
                                            "Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu")
 
     def test_false_friends_replacement(self):
         corrector = FrenchCorrector()
-        self.assertEqual(corrector.correct("Example"), "Exemple")
+        self.assertEqual(correct(corrector, "Example"), "Exemple")
 
     def test_correct_quotation_marks(self):
         corrector = FrenchCorrector()
         wrongs: List[str] = ['"Test"', "« Test »", "«Test»"]
         for wrong in wrongs:
-            self.assertEqual(corrector.correct(wrong), "«\u00a0Test\u00a0»")
+            self.assertEqual(correct(corrector, wrong), "«\u00a0Test\u00a0»")
         # Make sure several corrections in one longer string also work correctly
-        self.assertEqual(corrector.correct(" Connect ".join(wrongs)), " Connect ".join(["«\u00a0Test\u00a0»"] * 3))
+        self.assertEqual(correct(corrector, " Connect ".join(wrongs)), " Connect ".join(["«\u00a0Test\u00a0»"] * 3))
         with self.assertLogs('pywikitools.correctbot.fr', level="WARNING"):
-            self.assertEqual(corrector.correct("“Test”"), "“Test”")
+            self.assertEqual(correct(corrector, "“Test”"), "“Test”")
 
 class TestArabicCorrector(CorrectorTestCase):
     # TODO research which of these changes to improve Arabic language quality could be automated:
@@ -311,14 +342,14 @@ class TestArabicCorrector(CorrectorTestCase):
         cls.corrector = ArabicCorrector()
 
     def test_correct_punctuation(self):
-        self.assertEqual(self.corrector.correct(","), "،")
-        self.assertEqual(self.corrector.correct("منهم،حتى"), "منهم، حتى")
-        self.assertEqual(self.corrector.correct(";"),  "؛")
-        self.assertEqual(self.corrector.correct("ما هو من عند الله?"), "ما هو من عند الله؟")
+        self.assertEqual(correct(self.corrector, ","), "،")
+        self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
+        self.assertEqual(correct(self.corrector, ";"),  "؛")
+        self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
 
     def test_correct_spaces(self):
-        self.assertEqual(self.corrector.correct("يدعي  و يصلي"), "يدعي و يصلي")
-        self.assertEqual(self.corrector.correct("بحرص ،  أن"), "بحرص، أن")
+        self.assertEqual(correct(self.corrector, "يدعي  و يصلي"), "يدعي و يصلي")
+        self.assertEqual(correct(self.corrector, "بحرص ،  أن"), "بحرص، أن")
 
     def test_real_life_examples(self):
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 4, 62201, 62260)

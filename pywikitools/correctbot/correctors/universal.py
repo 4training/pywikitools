@@ -50,13 +50,30 @@ class UniversalCorrector():
 
     def correct_missing_spaces(self, text: str) -> str:
         """Insert missing spaces between punctuation and characters"""
-        check_missing_spaces = re.compile(r'([.!?;,؛،؟])(\w)')
-        return re.sub(check_missing_spaces, r'\1 \2', text)
+        check_missing_spaces = re.compile(r'([.!?;,؛،؟])([\w])')
+        # As we need to check for exceptions (surrounded by digits), it's a bit complicated. Otherwise it'd be just
+        # return re.sub(check_missing_spaces, r'\1 \2', text)
+        last_start_pos = 0          # necessary to not run into endless loops
+        while match := check_missing_spaces.search(text, last_start_pos):
+            if match.start(1) == 0: # it would be strange if our text directly started with a punctuation mark.
+                last_start_pos += 1 # also the following if statement would raise an IndexError
+                continue
+            if match.string[match.start(1) - 1].isdigit() and match.group(2).isdigit():
+                # Exception: Don't correct if punctuation mark is directly between characters
+                # (this is most likely used in a Bible reference like John 3:16 and should not be corrected)
+                last_start_pos = match.end(2)
+                continue
+            text = text[:match.end(1)] + " " + text[match.start(2):]    # match.expand(r"\1 \2")
+            last_start_pos = match.end(2) + 1   # +1 because we inserted a space
+
+        return text
 
     def correct_spaces_before_comma_and_dot(self, text: str) -> str:
         """Erase redundant spaces before commas and dots"""
-        check_wrong_spaces = re.compile(r'\s+([.,])')
-        return re.sub(check_wrong_spaces, r'\1', text)
+        # basically we check for r' +([.,])'. But we don't want to capture ... so we add [^.]
+        # Now we would miss "end ." so we add the alternative with |
+        check_wrong_spaces = re.compile(r' +([.,])$| +([.,])([^.])')
+        return re.sub(check_wrong_spaces, r'\1\2\3', text)
 
     def correct_wrong_dash_also_in_title(self, text: str) -> str:
         """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
@@ -94,7 +111,7 @@ class NoSpaceBeforePunctuationCorrector():
     """
     def correct_no_spaces_before_punctuation(self, text: str) -> str:
         """Erase redundant spaces before punctuation marks."""
-        check_wrong_spaces = re.compile(r'\s+([!?;:])')
+        check_wrong_spaces = re.compile(r' +([!?;:])')
         return re.sub(check_wrong_spaces, r'\1', text)
 
 
