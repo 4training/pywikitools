@@ -27,6 +27,7 @@ class ResourcesBot:
         """
         # read-only list of download file types
         self._file_types = fortraininglib.get_file_types()
+#        self._file_types = ["pdf", "odt", "odg", "printPdf"]   # TODO see #11
         # Read the configuration from config.ini in the same directory
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
@@ -77,7 +78,7 @@ class ResourcesBot:
                 raise RuntimeError(f"Unexpected error while parsing JSON data from cache.")
 
         else:
-            self._result["en"] = LanguageInfo("en")
+            self._result["en"] = LanguageInfo("en", "English")
             for worksheet in fortraininglib.get_worksheet_list():
                 # Gather all data (this takes quite some time!)
                 self._query_translations(worksheet)
@@ -231,7 +232,8 @@ class ResourcesBot:
                 self._query_translated_file(page_info, file_info)
 
             if lang not in self._result:
-                self._result[lang] = LanguageInfo(lang)
+                language_name = fortraininglib.get_language_name(lang, 'en') or ""
+                self._result[lang] = LanguageInfo(lang, language_name)
             self._result[lang].add_worksheet_info(page, page_info)
 
         self.logger.info(f"Worksheet {page} is translated into: {finished_translations}, "
@@ -248,7 +250,7 @@ class ResourcesBot:
         """
         lang = language_info.language_code
         encoded_json = DataStructureEncoder().encode(language_info)
-        old_language_info: LanguageInfo = LanguageInfo(lang)
+        old_language_info: LanguageInfo = LanguageInfo(lang, language_info.english_name)
         rewrite_json: bool = self._rewrite_all
 
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json

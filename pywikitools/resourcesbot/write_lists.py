@@ -100,9 +100,9 @@ class WriteList(LanguagePostProcessor):
             return
 
         # Saving this to the language information page, e.g. https://www.4training.net/German
-        language = fortraininglib.get_language_name(language_info.language_code, 'en')
-        if language is None:
-            self.logger.warning(f"Error while trying to get language name of {language_info.language_code}! Skipping")
+        language = language_info.english_name
+        if language == "":
+            self.logger.warning(f"English language name of {language_info.language_code} missing! Skipping WriteList")
             return
         self.logger.debug(f"Writing list of available resources in {language}...")
         page = pywikibot.Page(self._site, language)

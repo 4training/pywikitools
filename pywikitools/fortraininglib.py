@@ -99,7 +99,7 @@ def get_language_name(language_code: str, translate_to: Optional[str] = None) ->
     @param language_code: identifies the language we're interested in
     @param translate_to: optional target language the language name should be translated into (None returns autonym)
     @return Language name if successful
-    @return None in case of error
+    @return None in case of error (also logs a warning)
     """
     lang_parameter: str = language_code
     if isinstance(translate_to, str):
@@ -116,8 +116,10 @@ def get_language_name(language_code: str, translate_to: Optional[str] = None) ->
         langname = re.search('<p>([^<]*)</p>', json['parse']['text']['*'], re.MULTILINE)
         if langname:
             return langname.group(1).strip()
+        logger.warning("fortraininglib.get_language_name({language_code}): Unexpected parser result")
         return None
     except KeyError:
+        logger.warning("fortraininglib.get_language_name({language_code}): Unexpected error")
         return None
 
 

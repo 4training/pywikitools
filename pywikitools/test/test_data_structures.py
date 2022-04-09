@@ -29,6 +29,7 @@ TEST_PROGRESS3: dict = {"total": 44, "translated": 40, "fuzzy": 3, "proofread": 
 
 TEST_EN_NAME: str = "Hearing_from_God"
 TEST_LANG: str = "de"
+TEST_LANG_NAME: str = "German"
 TEST_TITLE: str = "Gottes Reden wahrnehmen"
 TEST_VERSION: str = "1.2"
 
@@ -191,7 +192,7 @@ class TestWorksheetInfo(unittest.TestCase):
 
 class TestLanguageInfo(unittest.TestCase):
     def setUp(self):
-        self.language_info: LanguageInfo = LanguageInfo(TEST_LANG)
+        self.language_info: LanguageInfo = LanguageInfo(TEST_LANG, TEST_LANG_NAME)
 
     def test_basic_functionality(self):
         progress = TranslationProgress(**TEST_PROGRESS)
@@ -225,6 +226,8 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertIsNotNone(decoded_language_info)
         self.assertIsInstance(decoded_language_info, LanguageInfo)
         self.assertEqual(DataStructureEncoder().encode(decoded_language_info), json_text)
+        self.assertEqual(decoded_language_info.language_code, TEST_LANG)
+        self.assertEqual(decoded_language_info.english_name, TEST_LANG_NAME)
         self.assertTrue(decoded_language_info.has_worksheet(TEST_EN_NAME))
         self.assertTrue(decoded_language_info.worksheet_has_type(TEST_EN_NAME, "odt"))
 

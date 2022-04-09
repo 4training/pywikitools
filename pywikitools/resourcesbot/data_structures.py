@@ -201,10 +201,11 @@ class WorksheetInfo:
 
 class LanguageInfo:
     """Holds information on all available worksheets in one specific language"""
-    __slots__ = 'language_code', 'worksheets'
+    __slots__ = 'language_code', 'english_name', 'worksheets'
 
-    def __init__(self, language_code: str):
+    def __init__(self, language_code: str, english_name: str):
         self.language_code: Final[str] = language_code
+        self.english_name: Final[str] = english_name    # if there was an error before this could be ""
         self.worksheets: Dict[str, WorksheetInfo] = {}
 
     def add_worksheet_info(self, name: str, worksheet_info: WorksheetInfo):
@@ -312,7 +313,8 @@ def json_decode(data: Dict[str, Any]):
 
     if "worksheets" in data:
         assert "language_code" in data
-        language_info = LanguageInfo(data["language_code"])
+        assert "english_name" in data
+        language_info = LanguageInfo(data["language_code"], data["english_name"])
         for worksheet in data["worksheets"]:
             assert isinstance(worksheet, WorksheetInfo)
             language_info.add_worksheet_info(worksheet.page, worksheet)
@@ -325,7 +327,11 @@ class DataStructureEncoder(json.JSONEncoder):
     """Serializes a LanguageInfo / WorksheetInfo / FileInfo / TranslationProgress object into a JSON string"""
     def default(self, obj):
         if isinstance(obj, LanguageInfo):
-            return {"language_code": obj.language_code, "worksheets": list(obj.worksheets.values())}
+            return {
+                "language_code": obj.language_code,
+                "english_name": obj.english_name,
+                "worksheets": list(obj.worksheets.values())
+            }
         if isinstance(obj, WorksheetInfo):
             worksheet_json: Dict[str, Any] = {
                 "page": obj.page,

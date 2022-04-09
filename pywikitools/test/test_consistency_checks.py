@@ -17,7 +17,7 @@ class TestConsistencyCheck(unittest.TestCase):
     def test_everything_in_english(self):
         """All consistency checks should pass in English"""
         cc = ConsistencyCheck()
-        language_info = LanguageInfo("en")
+        language_info = LanguageInfo("en", "English")
         self.assertTrue(cc.check_bible_reading_hints_titles(language_info))
         self.assertTrue(cc.check_gods_story_titles(language_info))
         self.assertTrue(cc.check_who_do_i_need_to_forgive(language_info))

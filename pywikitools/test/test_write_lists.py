@@ -15,8 +15,8 @@ class TestWriteList(unittest.TestCase):
     def test_force_rewrite(self):
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
             write_list = WriteList(None, "", "", force_rewrite=True)
-        self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru"), ChangeLog()))
-        self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru"), ChangeLog()))
+        self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
+        self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
 
     def test_needs_rewrite(self):
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
