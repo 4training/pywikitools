@@ -1,0 +1,136 @@
+== Worksheets ==
+{| class="wikitable" style="width:100%"
+|-
+! Worksheet
+! Translation
+! Progress
+! PDF
+! ODT
+! Version
+|- style="background-color:red"
+| [[God's Story (five fingers)]]
+| -
+| 0%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:red" | -
+|- style="background-color:orange"
+| [[God's Story (first and last sacrifice)]]
+| [[God's Story (first and last sacrifice)/ru|Рассказ о Боге (Первая и последняя жертва)]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 2.2
+|- style="background-color:orange"
+| [[Baptism]]
+| [[Baptism/ru|Крещение]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 2.1
+|- style="background-color:orange"
+| [[Prayer]]
+| [[Prayer/ru|Молитва]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 1.1
+|- style="background-color:red"
+| [[Forgiving Step by Step]]
+| -
+| 0%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:red" | -
+|- style="background-color:red"
+| [[Confessing Sins and Repenting]]
+| -
+| 0%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:red" | -
+|- style="background-color:orange"
+| [[Time with God]]
+| [[Time with God/ru|Время с Богом]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 1.2
+|- style="background-color:orange"
+| [[Hearing from God]]
+| [[Hearing from God/ru|Слышание Бога]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 1.2
+|- style="background-color:orange"
+| [[Church]]
+| [[Church/ru|Церковь]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:green" | [[File:Церковь.odt]]
+| style="background-color:green" | 2.0
+|- style="background-color:orange"
+| [[Healing]]
+| [[Healing/ru|Исцеление]]
+| style="background-color:green"  | 100%
+| style="background-color:green" | [[File:Исцеление.pdf]]
+| style="background-color:red" | -
+| style="background-color:green" | 1.0
+|- style="background-color:red"
+| [[Dealing with Money]]
+| -
+| 0%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:red" | -
+|- style="background-color:green"
+| [[My Story with God]]
+| [[My Story with God/ru|Моё свидетельство]]
+| style="background-color:green"  | 100%
+| style="background-color:green" | [[File:Моё_свидетельство.pdf]]
+| style="background-color:green" | [[File:Моё_свидетельство.odt]]
+| style="background-color:green" | 1.1
+|- style="background-color:green"
+| [[Bible Reading Hints]]
+| [[Bible Reading Hints/ru|Подсказки для чтения Библии]]
+| style="background-color:green"  | 100%
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии.pdf]]
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии.odt]]
+| style="background-color:green" | 2.0
+|- style="background-color:green"
+| [[Bible Reading Hints (Seven Stories full of Hope)]]
+| [[Bible Reading Hints (Seven Stories full of Hope)/ru|Подсказки для чтения Библии (Семь историй, полных надежды)]]
+| style="background-color:green"  | 100%
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Семь_историй,_полных_надежды).pdf]]
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Семь_историй,_полных_надежды).odt]]
+| style="background-color:green" | 2.0
+|- style="background-color:green"
+| [[Bible Reading Hints (Starting with the Creation)]]
+| [[Bible Reading Hints (Starting with the Creation)/ru|Подсказки для чтения Библии (Начиная с Сотворения)]]
+| style="background-color:green"  | 100%
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Начиная_с_Сотворения).pdf]]
+| style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Начиная_с_Сотворения).odt]]
+| style="background-color:green" | 2.0
+|- style="background-color:orange"
+| [[The Three-Thirds Process]]
+| [[The Three-Thirds Process/ru|Трехсторонний процесс]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 1.0
+|- style="background-color:red"
+| [[Training Meeting Outline]]
+| -
+| 0%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:red" | -
+|- style="background-color:orange"
+| [[A Daily Prayer]]
+| [[A Daily Prayer/ru|Ежедневная молитва]]
+| style="background-color:green"  | 100%
+| style="background-color:red" | -
+| style="background-color:red" | -
+| style="background-color:green" | 1.0
+|}

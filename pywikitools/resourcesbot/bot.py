@@ -14,6 +14,7 @@ from pywikitools.resourcesbot.export_repository import ExportRepository
 from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, TranslationProgress, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
+from pywikitools.resourcesbot.write_report import WriteReport
 
 class ResourcesBot:
     """Contains all the logic of our bot"""
@@ -64,6 +65,7 @@ class ResourcesBot:
                     assert isinstance(language_list, list)
                 else:
                     language_list.append(self._limit_to_lang)
+                    language_list.append("en")  # We need the English infos for WriteReport (and maybe more)
 
                 for lang in language_list:      # Now we read the details for each language
                     self.logger.info(f"Reading details for language {lang} from cache...")
@@ -103,6 +105,7 @@ class ResourcesBot:
         # Run all LanguagePostProcessors
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
             self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
+        write_report = WriteReport(self.site, self._rewrite_all)
         consistency_check = ConsistencyCheck()
         export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""), self._rewrite_all)
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
@@ -114,6 +117,7 @@ class ResourcesBot:
             write_list.run(self._result[lang], change_log)
 
         # Now run all GlobalPostProcessors
+        write_report.run(self._result, self._changelog)
         # TODO move the following into a GlobalPostProcessor
         if self._limit_to_lang is not None:
             self.create_summary(self._limit_to_lang)

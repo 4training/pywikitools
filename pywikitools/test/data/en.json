@@ -1,0 +1,474 @@
+{
+  "language_code": "en",
+  "english_name": "English",
+  "worksheets": [
+    {
+      "page": "God's_Story_(five_fingers)",
+      "language_code": "en",
+      "title": "God's Story (five fingers)",
+      "version": "2.1",
+      "progress": {
+        "translated": 33,
+        "fuzzy": 0,
+        "total": 33
+      },
+      "version_unit": 3,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/a/af/Gods_Story_(five_fingers).pdf",
+          "timestamp": "2020-07-19T12:38:59+00:00",
+          "translation_unit": 1
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/2/2c/Gods_Story_(five_fingers).odt",
+          "timestamp": "2020-10-14T22:21:52+00:00",
+          "translation_unit": 2
+        }
+      ]
+    },
+    {
+      "page": "God's_Story_(first_and_last_sacrifice)",
+      "language_code": "en",
+      "title": "God's Story (first and last sacrifice)",
+      "version": "2.2",
+      "progress": {
+        "translated": 32,
+        "fuzzy": 0,
+        "total": 32
+      },
+      "version_unit": 14,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/b/bf/Gods_Story_(first_and_last_sacrifice).pdf",
+          "timestamp": "2020-07-19T13:35:50+00:00",
+          "translation_unit": 12
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/d/d7/Gods_Story_(first_and_last_sacrifice).odt",
+          "timestamp": "2020-08-16T07:48:58+00:00",
+          "translation_unit": 13
+        }
+      ]
+    },
+    {
+      "page": "Baptism",
+      "language_code": "en",
+      "title": "Baptism",
+      "version": "2.1",
+      "progress": {
+        "translated": 31,
+        "fuzzy": 0,
+        "total": 31
+      },
+      "version_unit": 13,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/8/8b/Baptism.pdf",
+          "timestamp": "2020-07-10T09:45:18+00:00",
+          "translation_unit": 11
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/4/43/Baptism.odt",
+          "timestamp": "2020-10-11T23:22:42+00:00",
+          "translation_unit": 12
+        }
+      ]
+    },
+    {
+      "page": "Prayer",
+      "language_code": "en",
+      "title": "Prayer",
+      "version": "1.1",
+      "progress": {
+        "translated": 59,
+        "fuzzy": 0,
+        "total": 59
+      },
+      "version_unit": 6,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/d/d2/Prayer.pdf",
+          "timestamp": "2020-07-15T10:18:44+00:00",
+          "translation_unit": 4
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/7/70/Prayer.odt",
+          "timestamp": "2020-10-14T22:45:43+00:00",
+          "translation_unit": 5
+        }
+      ]
+    },
+    {
+      "page": "Forgiving_Step_by_Step",
+      "language_code": "en",
+      "title": "Forgiving Step by Step",
+      "version": "1.3",
+      "progress": {
+        "translated": 44,
+        "fuzzy": 0,
+        "total": 44
+      },
+      "version_unit": 42,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/4/4d/Forgiving_Step_by_Step.pdf",
+          "timestamp": "2020-07-15T10:33:45+00:00",
+          "translation_unit": 39
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/d/da/Forgiving_Step_by_Step.odt",
+          "timestamp": "2020-10-31T19:06:43+00:00",
+          "translation_unit": 40
+        }
+      ]
+    },
+    {
+      "page": "Confessing_Sins_and_Repenting",
+      "language_code": "en",
+      "title": "Confessing Sins and Repenting",
+      "version": "1.1",
+      "progress": {
+        "translated": 38,
+        "fuzzy": 0,
+        "total": 38
+      },
+      "version_unit": 37,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/1/1a/Confessing_Sins_and_Repenting.pdf",
+          "timestamp": "2020-07-15T18:44:13+00:00",
+          "translation_unit": 34
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/3/37/Confessing_Sins_and_Repenting.odt",
+          "timestamp": "2020-10-14T22:56:50+00:00",
+          "translation_unit": 35
+        }
+      ]
+    },
+    {
+      "page": "Time_with_God",
+      "language_code": "en",
+      "title": "Time with God",
+      "version": "1.2",
+      "progress": {
+        "translated": 39,
+        "fuzzy": 0,
+        "total": 39
+      },
+      "version_unit": 20,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/5/5f/Time_with_God.pdf",
+          "timestamp": "2020-07-15T19:14:44+00:00",
+          "translation_unit": 18
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/4/43/Time_with_God.odt",
+          "timestamp": "2020-10-14T23:08:24+00:00",
+          "translation_unit": 19
+        }
+      ]
+    },
+    {
+      "page": "Hearing_from_God",
+      "language_code": "en",
+      "title": "Hearing from God",
+      "version": "1.2",
+      "progress": {
+        "translated": 59,
+        "fuzzy": 0,
+        "total": 59
+      },
+      "version_unit": 55,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/3/30/Hearing_from_God.pdf",
+          "timestamp": "2020-07-15T21:38:12+00:00",
+          "translation_unit": 52
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/b/b1/Hearing_from_God.odt",
+          "timestamp": "2020-10-14T23:35:27+00:00",
+          "translation_unit": 53
+        }
+      ]
+    },
+    {
+      "page": "Church",
+      "language_code": "en",
+      "title": "Church",
+      "version": "2.0",
+      "progress": {
+        "translated": 44,
+        "fuzzy": 0,
+        "total": 44
+      },
+      "version_unit": 37,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/4/44/Church.pdf",
+          "timestamp": "2020-07-15T22:18:25+00:00",
+          "translation_unit": 34
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/a/a8/Church.odt",
+          "timestamp": "2020-10-14T23:50:02+00:00",
+          "translation_unit": 35
+        }
+      ]
+    },
+    {
+      "page": "Healing",
+      "language_code": "en",
+      "title": "Healing",
+      "version": "1.0",
+      "progress": {
+        "translated": 35,
+        "fuzzy": 0,
+        "total": 35
+      },
+      "version_unit": 35,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/5/53/Healing.pdf",
+          "timestamp": "2020-07-16T11:30:41+00:00",
+          "translation_unit": 32
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/6/69/Healing.odt",
+          "timestamp": "2020-10-14T23:59:32+00:00",
+          "translation_unit": 33
+        }
+      ]
+    },
+    {
+      "page": "Dealing_with_Money",
+      "language_code": "en",
+      "title": "Dealing with Money",
+      "version": "1.0",
+      "progress": {
+        "translated": 39,
+        "fuzzy": 0,
+        "total": 39
+      },
+      "version_unit": 38,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/a/aa/Dealing_with_Money.pdf",
+          "timestamp": "2021-11-25T12:10:57+00:00",
+          "translation_unit": 36
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/b/b9/Dealing_with_Money.odt",
+          "timestamp": "2021-11-25T12:10:42+00:00",
+          "translation_unit": 37
+        }
+      ]
+    },
+    {
+      "page": "My_Story_with_God",
+      "language_code": "en",
+      "title": "My Story with God",
+      "version": "1.1",
+      "progress": {
+        "translated": 31,
+        "fuzzy": 0,
+        "total": 31
+      },
+      "version_unit": 31,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/8/8e/My_Story_with_God.pdf",
+          "timestamp": "2020-07-17T09:39:13+00:00",
+          "translation_unit": 28
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/a/a1/My_Story_with_God.odt",
+          "timestamp": "2020-10-11T23:34:22+00:00",
+          "translation_unit": 29
+        }
+      ]
+    },
+    {
+      "page": "Bible_Reading_Hints",
+      "language_code": "en",
+      "title": "Bible Reading Hints",
+      "version": "2.0",
+      "progress": {
+        "translated": 8,
+        "fuzzy": 0,
+        "total": 8
+      },
+      "version_unit": 7,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/d/d9/Bible_Reading_Hints.pdf",
+          "timestamp": "2021-04-02T15:03:37+00:00",
+          "translation_unit": 4
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/8/87/Bible_Reading_Hints.odt",
+          "timestamp": "2021-04-02T15:03:20+00:00",
+          "translation_unit": 5
+        }
+      ]
+    },
+    {
+      "page": "Bible_Reading_Hints_(Seven_Stories_full_of_Hope)",
+      "language_code": "en",
+      "title": "Bible Reading Hints (Seven Stories full of Hope)",
+      "version": "2.0",
+      "progress": {
+        "translated": 20,
+        "fuzzy": 0,
+        "total": 20
+      },
+      "version_unit": 5,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/9/90/Bible_Reading_Hints_(Seven_Stories_full_of_Hope).pdf",
+          "timestamp": "2021-04-02T15:01:56+00:00",
+          "translation_unit": 2
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/8/8c/Bible_Reading_Hints_(Seven_Stories_full_of_Hope).odt",
+          "timestamp": "2021-04-02T15:01:35+00:00",
+          "translation_unit": 3
+        }
+      ]
+    },
+    {
+      "page": "Bible_Reading_Hints_(Starting_with_the_Creation)",
+      "language_code": "en",
+      "title": "Bible Reading Hints (Starting with the Creation)",
+      "version": "2.0",
+      "progress": {
+        "translated": 5,
+        "fuzzy": 0,
+        "total": 5
+      },
+      "version_unit": 4,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/6/6d/Bible_Reading_Hints_(Starting_with_the_Creation).pdf",
+          "timestamp": "2021-04-27T13:21:24+00:00",
+          "translation_unit": 1
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/0/03/Bible_Reading_Hints_(Starting_with_the_Creation).odt",
+          "timestamp": "2021-04-27T13:21:06+00:00",
+          "translation_unit": 2
+        }
+      ]
+    },
+    {
+      "page": "The_Three-Thirds_Process",
+      "language_code": "en",
+      "title": "The Three-Thirds Process",
+      "version": "1.0",
+      "progress": {
+        "translated": 14,
+        "fuzzy": 0,
+        "total": 14
+      },
+      "version_unit": 11,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/9/99/The_Three-Thirds_Process.pdf",
+          "timestamp": "2020-08-18T15:46:16+00:00",
+          "translation_unit": 9
+        },
+        {
+          "file_type": "odg",
+          "url": "https://www.4training.net/mediawiki/images/9/9a/The_Three-Thirds_Process.odg",
+          "timestamp": "2020-08-18T15:46:33+00:00",
+          "translation_unit": 10
+        }
+      ]
+    },
+    {
+      "page": "Training_Meeting_Outline",
+      "language_code": "en",
+      "title": "Training Meeting Outline",
+      "version": "1.0",
+      "progress": {
+        "translated": 42,
+        "fuzzy": 0,
+        "total": 42
+      },
+      "version_unit": 42,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/4/4d/Training_Meeting_Outline.pdf",
+          "timestamp": "2020-12-17T22:38:24+00:00",
+          "translation_unit": 39
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/6/6a/Training_Meeting_Outline.odt",
+          "timestamp": "2020-12-17T23:24:41+00:00",
+          "translation_unit": 40
+        }
+      ]
+    },
+    {
+      "page": "A_Daily_Prayer",
+      "language_code": "en",
+      "title": "A Daily Prayer",
+      "version": "1.0",
+      "progress": {
+        "translated": 26,
+        "fuzzy": 0,
+        "total": 26
+      },
+      "version_unit": 21,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/4/42/A_Daily_Prayer.pdf",
+          "timestamp": "2021-01-08T12:00:36+00:00",
+          "translation_unit": 19
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/6/61/A_Daily_Prayer.odt",
+          "timestamp": "2021-01-08T11:57:45+00:00",
+          "translation_unit": 20
+        }
+      ]
+    }
+  ]
+}
