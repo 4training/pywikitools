@@ -1,4 +1,5 @@
 import logging
+import re
 import shlex
 from subprocess import Popen, TimeoutExpired
 from time import sleep
@@ -9,6 +10,10 @@ from com.sun.star.beans import PropertyValue            # type: ignore
 from com.sun.star.lang import Locale                    # type: ignore
 from com.sun.star.task import ErrorCodeIOException      # type: ignore
 from com.sun.star.io import IOException                 # type: ignore
+from com.sun.star.awt import FontWeight                 # type: ignore
+
+class FontSlant():
+    from com.sun.star.awt.FontSlant import (NONE, ITALIC)   # type: ignore
 
 from pywikitools.lang.libreoffice_lang import LANG_LOCALE
 
@@ -90,11 +95,13 @@ class LibreOffice:
         assert self._model is not None
         return self._model.getCurrentController().PageCount
 
-    def search_and_replace(self, search: str, replace: str, warn_if_pages_change: bool = False) -> bool:
+    def search_and_replace(self, search: str, replace: str,
+                           warn_if_pages_change: bool = False, parse_formatting: bool = False) -> bool:
         """
         Replaces first occurence of search with replace in the currently opened LibreOffice document
         @param warn_if_pages_change: Log a warning if start and end of the passage aren't on the same page(s) as
                                      it was before the replace
+        @param parse_formatting: Should we take <i>,<b>,</i> and </b> in the replace string as formatting instruction?
         @return True if successful
         """
         # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
@@ -114,7 +121,25 @@ class LibreOffice:
                 end_page_before = view_cursor.getPage()
                 self.logger.debug(f"Found {search} on page(s) {start_page_before} to {end_page_before}")
 
-            found.setString(replace)
+            pattern = re.compile(r"</?[ib]>")
+            next_match = None
+            if parse_formatting:
+                next_match = pattern.search(replace)
+            found.setString(replace if next_match is None else replace[:next_match.start()])
+            while next_match is not None:
+                # go through the remaining string: add formatting and add the text parts step by step
+                found.collapseToEnd()
+                if next_match.group(0) == "<b>":
+                    found.CharWeight = FontWeight.BOLD
+                elif next_match.group(0) == "</b>":
+                    found.CharWeight = FontWeight.NORMAL
+                if next_match.group(0) == "<i>":
+                    found.CharPosture = FontSlant.ITALIC
+                elif next_match.group(0) == "</b>":
+                    found.CharPosture = FontSlant.NONE
+                last_pos = next_match.end()
+                next_match = pattern.search(replace, last_pos)
+                found.setString(replace[last_pos:] if next_match is None else replace[last_pos:next_match.start()])
 
             if warn_if_pages_change:
                 # Checking whether the page number(s) are still the same
