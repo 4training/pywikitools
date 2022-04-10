@@ -45,8 +45,15 @@ class TestWriteReport(unittest.TestCase):
 
     @patch("pywikitools.resourcesbot.write_report.WriteReport.save_language_report")
     def test_run(self, mock_save):
-        # save_language_report() shouldn't get called when there are no changes
+        # run() should abort with warning if we don't provide English language info
         write_report = WriteReport(None)
+        language_data = {"ru": self.language_info}
+        changes = {"ru": ChangeLog()}
+        with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+            write_report.run(language_data, changes)
+        mock_save.assert_not_called()
+
+        # save_language_report() shouldn't get called when there are no changes
         language_data = {"en": self.english_info, "ru": self.language_info}
         changes = {"en": ChangeLog(), "ru": ChangeLog()}
         write_report.run(language_data, changes)

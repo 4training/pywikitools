@@ -24,10 +24,10 @@
 |- style="background-color:orange"
 | [[Baptism]]
 | [[Baptism/ru|Крещение]]
-| style="background-color:green"  | 100%
+| style="background-color:orange"  | 100%
 | style="background-color:red" | -
 | style="background-color:red" | -
-| style="background-color:green" | 2.1
+| style="background-color:red" | 2.1 (Original: 2.2)
 |- style="background-color:orange"
 | [[Prayer]]
 | [[Prayer/ru|Молитва]]
