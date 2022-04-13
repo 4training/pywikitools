@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import unittest
 from pywikitools import fortraininglib
 
@@ -49,11 +50,6 @@ He wants to set us free from our distorted views and the negative consequences t
 
 Jesus says in John 8:31-32: <i>“If you obey my teaching, you are really my disciples.
 Then you will know the truth. And the truth will set you free.”</i>"""
-
-TEST_UNIT_WITH_FORMATTING = """''God, through which glasses am I seeing You?''<br/>
-'''Let God show you what happened.'''<br/>
-Use the ''support'' of a '''good''' helper!
-"""
 
 # TODO: Ideally this should be split into four snippets... but that would require
 # more complexity in split_into_snippets() to understand that the newline after the third item
@@ -107,8 +103,8 @@ class TestTranslationUnit(unittest.TestCase):
 
     def test_split_into_snippets(self):
         with_lists = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_LISTS)
-        self.assertEqual(len(with_lists), 16)
-        self.assertEqual(len([s for s in with_lists if s.is_text()]), 8)
+        self.assertEqual(len(with_lists), 13)
+        self.assertEqual(len([s for s in with_lists if s.is_text()]), 7)
         self.assertEqual(TEST_UNIT_WITH_LISTS, "".join([s.content for s in with_lists]))
 
         with_definition = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_DEFINITION)
@@ -122,14 +118,9 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(TEST_UNIT_WITH_HEADLINE, "".join([s.content for s in with_headline]))
 
         with_br = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_BR)
-        self.assertEqual(len(with_br), 6)
-        self.assertEqual(len([s for s in with_br if s.is_text()]), 3)
+        self.assertEqual(len(with_br), 3)
+        self.assertEqual(len([s for s in with_br if s.is_text()]), 2)
         self.assertEqual(TEST_UNIT_WITH_BR, "".join([s.content for s in with_br]))
-
-        with_formatting = TranslationUnit.split_into_snippets(TEST_UNIT_WITH_FORMATTING)
-        self.assertEqual(len(with_formatting), 17)
-        self.assertEqual(len([s for s in with_formatting if s.is_text()]), 7)
-        self.assertEqual(TEST_UNIT_WITH_FORMATTING, "".join([s.content for s in with_formatting]))
 
     def test_is_translation_well_structured(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
@@ -146,7 +137,7 @@ class TestTranslationUnit(unittest.TestCase):
             self.assertTrue(trans.is_text())
             counter += 1
         self.assertTrue(with_lists.is_translation_well_structured())
-        self.assertGreaterEqual(counter, 8)
+        self.assertGreaterEqual(counter, 7)
 
         # Iterating over not well-structured translation unit should give a warning (and not raise an error)
         with_lists = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
@@ -186,6 +177,43 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 
+    def _sort_units(self, definitions: List[str], translations: List[str]) -> Tuple[List[str], List[str]]:
+        """Create translation units, sort them and return lists of definitions and translations
+        The return format is for easier comparison of the expected outcome
+        """
+        units: List[TranslationUnit] = []
+        for counter, definition in enumerate(definitions):
+            unit = TranslationUnit(f"Test/{counter}", "de", definition, translations[counter])
+            units.append(unit)
+        units.sort()
+        sorted_definitions_list: List[str] = []
+        sorted_translations_list: List[str] = []
+        for unit in units:
+            sorted_definitions_list.append(unit.get_definition())
+            sorted_translations_list.append(unit.get_translation())
+        return (sorted_definitions_list, sorted_translations_list)
+
+    def test_sorting(self):
+        # Test for correct sorting
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            (orig_list, trans_list) = self._sort_units(["this", "this", "is", "thistle"],
+                                                       ["same", "same", "same", "same"])
+        self.assertListEqual(orig_list, ["thistle", "this", "this", "is"])
+        # two different translation units with the same definition but different translations should give a warning
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            (orig_list, trans_list) = self._sort_units(["this", "this", "other", "content"],
+                                                       ["same", "different", "same", "same"])
+        self.assertListEqual(orig_list, ["this", "this", "other", "content"])
+        # two snippets in a translation unit
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            (orig_list, trans_list) = self._sort_units(["this<br/>is", "this<br/>thistle"],
+                                                       ["same<br/>same", "same<br/>same"])
+        self.assertListEqual(orig_list, ["this<br/>thistle", "this<br/>is"])
+        # reciprocal dependency should give a warning
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING') as cm:
+            (orig_list, trans_list) = self._sort_units(["something<br/>range", "thing<br/>strange"],
+                                                       ["same<br/>same", "same<br/>same"])
+        self.assertIn("reciprocal", cm.output[2])
 
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):

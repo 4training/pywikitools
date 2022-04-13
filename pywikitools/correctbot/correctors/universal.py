@@ -10,6 +10,7 @@ Each function should have a documentation string which will be used for print_st
 """
 import logging
 import re
+from typing import List
 
 from pywikitools.correctbot.correctors.base import use_snippets
 
@@ -89,6 +90,45 @@ class UniversalCorrector():
             if len(text.strip()) > 1 and not text.strip().endswith("."):
                 return text.strip() + "."
         return text
+
+    def correct_mediawiki_bold_italic(self, text: str) -> str:
+        """Replace mediawiki formatting '''bold''' with <b>bold</b> and ''italic'' with <i>italic</i>"""
+        # Is a shorter implementation possible?
+        splitted_text: List[str] = re.split("'''''", text)
+        if (len(splitted_text) % 2) != 1:   # Not an even amount of ''''': we don't do anything
+            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger.warning(f"Found uneven amount of bold italic formatting (''''') Please correct manually: {text}")
+        else:
+            # Put all parts together again, replacing ''''' with <b><i> and </i></b> (alternating)
+            text = splitted_text[0]
+            for counter in range(1, len(splitted_text)):
+                text += '<b><i>' if counter % 2 == 1 else '</i></b>'
+                text += splitted_text[counter]
+
+        splitted_text = re.split("'''", text)
+        if (len(splitted_text) % 2) != 1:   # Not an even amount of ''': we don't do anything
+            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger.warning(f"Found uneven amount of bold formatting (''') Please correct manually: {text}")
+        else:
+            # Put all parts together again, replacing ''' with <b> and </b> (alternating)
+            text = splitted_text[0]
+            for counter in range(1, len(splitted_text)):
+                text += '<b>' if counter % 2 == 1 else '</b>'
+                text += splitted_text[counter]
+
+        splitted_text = re.split("''", text)
+        if (len(splitted_text) % 2) != 1:   # Not an even amount of '': we don't do anything
+            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger.warning(f"Found uneven amount of italic formatting ('') Please correct manually: {text}")
+        else:
+            # Put all parts together again, replacing '' with <i> and </i> (alternating)
+            text = splitted_text[0]
+            for counter in range(1, len(splitted_text)):
+                text += '<i>' if counter % 2 == 1 else '</i>'
+                text += splitted_text[counter]
+        return text
+
+
 
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""

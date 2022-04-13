@@ -29,6 +29,7 @@ from configparser import ConfigParser
 from typing import List, Optional
 import requests
 from pywikitools import fortraininglib
+from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
@@ -93,14 +94,20 @@ class TranslateODT:
         @param trans the translated string (what we're going to replace it with)
         """
         self.logger.debug(f"process_snippet, orig: {orig}, trans: {trans}")
+        # remove bold/italic/underline formatting from original
+        orig = re.sub("\'\'+|</?[biu]>", '', orig)
+        # replace '' / ''' with <i> / <b> in trans: only these are recognized by LibreOffice.search_and_replace()
+        corrector = UniversalCorrector()
+        trans = corrector.correct_mediawiki_bold_italic(trans)
+
         orig = orig.strip()
         trans = trans.strip()
-
         if not self._is_search_and_replace_necessary(orig, trans):
             return
+
         # if translation snippet can be found in document, replace
         try:
-            replaced = self._loffice.search_and_replace(orig, trans, not self._did_page_count_change)
+            replaced = self._loffice.search_and_replace(orig, trans, not self._did_page_count_change, True)
             if replaced:
                 self.logger.info(f"Replaced: {orig} with: {trans}")
             else:
@@ -117,7 +124,7 @@ class TranslateODT:
                 for search, replace in zip(orig_split, trans_split):
                     if not self._is_search_and_replace_necessary(search.strip(), replace.strip()):
                         continue
-                    replaced = self._loffice.search_and_replace(search, replace, not self._did_page_count_change)
+                    replaced = self._loffice.search_and_replace(search, replace, not self._did_page_count_change, True)
                     if replaced:
                         self.logger.info(f"Replaced: {search} with: {replace}")
                     else:
@@ -133,16 +140,6 @@ class TranslateODT:
         """Go through the whole document, search for original text snippets and replace them
         with the translated text snippets"""
         for t in translated_page:           # for each translation unit:
-            if t.get_definition() == "":
-                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
-                continue
-            if t.get_translation() == "":
-                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
-                continue
-            if t.get_definition() == translated_page.get_english_info().version:
-                # We don't try to do search and replace with the version string. We later process the whole CC0 notice
-                continue
-
             self.logger.debug(f"Translation unit: {t.get_definition()}")
             t.remove_links()
 
@@ -163,7 +160,7 @@ class TranslateODT:
                                     f"but {br_in_trans} of them in the translation. "
                                     f"We still can process {t.get_name()}. You may ignore this warning.")
 
-            for (search, replace) in t:     # for each snippet of translation unit:
+            for (search, replace) in t:   # for each snippet of translation unit
                 self._process_snippet(search.content, replace.content)
 
         if self._did_page_count_change:
@@ -213,6 +210,47 @@ class TranslateODT:
                                 f"according to the headline it should be: {filename}")
         return filename
 
+    def _cleanup_units(self, translated_page: TranslatedPage) -> TranslatedPage:
+        """
+        Filter out empty/irrelevant units; Check order of translation units and rearrange if necessary.
+
+        We can run into troubles if a we have a short translation snippet that is contained in another snippet
+        -> search and replace will likely happen at the wrong place
+        Let's loop through all units and in the case a snippet is contained in anoher one, we'll move the short
+        translation unit to the end: We always try to match long search strings first
+
+        @return a cleaned up copy TranslatedPage (as in-place manipulation isn't easily possible)
+        """
+        result: List[TranslationUnit] = []
+        for t in translated_page:
+            if t.get_definition() == "":
+                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
+                continue
+            if t.get_translation() == "":
+                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
+                continue
+            if t.get_definition() == translated_page.get_english_info().version:
+                # We don't try to do search and replace with the version string. We later process the whole CC0 notice
+                continue
+            result.append(t)
+
+        result.sort()
+
+        # Compare all translation units with each other
+        for i in range(len(result)):
+            for j in range(len(result)):
+                if i == j:
+                    continue
+                # compare all of their snippets with each other
+                for i_snippet_orig, _ in result[i]:
+                    for _, j_snippet_trans in result[j]:
+                        # warn in case a search string can be found in a translation (unlikely but better check)
+                        if i_snippet_orig.content in j_snippet_trans.content:
+                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({result[i].get_name()}) '
+                                                f'is in translation "{j_snippet_trans.content}" ({result[j].get_name()})!')
+
+        return TranslatedPage(translated_page.page, translated_page.language_code, result)
+
     def translate_odt(self, odt_path: str, translated_page: TranslatedPage) -> None:
         """Open the specified ODT file and replace contents with translation
         @param odt_path: Path of the ODT file
@@ -222,7 +260,7 @@ class TranslateODT:
         self._loffice.open_file(odt_path)
         self._did_page_count_change = False
         self._original_page_count = self._loffice.get_page_count()
-        self._search_and_replace(translated_page)
+        self._search_and_replace(self._cleanup_units(translated_page))
 
     def translate_worksheet(self, worksheet: str, language_code: str) -> Optional[str]:
         """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT

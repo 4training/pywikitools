@@ -216,8 +216,8 @@ class TestUniversalCorrector(unittest.TestCase):
         corrector = UniversalCorrectorTester()
         self.assertEqual(correct(corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
                                             "Lowercase start.<br/>And lowercase after full stop. Yes.")
-        self.assertEqual(correct(corrector, "Question? answer!<br/>more lowercase. <b>why?</b> didn't check."),
-                                            "Question? Answer!<br/>More lowercase. <b>Why?</b> didn't check.")
+        self.assertEqual(correct(corrector, "Question? answer!<br/>more lowercase.<br/>why? didn't check."),
+                                            "Question? Answer!<br/>More lowercase.<br/>Why? Didn't check.")
         self.assertEqual(correct(corrector, "After colons: and semicolons; we don't correct."),
                                             "After colons: and semicolons; we don't correct.")
 
@@ -238,9 +238,15 @@ class TestUniversalCorrector(unittest.TestCase):
 
     def test_final_dot_correction(self):
         corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "<b>Ein ganzer Satz</b>", "<b>A full sentence.</b>"),
-                                            "<b>Ein ganzer Satz.</b>")
+        self.assertEqual(correct(corrector, "* Ein Wort\n* Ein ganzer Satz", "* A word\n* A full sentence."),
+                                            "* Ein Wort\n* Ein ganzer Satz.")
         self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
+
+    def test_mediawiki_bold_italic(self):
+        corrector = UniversalCorrectorTester()
+        self.assertEqual(correct(corrector, "''italic'' and '''bold'''"), "<i>italic</i> and <b>bold</b>")
+        self.assertEqual(correct(corrector, "This is '''''italic and bold'''''."), "This is <b><i>italic and bold</i></b>.")
+
 
 
 

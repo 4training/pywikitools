@@ -4,7 +4,7 @@ import difflib
 from enum import Enum
 import logging
 import re
-from typing import Final, List, Optional
+from typing import Final, List, Optional, Tuple
 
 from pywikitools.resourcesbot.data_structures import TranslationProgress, FileInfo, WorksheetInfo
 
@@ -177,15 +177,13 @@ class TranslationUnit:
         """
         Split the given text into snippets
 
-        We split at all kinds of formattings / markup:
-            '' or ''': italic / bold formatting
-            <tags>: all kind of html tags like <i> or <b> or </i> or </b>
+        We split at the following formatting / markup items:
             * or #: bullet list / numbered list items
             == up to ======: section headings
             : at the beginning of a line: definition list / indent text
             ; at the beginning of a line: definition list
-        For <br/>, include a following newline in the match.
-        For *#;: include a following whitespace character in the match.
+        For <br/>, if there is a following newline, include it also in the match.
+        For *#;: if there is a following whitespace character, include it also in the match.
         @param fallback: Should we try the fallback splitting-up?
         """
         if fallback:
@@ -196,7 +194,7 @@ class TranslationUnit:
 
         snippets: List[TranslationSnippet] = []
         last_pos = 0
-        pattern = re.compile("\'\'+|<br ?/?>\n?|<.*?>|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
+        pattern = re.compile("<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
         for match in re.finditer(pattern, text):
             if match.start() > last_pos:
                 text_snippet = TranslationSnippet(SnippetType.TEXT_SNIPPET, text[last_pos:match.start()])
@@ -289,6 +287,84 @@ class TranslationUnit:
             if definition_snippet.is_text():
                 return (definition_snippet, translation_snippet)
         raise StopIteration
+
+    def __str__(self) -> str:
+        content  = f"{self.identifier}/{self.language_code}: "
+        content += f"Definition={self._definition} (original: {self._original_definition}) "
+        content += f"Translation={self._translation} (original: {self._original_translation}). Snippets:\n"
+        self._ensure_split()
+        assert self._translation_snippets is not None
+        for snippet in self._translation_snippets:
+            content += f"- {snippet}\n"
+        return content
+
+    # The following comparison functions enable sorting of a List[TranslationUnit].
+    # It's not a "typical" ordering that would order alphabetically, rather we're only checking
+    # whether the definition of a snippet can be found in another snippet definition.
+    #
+    # This is problematic for TranslateODT, so we want to order a list of TranslationUnits in such a way that
+    # units with a short snippet (that is part of another one) are moved to the end of the list
+    # ["long", "A long sentence", "long sentence"] -> ["A long sentence", "long sentence", "long"]
+    # Then we first search and replace the long strings, avoiding replacing at the wrong places.
+    #
+    # If no snippet contains another one, sorting a List[TranslationUnit] doesn't change it at all.
+    def _comparison(self, other) -> Tuple[bool, bool]:
+        """
+        Compare our TranslationUnit to another TranslationUnit: Is any of the snippet definitions a substring
+        of another snippet?
+
+        Remark: We don't check whether the snippets in self._definition_snippets contain each other -
+        any translation administrator should make sure that never happens...
+        @return Tuple(self_is_in_other, other_is_in_self)
+        """
+        assert isinstance(other, TranslationUnit)
+        self._ensure_split()
+        assert self._definition_snippets is not None and self._translation_snippets is not None
+        self_is_in_other = False
+        other_is_in_self = False
+        for counter, snippet in enumerate(self._definition_snippets):
+            if not snippet.is_text():
+                continue
+            for other_snippet, other_snippet_translation in other:
+                if snippet.content == other_snippet.content:
+                    if self._translation_snippets[counter].content != other_snippet_translation.content:
+                        self.logger.warning(f"{self.get_name()} and {other.get_name()} have same definition: "
+                                            f"{other_snippet.content} but different translations: "
+                                            f"{self._translation_snippets[counter].content} / "
+                                            f"{other_snippet_translation.content}")
+                    continue
+                if snippet.content in other_snippet.content:
+                    self.logger.warning(f'"{snippet.content}" (in {self.get_name()}) is a substring of "{other_snippet.content}" (in {other.get_name()})!')
+                    self_is_in_other = True
+                elif other_snippet.content in snippet.content:
+                    self.logger.warning(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of "{snippet.content}" (in {self.get_name()})!')
+                    other_is_in_self = True
+        if self_is_in_other and other_is_in_self:
+            # Don't know what happens now, I hope the sort() is not going into an endless loop...
+            self.logger.warning(f"{self.get_name()} and {other.get_name()} have reciprocal substrings: "
+                                f"{self.get_definition()} / {other.get_definition()} "
+                                 "This may lead to undefined behavior!")
+        return (self_is_in_other, other_is_in_self)
+
+    def __eq__(self, other) -> bool:
+        (self_is_in_other, other_is_in_self) = self._comparison(other)
+        return not self_is_in_other and not other_is_in_self
+
+    def __lt__(self, other) -> bool:
+        (self_is_in_other, other_is_in_self) = self._comparison(other)
+        return other_is_in_self
+
+    def __gt__(self, other) -> bool:
+        (self_is_in_other, other_is_in_self) = self._comparison(other)
+        return self_is_in_other
+
+    def __le__(self, other) -> bool:
+        (self_is_in_other, other_is_in_self) = self._comparison(other)
+        return not self_is_in_other
+
+    def __ge__(self, other) -> bool:
+        (self_is_in_other, other_is_in_self) = self._comparison(other)
+        return not other_is_in_self
 
 
 class TranslatedPage:

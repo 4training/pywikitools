@@ -59,7 +59,6 @@ class TestTranslateODT(unittest.TestCase):
         with self.assertLogs('pywikitools.translateodt', level='WARNING'):
             self.assertEqual(self.translate_odt._get_odt_filename(translated_page), "Guter_Titel.odt")
 
-
     def test_set_properties(self):
         # Test that document properties are correctly set for a worksheet with no sub-headline
         headline = TranslationUnit("Test/Page_display_title", "de", "Title", "Titel")
@@ -81,6 +80,21 @@ class TestTranslateODT(unittest.TestCase):
             "Titel - Überschrift", "Title - Headline German Deutsch",
             "Kein Copyright: Dieses Arbeitsblatt darf ohne Einschränkungen weitergegeben und weiterverarbeitet werden"
             " (CC0). Version 1.2 - copyright-free")
+
+    def test_cleanup_units(self):
+        # should warn because "sin" can be found in the German translation "Wir versinken..."
+        unit1 = TranslationUnit(f"Test/2", "de", "We're drowning in snow chaos", "Wir versinken im Schnee.")
+        unit2 = TranslationUnit(f"Test/1", "de", "sin", "Sünde")
+        translated_page = TranslatedPage("Test", "de", [unit1, unit2])
+        with self.assertLogs('pywikitools.translateodt', level='WARNING'):
+            cleaned_up_page = self.translate_odt._cleanup_units(translated_page)
+        # the TranslatedPage returned should have the same contents as before
+        self.assertEqual(cleaned_up_page.page, translated_page.page)
+        self.assertEqual(cleaned_up_page.language_code, translated_page.language_code)
+        self.assertEqual(cleaned_up_page.units[0], translated_page.units[0])
+        self.assertEqual(cleaned_up_page.units[1], translated_page.units[1])
+
+        # TODO test some more stuff
 
 
 if __name__ == '__main__':

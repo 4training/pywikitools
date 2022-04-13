@@ -10,7 +10,7 @@ from com.sun.star.beans import PropertyValue            # type: ignore
 from com.sun.star.lang import Locale                    # type: ignore
 from com.sun.star.task import ErrorCodeIOException      # type: ignore
 from com.sun.star.io import IOException                 # type: ignore
-from com.sun.star.awt import FontWeight                 # type: ignore
+from com.sun.star.awt import FontWeight, FontUnderline  # type: ignore
 
 class FontSlant():
     from com.sun.star.awt.FontSlant import (NONE, ITALIC)   # type: ignore
@@ -102,6 +102,7 @@ class LibreOffice:
         @param warn_if_pages_change: Log a warning if start and end of the passage aren't on the same page(s) as
                                      it was before the replace
         @param parse_formatting: Should we take <i>,<b>,</i> and </b> in the replace string as formatting instruction?
+                                 The search string should still contain the text content only and no <tags>
         @return True if successful
         """
         # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
@@ -121,7 +122,7 @@ class LibreOffice:
                 end_page_before = view_cursor.getPage()
                 self.logger.debug(f"Found {search} on page(s) {start_page_before} to {end_page_before}")
 
-            pattern = re.compile(r"</?[ib]>")
+            pattern = re.compile(r"</?[biu]>")
             next_match = None
             if parse_formatting:
                 next_match = pattern.search(replace)
@@ -133,10 +134,14 @@ class LibreOffice:
                     found.CharWeight = FontWeight.BOLD
                 elif next_match.group(0) == "</b>":
                     found.CharWeight = FontWeight.NORMAL
-                if next_match.group(0) == "<i>":
+                elif next_match.group(0) == "<i>":
                     found.CharPosture = FontSlant.ITALIC
                 elif next_match.group(0) == "</b>":
                     found.CharPosture = FontSlant.NONE
+                elif next_match.group(0) == "<u>":
+                    found.CharUnderline = FontUnderline.SINGLE
+                elif next_match.group(0) == "</u>":
+                    found.CharUnderline = FontUnderline.NONE
                 last_pos = next_match.end()
                 next_match = pattern.search(replace, last_pos)
                 found.setString(replace[last_pos:] if next_match is None else replace[last_pos:next_match.start()])
