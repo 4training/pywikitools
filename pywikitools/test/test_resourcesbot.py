@@ -78,6 +78,7 @@ class TestResourcesBot(unittest.TestCase):
         self.assertEqual(version, "")
         self.assertEqual(version_unit, 0)
 
+    @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
@@ -85,7 +86,7 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
     def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
-                       mock_write_list, mock_write_report, mock_pywikibot_page):
+                       mock_write_list, mock_write_report, mock_pywikibot_page, mock_pywikibot_site):
         def json_test_loader(site, page: str):
             """Load meaningful test data for languages.json, en.json and ru.json"""
             result = Mock()
@@ -99,6 +100,7 @@ class TestResourcesBot(unittest.TestCase):
                     result.text = f.read()
             return result
         mock_pywikibot_page.side_effect = json_test_loader
+        mock_pywikibot_site.return_value.logged_in.return_value = True
         bot = ResourcesBot(self.config, read_from_cache=True)
         bot.run()
 
