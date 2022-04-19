@@ -90,12 +90,12 @@ class ResourcesBot:
                 self.logger.warning(f"userinfo: {self.site.userinfo}")
                 raise RuntimeError("Login with pywikibot failed.")
 
-        if not self._read_from_cache:   # Find out what has been changed since our last run
-            for lang, language_info in self._result.items():
-                self._changelog[lang] = self._sync_and_compare(language_info)
-            if self._limit_to_lang is None:
-                self._save_languages_list()
-                self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
+        # Find out what has been changed since our last run
+        for lang, language_info in self._result.items():
+            self._changelog[lang] = self._sync_and_compare(language_info) if not self._read_from_cache else ChangeLog()
+        if not self._read_from_cache and self._limit_to_lang is None:
+            self._save_languages_list()
+            self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
 
         # Run all LanguagePostProcessors
         write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
@@ -105,11 +105,10 @@ class ResourcesBot:
         export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""), self._rewrite_all)
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         for lang in self._result:
-            change_log = self._changelog[lang] if not self._read_from_cache else ChangeLog()
             consistency_check.run(self._result[lang], ChangeLog())
-            export_html.run(self._result[lang], change_log)
-            export_repository.run(self._result[lang], change_log)
-            write_list.run(self._result[lang], change_log)
+            export_html.run(self._result[lang], self._changelog[lang])
+            export_repository.run(self._result[lang], self._changelog[lang])
+            write_list.run(self._result[lang], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
         write_report.run(self._result, self._changelog)

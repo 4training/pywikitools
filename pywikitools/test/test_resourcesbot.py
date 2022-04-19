@@ -6,8 +6,10 @@ TODO: Find ways to run meaningful tests that don't take too long...
 """
 from configparser import ConfigParser
 from datetime import datetime
+import logging
+from os.path import abspath, dirname, join
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pywikibot
 
@@ -75,6 +77,47 @@ class TestResourcesBot(unittest.TestCase):
             version, version_unit = self.bot.get_english_version("Some mediawiki content...")
         self.assertEqual(version, "")
         self.assertEqual(version_unit, 0)
+
+    @patch("pywikibot.Page", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
+    def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
+                       mock_write_list, mock_write_report, mock_pywikibot_page):
+        def json_test_loader(site, page: str):
+            """Load meaningful test data for languages.json, en.json and ru.json"""
+            result = Mock()
+            if page == "4training:languages.json":
+                result.text = '["en", "ru"]'
+            elif page == "4training:en.json":
+                with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
+                    result.text = f.read()
+            elif page == "4training:ru.json":
+                with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
+                    result.text = f.read()
+            return result
+        mock_pywikibot_page.side_effect = json_test_loader
+        bot = ResourcesBot(self.config, read_from_cache=True)
+        bot.run()
+
+        mock_consistency_check.assert_called_once()
+        mock_export_html.assert_called_once()
+        mock_export_repository.assert_called_once()
+        mock_write_list.assert_called_once()
+
+        # Get the internal variables bot._result and bot._changelog so that we can do some assertions on them
+        bot_result = mock_write_report.return_value.run.call_args.args[0]
+        bot_changelog = mock_write_report.return_value.run.call_args.args[1]
+
+        self.assertIn("en", bot_result)
+        self.assertIn("ru", bot_result)
+        self.assertEqual(len(bot_result), 2)
+        self.assertTrue(bot_changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
+        self.assertTrue(bot_changelog["ru"].is_empty())
+        self.assertEqual(len(bot_changelog), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

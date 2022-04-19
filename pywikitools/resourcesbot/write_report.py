@@ -44,7 +44,7 @@ class WriteReport(GlobalPostProcessor):
         english_info = language_data["en"]
 
         for lang_code, lang_info in language_data.items():
-            if self._force_rewrite or not changes[lang_code].is_empty():
+            if self._force_rewrite or (lang_code in changes and not changes[lang_code].is_empty()):
                 if lang_code == "en":   # We don't need a report for English as it is the source language
                     continue
                 if "-" in lang_code and lang_code != "pt-br":   # Don't write reports for language variants
