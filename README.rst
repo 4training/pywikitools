@@ -42,6 +42,11 @@ Setup:
    	    * To create a new virtual environment: ``virtualenv --system-site-packages new_venv_name``. It is important to include the tag ``--system-site-packages``, else the virtual environment will not be able to import the uno package into your working environment.
    	    * To activate the virtual environment: ``source new_venv_name/bin/activate``
    	    * Change into pywikitools base path and run ``pip install -r requirements.txt``.
+
+#. Install LibreOffice UNO (python bridge): ``sudo apt-get install python3-uno`` (on linux)
+
+    * This is not necessary for all scripts, only for our LibreOffice module and scripts using it (``translateodt.py``)
+    * Running the complete test suite requires it, though
         
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located).
