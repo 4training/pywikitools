@@ -1,7 +1,6 @@
 config.ini
-logs/*.log
-logs/languagereports
-worksheets/
+logs/
+htmlexport/
 generateodtbot.lock
 
 # Contains (potentially sensitive) details to log into a specific mediawiki instance
@@ -17,6 +16,7 @@ apicache-py3
 pywikitools/correctbot/families/
 
 # worksheet files
+worksheets/
 *.pdf
 *.odt
 *.odt#
