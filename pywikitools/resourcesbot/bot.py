@@ -26,8 +26,7 @@ class ResourcesBot:
         @param read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
         """
         # read-only list of download file types
-        self._file_types = fortraininglib.get_file_types()
-#        self._file_types = ["pdf", "odt", "odg", "printPdf"]   # TODO see #11
+        self._file_types = ["pdf", "odt", "odg", "printPdf"]
         # Read the configuration from config.ini in the same directory
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
@@ -166,7 +165,7 @@ class ResourcesBot:
         and adds them to worksheet
         """
         for file_type in self._file_types:
-            handler = re.search(r"\{\{" + file_type.capitalize() +
+            handler = re.search(r"\{\{" + file_type[0].upper() + file_type[1:] +
                                 r"Download\|<translate>*?<!--T:(\d+)-->\s*([^<]+)</translate>", page_source)
             if handler:
                 self._add_file_type(worksheet, file_type, handler.group(2), int(handler.group(1)))

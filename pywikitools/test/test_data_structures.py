@@ -153,10 +153,11 @@ class TestWorksheetInfo(unittest.TestCase):
         # Now let's add two files and make sure serialization is still working correctly
         worksheet_info.add_file_info(FileInfo("pdf", TEST_URL, TEST_TIME))
         worksheet_info.add_file_info(FileInfo("odt", TEST_URL.replace(".pdf", ".odt"), TEST_TIME))
+        worksheet_info.add_file_info(FileInfo("printPdf", TEST_URL.replace(".pdf", "_print.pdf"), TEST_TIME))
         json_text = DataStructureEncoder().encode(worksheet_info)
         decoded_worksheet_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_worksheet_info, WorksheetInfo)
-        self.assertEqual(len(decoded_worksheet_info.get_file_infos()), 2)
+        self.assertEqual(len(decoded_worksheet_info.get_file_infos()), 3)
         self.assertEqual(DataStructureEncoder().encode(decoded_worksheet_info), json_text)
 
     def test_to_str(self):
