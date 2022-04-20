@@ -65,7 +65,7 @@ class WriteList(LanguagePostProcessor):
             file_name = file_name[pos+1:]
         else:
             self.logger.warning(f"Couldn't find / in {file_name}")
-        return f" [[File:{file_info.file_type}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
+        return f" [[File:{file_info.file_type.lower()}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
 
     def create_mediawiki(self, language_info: LanguageInfo) -> str:
         """
@@ -74,6 +74,7 @@ class WriteList(LanguagePostProcessor):
         Output should look like the following line:
         * [[God's_Story_(five_fingers)/de|{{int:sidebar-godsstory-fivefingers}}]] \
           [[File:pdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] \
+          [[File:printpdficon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).pdf}}]] \
           [[File:odticon_small.png|link={{filepath:Gottes_Geschichte_(fünf_Finger).odt}}]]
         """
         content: str = ''
@@ -89,6 +90,7 @@ class WriteList(LanguagePostProcessor):
             content += f"* [[{worksheet}/{language_info.language_code}|"
             content += "{{int:" + fortraininglib.title_to_message(worksheet) + "}}]]"
             content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
+            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
             content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
             content += "\n"
 
