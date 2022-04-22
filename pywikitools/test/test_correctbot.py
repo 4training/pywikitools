@@ -2,11 +2,10 @@
 Test cases for CorrectBot: Testing core functionality as well as language-specific rules
 """
 from inspect import signature
-import logging
 import unittest
 import importlib
 import os
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
@@ -76,6 +75,7 @@ class CorrectorTestCase(unittest.TestCase):
 
     def compare_revisions(self, page: str, language_code: str, identifier: int, old_revision: int, new_revision: int):
         """For all "normal" translation units: Calls CorrectorBase.correct()"""
+        fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
         self.assertIsNotNone(old_content)
@@ -84,6 +84,7 @@ class CorrectorTestCase(unittest.TestCase):
 
     def compare_title_revisions(self, page: str, language_code: str, old_revision: int, new_revision):
         """Calls CorrectBase.title_correct()"""
+        fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_title(page, language_code, old_revision)
         new_content = fortraininglib.get_translated_title(page, language_code, new_revision)
         self.assertIsNotNone(old_content)
@@ -93,6 +94,7 @@ class CorrectorTestCase(unittest.TestCase):
     def compare_filename_revisions(self, page: str, language_code: str, identifier: int,
                                          old_revision: int, new_revision):
         """Calls CorrectorBase.filename_correct()"""
+        fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
         self.assertIsNotNone(old_content)
@@ -245,7 +247,8 @@ class TestUniversalCorrector(unittest.TestCase):
     def test_mediawiki_bold_italic(self):
         corrector = UniversalCorrectorTester()
         self.assertEqual(correct(corrector, "''italic'' and '''bold'''"), "<i>italic</i> and <b>bold</b>")
-        self.assertEqual(correct(corrector, "This is '''''italic and bold'''''."), "This is <b><i>italic and bold</i></b>.")
+        self.assertEqual(correct(corrector, "This is '''''italic and bold'''''."),
+                                            "This is <b><i>italic and bold</i></b>.")
 
 
 

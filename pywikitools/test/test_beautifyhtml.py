@@ -3,7 +3,7 @@ import unittest
 
 from bs4 import BeautifulSoup, Comment
 from bs4.element import NavigableString
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
 
 class TestBeautifyHTML(unittest.TestCase):
@@ -44,6 +44,7 @@ class TestBeautifyHTML(unittest.TestCase):
         # We're not going through all of fortraininglib.get_worksheet_list() because that takes some extra time
 
         # There should be no empty <span> sections anymore
+        fortraininglib = ForTrainingLib("https://www.4training.net")
         soup = BeautifulSoup(BeautifyHTML().process_html(fortraininglib.get_page_html("Church/en")), 'html.parser')
         self.assertEqual(len(soup.find_all("div", class_="mw-parser-output")), 0)
         for element in soup.find_all("span"):

@@ -31,7 +31,8 @@ class TestResourcesBot(unittest.TestCase):
 
     def setUp(self):
         self.config = ConfigParser()
-        self.config.read_dict({"Paths": {"logs": "~/"}}) # Fill this to prevent a warning
+        self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"},
+                               "Paths": {"logs": "~/"}}) # Fill this to prevent a warning
         self.bot = ResourcesBot(self.config)
 
     @patch("pywikibot.FilePage")

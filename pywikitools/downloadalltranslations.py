@@ -10,7 +10,7 @@ import os
 import logging
 import getopt
 import requests
-import fortraininglib
+from fortraininglib import ForTrainingLib
 
 def usage():
     print("Usage: python3 downloadalltranslations.py [-l {debug, info, warning, error, critical}] <worksheetname>")
@@ -43,6 +43,7 @@ try:
 except FileExistsError:
     pass
 
+fortraininglib = ForTrainingLib("https://www.4training.net")
 translations = fortraininglib.list_page_translations(worksheetname)
 logging.info(f'Worksheet {worksheetname} is translated into {len(translations)} languages: {translations.keys()}')
 for language in translations.keys():
@@ -56,8 +57,8 @@ for language in translations.keys():
         logging.warning(f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring")
         continue
     file_request = requests.get(url, allow_redirects=True)
-    language_autonym = fortraininglib.get_language_name(language) 
-    language_english = fortraininglib.get_language_name(language, 'en') 
+    language_autonym = fortraininglib.get_language_name(language)
+    language_english = fortraininglib.get_language_name(language, 'en')
     if language_autonym is None or language_english is None:
         logging.warning(f"Strang: couldn't get language name for language {language}, ignoring")
         continue

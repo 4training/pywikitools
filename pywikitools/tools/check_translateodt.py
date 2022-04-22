@@ -9,7 +9,7 @@ import sys
 from typing import List
 from unittest.mock import Mock
 
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.libreoffice import LibreOffice
 from pywikitools.translateodt import TranslateODT
 
@@ -86,6 +86,7 @@ if __name__ == "__main__":
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
+    fortraininglib = ForTrainingLib("https://www.4training.net")
     translate_odt = DummyTranslateODT(False)
 #    translate_odt = TranslateODT(False)    # uncomment this to invoke LibreOffice for each worksheet
     for worksheet in fortraininglib.get_worksheet_list():

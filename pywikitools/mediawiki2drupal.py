@@ -19,11 +19,10 @@ Configuration with credentials is in the [mediawiki2drupal] part of config.ini (
 import requests
 import os
 import logging
-from typing import Final, Dict, Optional
-from requests.auth import HTTPBasicAuth
+from typing import Final, Dict
 from bs4 import BeautifulSoup, Comment
 import configparser
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 
 class Mediawiki2Drupal():
     """The main class containing all major functionality to import pages from mediawiki into Drupal"""
@@ -33,7 +32,7 @@ class Mediawiki2Drupal():
         'Content-Type': 'application/vnd.api+json'
     }
 
-    def __init__(self, endpoint: str, username: str, password: str,
+    def __init__(self, fortraininglib: ForTrainingLib, endpoint: str, username: str, password: str,
                  content_type: str="page", change_hrefs: Dict[str, str]=None,
                  img_src_rewrite: Dict[str, str]=None):
         """
@@ -49,7 +48,8 @@ class Mediawiki2Drupal():
         self._content_type = content_type
         self._change_hrefs = change_hrefs
         self._img_src_rewrite = img_src_rewrite
-        self.logger = logging.getLogger('pywikitools.mediawiki2drupal')
+        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
+        self.logger: logging.Logger = logging.getLogger('pywikitools.mediawiki2drupal')
 
     def _process_html(self, input: str, custom_fields: Dict[str, str]=None) -> str:
         """
@@ -149,11 +149,11 @@ class Mediawiki2Drupal():
         @param custom_fields allows to set more fields of the content type to custom values
         @return False on error
         """
-        title = fortraininglib.get_translated_title(page, language_code)
+        title = self.fortraininglib.get_translated_title(page, language_code)
         if title is None:
             self.logger.warning(f"Importing page failed: Couldn't get translated title of page {page}.")
             return False
-        content = fortraininglib.get_page_html(f"{page}/{language_code}")
+        content = self.fortraininglib.get_page_html(f"{page}/{language_code}")
         if content is None:
             self.logger.warning(f"Importing page failed: Couldn't get content of page {page}/{language_code}")
             return False
@@ -203,10 +203,12 @@ if __name__ == "__main__":
     # Read the configuration from config.ini in the same directory
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-    if config.has_option("mediawiki2drupal", "endpoint") and \
+    if config.has_option("mediawiki", "baseurl") and \
+    config.has_option("mediawiki2drupal", "endpoint") and \
     config.has_option("mediawiki2drupal", "username") and \
     config.has_option("mediawiki2drupal", "password"):
-        mediawiki2drupal = Mediawiki2Drupal(config.get("mediawiki2drupal", "endpoint"),
+        fortraininglib = ForTrainingLib(config.get("mediawiki", "baseurl"))
+        mediawiki2drupal = Mediawiki2Drupal(fortraininglib, config.get("mediawiki2drupal", "endpoint"),
             config.get("mediawiki2drupal", "username"), config.get("mediawiki2drupal", "password"))
         # TODO: Read parameters from command line
         mediawiki2drupal.import_page("Prayer", "de")

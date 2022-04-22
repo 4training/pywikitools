@@ -6,7 +6,7 @@ import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 
 
 class WriteList(LanguagePostProcessor):
@@ -17,12 +17,14 @@ class WriteList(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
-    def __init__(self, site: pywikibot.site.APISite, user_name: str, password: str, force_rewrite: bool = False):
+    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite,
+                 user_name: str, password: str, force_rewrite: bool = False):
         """
         @param user_name and password necessary to mark page for translation in case of changes
                In case they're empty we won't try to mark pages for translation
         @param force_rewrite rewrite even if there were no (relevant) changes
         """
+        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
         self._user_name: Final[str] = user_name
         self._password: Final[str] = password
@@ -88,7 +90,7 @@ class WriteList(LanguagePostProcessor):
                 continue
 
             content += f"* [[{worksheet}/{language_info.language_code}|"
-            content += "{{int:" + fortraininglib.title_to_message(worksheet) + "}}]]"
+            content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
             content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
             content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
             content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
@@ -153,7 +155,7 @@ class WriteList(LanguagePostProcessor):
         page.text = new_page_content
         page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
         if self._user_name != '' and self._password != '':
-            fortraininglib.mark_for_translation(page.title(), self._user_name, self._password)
+            self.fortraininglib.mark_for_translation(page.title(), self._user_name, self._password)
             self.logger.info(f"Updated language information page {language} and marked it for translation.")
         else:
             self.logger.info(f"Updated language information page {language}. Couldn't mark it for translation.")

@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR, TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE
@@ -19,7 +19,7 @@ class TestTranslateODT(unittest.TestCase):
 
     def test_is_search_and_replace_necessary(self):
         is_necessary = self.translate_odt._is_search_and_replace_necessary  # Shorten this long name
-        for extension in fortraininglib.get_file_types():
+        for extension in ForTrainingLib("").get_file_types():
             self.assertFalse(is_necessary(f"Test.{extension}", f"Translation.{extension}"))
         self.assertFalse(is_necessary("", ""))
         self.assertFalse(is_necessary("same", "same"))

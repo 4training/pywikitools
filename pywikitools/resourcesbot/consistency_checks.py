@@ -5,7 +5,7 @@ Contains consistency checks specifically for 4training.net
 import logging
 import re
 from typing import Final, Optional, Tuple, Union
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslationUnit
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
@@ -23,7 +23,8 @@ class ConsistencyCheck(LanguagePostProcessor):
     """
     TITLE: Final[str] = "Page display title"
 
-    def __init__(self):
+    def __init__(self, fortraininglib: ForTrainingLib):
+        self.fortraininglib = fortraininglib
         self.logger = logging.getLogger("pywikitools.resourcesbot.consistency_checks")
 
     def extract_link(self, text: str) -> Tuple[str, str]:
@@ -47,7 +48,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         Otherwise we try to load the translation unit from the mediawiki system
         """
         if isinstance(identifier, int):
-            content = fortraininglib.get_translated_unit(page, language_info.language_code, identifier)
+            content = self.fortraininglib.get_translated_unit(page, language_info.language_code, identifier)
             if content is None:
                 self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.language_code}")
                 return None
@@ -59,7 +60,7 @@ class ConsistencyCheck(LanguagePostProcessor):
             if worksheet_info is not None:
                 return TranslationUnit(f"{page}/Page display title",
                                        language_info.language_code, page, worksheet_info.title)
-            content = fortraininglib.get_translated_title(page, language_info.language_code)
+            content = self.fortraininglib.get_translated_title(page, language_info.language_code)
             if content is None:
                 self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.language_code}")
                 return None

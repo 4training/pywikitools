@@ -59,6 +59,9 @@ class FileInfo:
     def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str],
                  translation_unit: Optional[int] = None):
         """
+            file_type: e.g. "pdf" (one of fortraininglib.get_file_types())
+        """
+        """
         @param file_type: e.g. "pdf" (one of fortraininglib.get_file_types())
         @param url: full URL where the file can be downloaded
         @param timestamp: Last modification date of the file

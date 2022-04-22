@@ -5,7 +5,7 @@ import re
 import requests
 from typing import Dict, Set
 
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
@@ -29,13 +29,14 @@ class ExportHTML(LanguagePostProcessor):
     Export all finished worksheets of this language as HTML into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
-    def __init__(self, folder: str, force_rewrite: bool = False):
+    def __init__(self, fortraininglib: ForTrainingLib, folder: str, force_rewrite: bool = False):
         """
         @param folder: base directory for export; subdirectories will be created for each language
         @param force_rewrite: rewrite even if there were no (relevant) changes
         """
         self._base_folder: str = folder
         self._force_rewrite: bool = force_rewrite
+        self.fortraininglib = fortraininglib
         self.logger = logging.getLogger('pywikitools.resourcesbot.export_html')
         if self._base_folder != "":
             try:
@@ -82,7 +83,7 @@ class ExportHTML(LanguagePostProcessor):
         if os.path.isfile(file_path):
             self.logger.info(f"File {file_path} already exists locally, not downloading.")
         else:
-            url = fortraininglib.get_file_url(filename)
+            url = self.fortraininglib.get_file_url(filename)
             if url is None:
                 self.logger.error(f"Could not get URL of file {filename}, skipping.")
                 return False
@@ -126,7 +127,7 @@ class ExportHTML(LanguagePostProcessor):
             if info.progress.is_unfinished() or not info.has_file_type("pdf"):
                 continue
             if self._force_rewrite or self.has_relevant_change(worksheet, change_log):
-                content = fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")
+                content = self.fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")
                 if content is None:
                     self.logger.warning(f"Couldn't get content of {worksheet}/{language_info.language_code}. Skipping")
                     continue

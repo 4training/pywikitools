@@ -10,7 +10,7 @@ import argparse
 import logging
 import sys
 from typing import List
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 
 from pywikitools.correctbot.correct_bot import CorrectBot
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     root.addHandler(sh)
 
     correctbot = CorrectBot(simulate=True)
-    for worksheet in fortraininglib.get_worksheet_list():
+    for worksheet in ForTrainingLib("").get_worksheet_list():
         correctbot.check_page(worksheet, args.language_code)
         print(f"{worksheet}: {correctbot.get_correction_counter()} corrections")
         if correctbot.get_correction_counter() > 0:

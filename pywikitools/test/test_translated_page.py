@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import unittest
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 
 from pywikitools.lang.translated_page import SnippetType, TranslatedPage, TranslationUnit, TranslationSnippet
 
@@ -268,6 +268,7 @@ class TestTranslatedPage(unittest.TestCase):
 
     def test_with_real_data(self):
         # TODO this test is closely tied to content on 4training.net that might change in the future
+        fortraininglib = ForTrainingLib("https://www.4training.net")
         translated_page = fortraininglib.get_translation_units("Forgiving_Step_by_Step", "de")
         self.assertIsNotNone(translated_page)
         self.assertEqual(translated_page.page, "Forgiving_Step_by_Step")

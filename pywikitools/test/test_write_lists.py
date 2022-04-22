@@ -3,6 +3,7 @@ from os.path import abspath, dirname, join
 from typing import Final
 import unittest
 from unittest.mock import Mock, patch
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo, json_decode
@@ -13,13 +14,13 @@ class TestWriteList(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list = WriteList(None, "", "")
+            self.write_list = WriteList(ForTrainingLib("https://www.4training.net"), None, "", "")
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
 
     def test_force_rewrite(self):
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            write_list = WriteList(None, "", "", force_rewrite=True)
+            write_list = WriteList(ForTrainingLib("https://www.4training.net"), None, "", "", force_rewrite=True)
         self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
         self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
 

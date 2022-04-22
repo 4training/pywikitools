@@ -19,14 +19,15 @@ import re
 import sys
 from typing import Callable, List, Optional
 
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 class CorrectBot:
     """Main class for doing corrections"""
-    def __init__(self, simulate: bool = False):
-        self.logger = logging.getLogger("pywikitools.correctbot")
+    def __init__(self, fortraininglib: ForTrainingLib, simulate: bool = False):
+        self.fortraininglib: ForTrainingLib = fortraininglib
+        self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
         self._simulate: bool = simulate
         self._diff: str = ""
         self._stats: Optional[str] = None
@@ -83,7 +84,7 @@ class CorrectBot:
         self._diff = ""
         self._stats = None
         self._correction_counter = 0
-        translated_page: Optional[TranslatedPage] = fortraininglib.get_translation_units(page, language_code)
+        translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
         if translated_page is None:
             return False
         corrector = self._load_corrector(language_code)()
@@ -147,5 +148,6 @@ if __name__ == "__main__":
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
-    correctbot = CorrectBot(args.simulate)
+    # TODO read mediawiki baseurl from config.ini
+    correctbot = CorrectBot(ForTrainingLib("https://www.4training.net"), args.simulate)
     correctbot.run(args.page, args.language_code)

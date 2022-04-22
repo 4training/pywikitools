@@ -9,8 +9,9 @@ Also we don't include this script in the test suite because it takes maybe a min
 test run time too much - it's sufficient to run it once in a while to check correctness.
 """
 import json
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 
+fortraininglib = ForTrainingLib("https://www.4training.net")
 language_list = json.loads(fortraininglib.get_page_source("4training:languages.json"))
 counter: int = 0
 warning: int = 0

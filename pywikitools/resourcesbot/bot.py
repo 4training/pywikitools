@@ -1,3 +1,4 @@
+from ast import For
 import re
 import logging
 import json
@@ -5,7 +6,7 @@ from configparser import ConfigParser
 from typing import List, Optional, Dict, Tuple
 import pywikibot
 
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
@@ -31,6 +32,10 @@ class ResourcesBot:
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.site: pywikibot.site.APISite = pywikibot.Site()
+        if not self._config.has_option('mediawiki', 'baseurl'):
+            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+        # TODO also use config.get('mediawiki', 'apipath')
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'))
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
         self._rewrite_all: bool = rewrite_all
@@ -75,7 +80,7 @@ class ResourcesBot:
 
         else:
             self._result["en"] = LanguageInfo("en", "English")
-            for worksheet in fortraininglib.get_worksheet_list():
+            for worksheet in self.fortraininglib.get_worksheet_list():
                 # Gather all data (this takes quite some time!)
                 self._query_translations(worksheet)
 
@@ -97,11 +102,13 @@ class ResourcesBot:
             self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
 
         # Run all LanguagePostProcessors
-        write_list = WriteList(self.site, self._config.get("resourcesbot", "username", fallback=""),
+        write_list = WriteList(self.fortraininglib, self.site,
+            self._config.get("resourcesbot", "username", fallback=""),
             self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         write_report = WriteReport(self.site, self._rewrite_all)
-        consistency_check = ConsistencyCheck()
-        export_html = ExportHTML(self._config.get("Paths", "htmlexport", fallback=""), self._rewrite_all)
+        consistency_check = ConsistencyCheck(self.fortraininglib)
+        export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
+                                 self._rewrite_all)
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         for lang in self._result:
             consistency_check.run(self._result[lang], ChangeLog())
@@ -130,7 +137,7 @@ class ResourcesBot:
         if english_file_info.translation_unit is None:
             self.logger.warning(f"Internal error: translation unit is None in {english_file_info}, ignoring.")
             return
-        file_name = fortraininglib.get_translated_unit(worksheet.page, worksheet.language_code,
+        file_name = self.fortraininglib.get_translated_unit(worksheet.page, worksheet.language_code,
                                                        english_file_info.translation_unit)
         warning: str = ""
         if file_name is None:
@@ -177,9 +184,9 @@ class ResourcesBot:
         """
         # This is querying more data than necessary when self._limit_to_lang is set. But to save time we'd need to find
         # a different API call that is only requesting progress for one particular language... for now it's okay
-        available_translations = fortraininglib.list_page_translations(page, include_unfinished=True)
-        english_title = fortraininglib.get_translated_title(page, "en")
-        page_source = fortraininglib.get_page_source(page)
+        available_translations = self.fortraininglib.list_page_translations(page, include_unfinished=True)
+        english_title = self.fortraininglib.get_translated_title(page, "en")
+        page_source = self.fortraininglib.get_page_source(page)
         if english_title is None or page_source is None:
             self.logger.error(f"Couldn't get English page {page}, skipping.")
             return
@@ -198,12 +205,12 @@ class ResourcesBot:
             if progress.is_incomplete():
                 self.logger.warning(f"Incomplete translation {page}/{lang} - {progress}")
 
-            translated_title = fortraininglib.get_translated_title(page, lang)
+            translated_title = self.fortraininglib.get_translated_title(page, lang)
             if translated_title is None:  # apparently this translation doesn't exist
                 if not progress.is_unfinished():
                     self.logger.warning(f"Language {lang}: Title of {page} not translated, skipping.")
                 continue
-            translated_version = fortraininglib.get_translated_unit(page, lang, version_unit)
+            translated_version = self.fortraininglib.get_translated_unit(page, lang, version_unit)
             if translated_version is None:
                 if not progress.is_unfinished():
                     self.logger.warning(f"Language {lang}: Version of {page} not translated, skipping.")
@@ -222,7 +229,7 @@ class ResourcesBot:
                 self._query_translated_file(page_info, file_info)
 
             if lang not in self._result:
-                language_name = fortraininglib.get_language_name(lang, 'en') or ""
+                language_name = self.fortraininglib.get_language_name(lang, 'en') or ""
                 self._result[lang] = LanguageInfo(lang, language_name)
             self._result[lang].add_worksheet_info(page, page_info)
 

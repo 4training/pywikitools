@@ -26,9 +26,9 @@ import logging
 import os.path
 import re
 from configparser import ConfigParser
-from typing import List, Optional
+from typing import Dict, List, Optional
 import requests
-from pywikitools import fortraininglib
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
@@ -46,9 +46,10 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
 
 class TranslateODT:
-    def __init__(self, keep_english_file: bool = False):
+    def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
         """Variable initializations (no connection to LibreOffice here)
-        @param keep_english_file Don't delete English ODT file afterwards (command line option)
+        @param keep_english_file: Don't delete English ODT file afterwards (command line option)
+        @param config: can be used to overwrite config settings
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
         self.config: ConfigParser = ConfigParser()
@@ -56,9 +57,14 @@ class TranslateODT:
                                'translateodt' : {'closeoffice': True,
                                                  'headless': False}})
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+        self.config.read_dict(config)
 
         self.logger = logging.getLogger('pywikitools.translateodt')
         self.keep_english_file: bool = keep_english_file
+        if not self.config.has_option('mediawiki', 'baseurl'):
+            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+        # TODO also use config.get('mediawiki', 'apipath')
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self.config.get('mediawiki', 'baseurl'))
 
         self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
         self._original_page_count: int = 0          # How many pages did the currently opened file have originally?
@@ -184,7 +190,7 @@ class TranslateODT:
         if os.path.isfile(odt_path):
             self.logger.warning(f"File {odt_path} already exists locally, not downloading.")
         else:
-            url = fortraininglib.get_file_url(odt_file)
+            url = self.fortraininglib.get_file_url(odt_file)
             if url is None:
                 self.logger.error(f"Could not get URL of file {odt_file}")
                 return ""
@@ -269,7 +275,7 @@ class TranslateODT:
         @return file name of the created ODT file (or None in case of error)
         """
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
-        translated_page: Optional[TranslatedPage] = fortraininglib.get_translation_units(worksheet, language_code)
+        translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(worksheet, language_code)
         if translated_page is None:
             self.logger.error(f"Couldn't get translation units of {worksheet}.")
             return None
@@ -278,9 +284,9 @@ class TranslateODT:
             return None
 
         # Check for templates we need to read as well
-        templates = set(fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
+        templates = set(self.fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
         for template in templates:
-            template_page: Optional[TranslatedPage] = fortraininglib.get_translation_units(template, language_code)
+            template_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(template, language_code)
             if template_page is None:
                 self.logger.warning(f"Couldn't get translations of {template}, ignoring this template.")
             else:
@@ -308,8 +314,8 @@ class TranslateODT:
 
         # Add footer (Template:CC0Notice) to translation list
         translated_page.add_translation_unit(TranslationUnit("Template:CC0Notice", language_code,
-            fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),
-            fortraininglib.get_cc0_notice(translated_version, language_code)))
+            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),
+            self.fortraininglib.get_cc0_notice(translated_version, language_code)))
 
         odt_path = self._fetch_english_file(translated_page.get_english_info().get_file_type_name("odt"))
         if not odt_path:
@@ -318,7 +324,7 @@ class TranslateODT:
         self.translate_odt(odt_path, translated_page)
         self._set_properties(translated_page)
         self._loffice.set_default_style(translated_page.language_code,
-            fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
+            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
         save_path = self.config['Paths']['worksheets'] + translated_page.language_code
@@ -375,12 +381,12 @@ class TranslateODT:
         # Subject: [English title] [Languagename in English] [Languagename autonym]
         subject  = page.get_english_info().title
         subject += subtitle_en
-        subject += " " + str(fortraininglib.get_language_name(page.language_code, 'en'))
-        subject += " " + str(fortraininglib.get_language_name(page.language_code))
+        subject += " " + str(self.fortraininglib.get_language_name(page.language_code, 'en'))
+        subject += " " + str(self.fortraininglib.get_language_name(page.language_code))
 
         # Keywords: [Translated no-copyright notice + version] - copyright-free, version [original version]
         # ",version [original version]" is omitted in languages where the translation of "version" is very similar
-        cc0_notice = fortraininglib.get_cc0_notice(page.get_worksheet_info().version, page.language_code)
+        cc0_notice = self.fortraininglib.get_cc0_notice(page.get_worksheet_info().version, page.language_code)
         cc0_notice += " - copyright-free"
         if page.language_code not in NO_ADD_ENGLISH_VERSION:
             cc0_notice += ", version "
@@ -410,5 +416,5 @@ if __name__ == '__main__':
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
-    translateodt = TranslateODT(args.keep_english_file)
+    translateodt = TranslateODT(keep_english_file=args.keep_english_file)
     translateodt.translate_worksheet(args.worksheet, args.language_code)
