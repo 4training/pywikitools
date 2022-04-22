@@ -9,7 +9,7 @@ from pywikitools.translateodt import TranslateODT
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
-        super().__init__(keep_english_file=True)
+        super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net"}})
         self._loffice = Mock(spec=LibreOffice)
 
 
