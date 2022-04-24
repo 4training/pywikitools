@@ -51,6 +51,7 @@ from configparser import ConfigParser
 import logging
 import os
 import sys
+import traceback
 from typing import List
 
 from pywikitools.resourcesbot.bot import ResourcesBot
@@ -123,5 +124,9 @@ def set_loglevel(config: ConfigParser, loglevel: int):
 
 
 if __name__ == "__main__":
-    resourcesbot = parse_arguments()
-    resourcesbot.run()
+    try:
+        resourcesbot = parse_arguments()
+        resourcesbot.run()
+    except Exception as e:
+        logging.error(f"Exiting because of uncaught exception: {e}")
+        logging.error(traceback.format_exc())
