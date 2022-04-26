@@ -1,3 +1,5 @@
+from typing import Set
+from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import Mock
 from pywikitools.fortraininglib import ForTrainingLib
@@ -5,13 +7,12 @@ from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR, TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE
 
-from pywikitools.translateodt import TranslateODT
+from pywikitools.translateodt import TranslateODT, TranslateOdtConfig
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
         super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net"}})
         self._loffice = Mock(spec=LibreOffice)
-
 
 class TestTranslateODT(unittest.TestCase):
     def setUp(self):
@@ -32,7 +33,7 @@ class TestTranslateODT(unittest.TestCase):
 
     def test_process_snippet(self):
         self.translate_odt._loffice.search_and_replace.return_value = True
-        with self.assertLogs('pywikitools.translateodt', level='INFO'):
+        with self.assertLogs('pywikitools.translateodt', level='DEBUG'):
             self.translate_odt._process_snippet("original", "translation")
         self.translate_odt._loffice.search_and_replace.assert_called_once()
 
@@ -87,14 +88,48 @@ class TestTranslateODT(unittest.TestCase):
         unit2 = TranslationUnit(f"Test/1", "de", "sin", "Sünde")
         translated_page = TranslatedPage("Test", "de", [unit1, unit2])
         with self.assertLogs('pywikitools.translateodt', level='WARNING'):
-            cleaned_up_page = self.translate_odt._cleanup_units(translated_page)
+            cleaned_up_page = self.translate_odt._cleanup_units(translated_page, TranslateOdtConfig())
         # the TranslatedPage returned should have the same contents as before
         self.assertEqual(cleaned_up_page.page, translated_page.page)
         self.assertEqual(cleaned_up_page.language_code, translated_page.language_code)
         self.assertEqual(cleaned_up_page.units[0], translated_page.units[0])
         self.assertEqual(cleaned_up_page.units[1], translated_page.units[1])
 
+        # TranslateOdtConfig should be processed correctly: Ignoring Test/2, having Test/1 three times
+        config = TranslateOdtConfig()
+        config.ignore.add("Test/2")
+        config.multiple["Test/1"] = 3
+        cleaned_up_page = self.translate_odt._cleanup_units(translated_page, config)
+        self.assertListEqual([tu.identifier for tu in cleaned_up_page.units], ["Test/1"] * 3)
+
         # TODO test some more stuff
+
+    def test_read_worksheet_config(self):
+        # TranslateOdtConfig should be empty if there is no config in the mediawiki system
+        self.translate_odt.fortraininglib = Mock()
+        self.translate_odt.fortraininglib.get_page_source.return_value = None
+        result = self.translate_odt.read_worksheet_config("NotExisting")
+        self.assertSetEqual(result.ignore, set())
+        self.assertEqual(len(result.multiple), 0)
+
+        # TranslateOdtConfig should also be empty if the config exists but has no content
+        self.translate_odt.fortraininglib.get_page_source.return_value = ""
+        result = self.translate_odt.read_worksheet_config("Test")
+        self.assertSetEqual(result.ignore, set())
+        self.assertEqual(len(result.multiple), 0)
+
+        # Test with a realistic config file
+        with open(join(dirname(abspath(__file__)), "data", "Bible_Reading_Hints.config"), 'r') as f:
+            test_config = f.read()
+        self.translate_odt.fortraininglib.get_page_source.return_value = test_config
+        result = self.translate_odt.read_worksheet_config("Test")
+        self.assertSetEqual(result.ignore,
+            set(["Bible_Reading_Hints/1", "Bible_Reading_Hints/2", "Bible_Reading_Hints/3",
+                "Template:BibleReadingHints/18", "Template:BibleReadingHints/25", "Template:BibleReadingHints/26"]))
+        self.assertEqual(len(result.multiple), 2)
+        self.assertEqual(result.multiple["Template:BibleReadingHints/6"], 5)
+        self.assertEqual(result.multiple["Bible_Reading_Hints/7"], 2)
+
 
 
 if __name__ == '__main__':

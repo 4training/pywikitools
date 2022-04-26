@@ -26,7 +26,7 @@ import logging
 import os.path
 import re
 from configparser import ConfigParser
-from typing import Dict, List, Optional
+from typing import Dict, Final, List, Optional, Set
 import requests
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.universal import UniversalCorrector
@@ -44,6 +44,28 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 # because the translation of "version" is very close to the English word "version"
 # TODO should 'ko' be in this list?
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
+
+class TranslateOdtConfig:
+    """Contains configuration on how to process one worksheet:
+    Which translation units should be ignored?
+    Which translation units should be processed multiple times?
+
+    It is read from a config file (see TranslateODT.read_worksheet_config()) of the following structure:
+    [Ignore]
+    # Don't process the following translation units
+    Template:BibleReadingHints/18
+    Template:BibleReadingHints/25
+
+    [Multiple]
+    # Process the following translation unit 5 times
+    Template:BibleReadingHints/6 = 5
+    """
+    __slots__ = ["ignore", "multiple"]
+    def __init__(self):
+        # Set of translation unit identifiers that shouldn't be processed
+        self.ignore: Final[Set[str]] = set()
+        # Translation unit identifier -> number of times it should be processed
+        self.multiple: Final[Dict[str, int]] = {}
 
 class TranslateODT:
     def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
@@ -115,7 +137,7 @@ class TranslateODT:
         try:
             replaced = self._loffice.search_and_replace(orig, trans, not self._did_page_count_change, True)
             if replaced:
-                self.logger.info(f"Replaced: {orig} with: {trans}")
+                self.logger.debug(f"Replaced: {orig} with: {trans}")
             else:
                 # Second try: split at newlines (or similar strange breaks) and try again
                 self.logger.warning(f"Couldn't find {orig}. Splitting at newlines and trying again.")
@@ -132,7 +154,7 @@ class TranslateODT:
                         continue
                     replaced = self._loffice.search_and_replace(search, replace, not self._did_page_count_change, True)
                     if replaced:
-                        self.logger.info(f"Replaced: {search} with: {replace}")
+                        self.logger.debug(f"Replaced: {search} with: {replace}")
                     else:
                         self.logger.warning(f"Not found:\n{search}\nTranslation:\n{replace}")
 
@@ -216,15 +238,19 @@ class TranslateODT:
                                 f"according to the headline it should be: {filename}")
         return filename
 
-    def _cleanup_units(self, translated_page: TranslatedPage) -> TranslatedPage:
+    def _cleanup_units(self, translated_page: TranslatedPage, config: TranslateOdtConfig) -> TranslatedPage:
         """
-        Filter out empty/irrelevant units; Check order of translation units and rearrange if necessary.
+        Clean up translation units before we do search and replace:
+        - filter out empty/irrelevant units
+        - check order of translation units and rearrange if necessary
+        - process config: remove ignored units, replicate units that should be processed multiple times
 
         We can run into troubles if a we have a short translation snippet that is contained in another snippet
         -> search and replace will likely happen at the wrong place
         Let's loop through all units and in the case a snippet is contained in anoher one, we'll move the short
         translation unit to the end: We always try to match long search strings first
 
+        @param config: Instructions on which units should be ignored and which should be processed multiple times
         @return a cleaned up copy TranslatedPage (as in-place manipulation isn't easily possible)
         """
         result: List[TranslationUnit] = []
@@ -238,6 +264,13 @@ class TranslateODT:
             if t.get_definition() == translated_page.get_english_info().version:
                 # We don't try to do search and replace with the version string. We later process the whole CC0 notice
                 continue
+            if t.identifier in config.ignore:
+                self.logger.info(f"Ignoring translation unit {t.identifier}")
+                continue
+            if t.identifier in config.multiple:
+                self.logger.info(f"{t.identifier} will be processed {config.multiple[t.identifier]} times")
+                for i in range(1, config.multiple[t.identifier]):
+                    result.append(t)
             result.append(t)
 
         result.sort()
@@ -257,7 +290,32 @@ class TranslateODT:
 
         return TranslatedPage(translated_page.page, translated_page.language_code, result)
 
-    def translate_odt(self, odt_path: str, translated_page: TranslatedPage) -> None:
+    def read_worksheet_config(self, worksheet: str) -> TranslateOdtConfig:
+        """
+        Read processing configuration for a specific worksheet from the MediaWiki system.
+        The config is read from page [worksheet-name].config in the Project namespace
+        (example: https://www.4training.net/4training:Bible_Reading_Hints.config ).
+        If there is no such config, the two members of the data structure returned will both be empty
+        """
+        result = TranslateOdtConfig()
+        config = ConfigParser(delimiters=('='), allow_no_value=True)
+        config.optionxform = str    # We want to have the options case-sensitive
+        config_string = self.fortraininglib.get_page_source(f"Project:{worksheet}.config")
+        if config_string is None:
+            self.logger.info(f"No config found for worksheet {worksheet}")
+            return result
+        config.read_string(config_string)
+        if config.has_section("Ignore"):
+            for option in config["Ignore"]:
+                result.ignore.add(option)
+        if config.has_section("Multiple"):
+            for option, value in config.items("Multiple"):
+                result.multiple[option] = int(value)
+        self.logger.info(f"Read config: Ignoring {len(result.ignore)} translation units, "
+                         f"{len(result.multiple)} translation units will be processed multiple times")
+        return result
+
+    def translate_odt(self, odt_path: str, translated_page: TranslatedPage, config: TranslateOdtConfig) -> None:
         """Open the specified ODT file and replace contents with translation
         @param odt_path: Path of the ODT file
         @param translated_page: Contains all translation units we'll do search&replace with
@@ -266,7 +324,7 @@ class TranslateODT:
         self._loffice.open_file(odt_path)
         self._did_page_count_change = False
         self._original_page_count = self._loffice.get_page_count()
-        self._search_and_replace(self._cleanup_units(translated_page))
+        self._search_and_replace(self._cleanup_units(translated_page, config))
 
     def translate_worksheet(self, worksheet: str, language_code: str) -> Optional[str]:
         """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT
@@ -321,7 +379,8 @@ class TranslateODT:
         if not odt_path:
             return None
 
-        self.translate_odt(odt_path, translated_page)
+        config = self.read_worksheet_config(worksheet)
+        self.translate_odt(odt_path, translated_page, config)
         self._set_properties(translated_page)
         self._loffice.set_default_style(translated_page.language_code,
             self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
