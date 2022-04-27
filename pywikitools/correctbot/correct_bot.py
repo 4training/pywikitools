@@ -50,28 +50,27 @@ class CorrectBot:
 
         raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
-    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> None:
+    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> str:
         """
         Check one specific translation unit: Run the right correction rules on it.
         For this we analyze: Is it a title, a file name or a "normal" translation unit?
 
         Changes will be directly stored in this TranslationUnit.
+        @return any warnings (or empty string if there were none)
         """
         if unit.get_translation() == "":
-            return
+            return ""
         if unit.is_title():
             # translation unit holds the title
-            corrector.title_correct(unit)
-            return
+            return corrector.title_correct(unit)
         if re.search(r"\.(odt|pdf|odg)$", unit.get_definition()):
             # translation unit holds a filename
-            corrector.filename_correct(unit)
-            return
+            return corrector.filename_correct(unit)
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
-            return
+            return ""
 
-        corrector.correct(unit)
+        return corrector.correct(unit)
 
     def check_page(self, page: str, language_code: str) -> bool:
         """
@@ -89,7 +88,9 @@ class CorrectBot:
             return False
         corrector = self._load_corrector(language_code)()
         for translation_unit in translated_page:
-            self.check_unit(corrector, translation_unit)
+            warnings = self.check_unit(corrector, translation_unit)
+            if warnings != "":
+                self.logger.warning(warnings)
             if (diff := translation_unit.get_translation_diff()) != "":
                 self._diff += f"{translation_unit.get_name()}: {diff}\n"
         self._stats = corrector.print_stats()

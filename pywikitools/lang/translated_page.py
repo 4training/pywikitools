@@ -66,6 +66,7 @@ class TranslationUnit:
         @param translation: The translation of the definition
                             None or "" have the same meaning: there is no translation
         """
+        assert isinstance(identifier, str) and isinstance(language_code, str) and isinstance(definition, str)
         self.identifier: Final[str] = identifier
         self.language_code: Final[str] = language_code
         self._definition: str = definition
@@ -173,7 +174,7 @@ class TranslationUnit:
             self._translation_snippets = None
 
     @staticmethod
-    def split_into_snippets(text: str, fallback: bool = False) -> List[TranslationSnippet]:
+    def split_into_snippets(text: str) -> List[TranslationSnippet]:
         """
         Split the given text into snippets
 
@@ -184,14 +185,7 @@ class TranslationUnit:
             ; at the beginning of a line: definition list
         For <br/>, if there is a following newline, include it also in the match.
         For *#;: if there is a following whitespace character, include it also in the match.
-        @param fallback: Should we try the fallback splitting-up?
         """
-        if fallback:
-            # We replace <br/> line breaks with \n line breaks
-            # and remove italic and bold formatting and all kind of <tags>
-            text = re.sub("<br ?/?>", '\n', text)
-            text = re.sub("\'\'+|<.*?>", '', text, flags=re.MULTILINE)
-
         snippets: List[TranslationSnippet] = []
         last_pos = 0
         pattern = re.compile("<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
@@ -214,54 +208,43 @@ class TranslationUnit:
         if self._translation_snippets is None:
             self._translation_snippets = self.split_into_snippets(self._translation)
 
-    def is_translation_well_structured(self, use_fallback: bool = False) -> bool:
+    def is_translation_well_structured(self) -> Tuple[bool, str]:
         """
         Is the snippet structure of original and translation the same?
 
         This does quite some logging to provide helpful feedback for people working on the translations
-        TODO do some checks to see how often fallback method of split_into_snippets() is actually necessary
-        Potentially remove the fallback parameter
+        @return Tuple of actual return value and warning message if it is False
         """
         self._ensure_split()
         assert self._definition_snippets is not None and self._translation_snippets is not None
+        is_well_structured = True
 
         if len(self._definition_snippets) != len(self._translation_snippets):
+            is_well_structured = False
+        else:
+            # Iterate over both lists at the same time and check whether the snippet types fit each other
+            for d_snippet, t_snippet in zip(self._definition_snippets, self._translation_snippets):
+                # Currently we test only whether they have the same SnippetType. TODO check whether they actually match
+                if d_snippet.type != t_snippet.type:
+                    is_well_structured = False
+        #            if (d_snippet.type == SnippetType.MARKUP_SNIPPET) and (d_snippet.content != t_snippet.content):
+        #                return False
+
+        if not is_well_structured:
             # TODO give more specific warnings like "missing #" or "Number of = mismatch"
-            if use_fallback:
-                self.logger.info("Number of *, =, #, italic and bold formatting, ;, : and html tags is not equal"
-                                 f" in original and translation:\n{self._definition}\n{self._translation}")
-                self.logger.info('Falling back: removing all formatting and trying again')
-                self._definition_snippets = self.split_into_snippets(self._definition, fallback=True)
-                self._translation_snippets = self.split_into_snippets(self._translation, fallback=True)
+            br_in_definition = len([s for s in self._definition_snippets if s.is_br()])
+            br_in_translation = len([s for s in self._translation_snippets if s.is_br()])
+            if br_in_definition != br_in_translation:
+                warning_message  = f"Missing/wrong <br/> in {self.get_name()} "
+                warning_message += f"(in original: {br_in_definition}, in translation: {br_in_translation})"
+            else:
+                warning_message  = f"Formatting issues in {self.get_name()}. "
+                warning_message += f"Please check that all special characters like * = # ; : <b> <i> are correct."
+            warning_message += f"\nOriginal: \n{self._definition}"
+            warning_message += f"\nTranslation: \n{self._translation}"
+            return (False, warning_message)
 
-            if len(self._definition_snippets) != len(self._translation_snippets):
-                br_in_definition = len([s for s in self._definition_snippets if s.is_br()])
-                br_in_translation = len([s for s in self._translation_snippets if s.is_br()])
-                if br_in_definition != br_in_translation:
-                    # There could be another issue besides the <br/> issue. Still this warning is probably helpful
-                    self.logger.warning(f"Couldn't process Translations:{self.get_name()}. "
-                                        f"Reason: Missing/wrong <br/> "
-                                        f"(in original: {br_in_definition}, in translation: {br_in_translation})")
-                else:
-                    self.logger.warning("Couldn't process the following translation unit. Reason: Formatting issues. "
-                                        "Please check that all special characters like * = # ; : <b> <i> are correct.")
-                self.logger.warning(f"Original: \n{self._definition}")
-                self.logger.warning(f"Translation: \n{self._translation}")
-                return False
-
-            self.logger.warning("Found an issue with formatting (special characters like * = # ; : <b> <i>). "
-                                "I ignored all formatting and could continue. You may ignore this error "
-                                f"or correct the translation unit {self.get_name()}")
-
-        # Iterate over both lists at the same time and check whether the snippet types fit each other
-        for d_snippet, t_snippet in zip(self._definition_snippets, self._translation_snippets):
-            # Currently we test only whether they have the same SnippetType. TODO check whether they actually match
-            if d_snippet.type != t_snippet.type:
-                return False
-#            if (d_snippet.type == SnippetType.MARKUP_SNIPPET) and (d_snippet.content != t_snippet.content):
-#                return False
-
-        return True
+        return (True, "")
 
     def __iter__(self):
         """Make this class iterable in a simple way (not suitable for concurrency!)"""
@@ -334,10 +317,10 @@ class TranslationUnit:
                                             f"{other_snippet_translation.content}")
                     continue
                 if snippet.content in other_snippet.content:
-                    self.logger.warning(f'"{snippet.content}" (in {self.get_name()}) is a substring of "{other_snippet.content}" (in {other.get_name()})!')
+                    self.logger.info(f'"{snippet.content}" (in {self.get_name()}) is a substring of "{other_snippet.content}" (in {other.get_name()})!')
                     self_is_in_other = True
                 elif other_snippet.content in snippet.content:
-                    self.logger.warning(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of "{snippet.content}" (in {self.get_name()})!')
+                    self.logger.info(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of "{snippet.content}" (in {self.get_name()})!')
                     other_is_in_self = True
         if self_is_in_other and other_is_in_self:
             # Don't know what happens now, I hope the sort() is not going into an endless loop...

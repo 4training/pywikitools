@@ -12,26 +12,25 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
     * Ensure correct French quotation marks: « Foo » (with non-breaking whitespaces \u00a0 before/after the guillemets!)
     """
     def correct_false_friends(self, text: str) -> str:
-        """
-        Correct typical mistakes
+        """Correct typical mistakes
+
         Currently only one rule:
         "example" is English -> "exemple" is correct French
         """
         return text.replace("example", "exemple").replace("Example", "Exemple")
 
     def correct_spaces_before_punctuation(self, text: str) -> str:
-        """
-        Ensure we have non-breaking spaces before : ; ! ? (a specialty of French grammar, different to most languages)
+        """Ensure we have non-breaking spaces before : ; ! ?
+        This is a specialty of French grammar, different to most languages
         """
         # Insert missing space if there is none before punctuation
-        text = re.sub(r"(\w)([:;!?])", "\\1\u00A0\\2", text)
+        text = re.sub(r"([^\W\d])([:;!?])", "\\1\u00A0\\2", text)
         # Replace normal space with non-breaking space before punctuation
         text = re.sub(r" ([:;!?])", "\u00A0\\1", text)
         return text
 
     def correct_quotation_marks(self, text: str) -> str:
-        """
-        Ensure correct French quotation marks: « Foo »
+        """Ensure correct French quotation marks: « Foo »
         (with non-breaking whitespaces \u00a0 before/after the guillemets!)
         """
         logger = logging.getLogger('pywikitools.correctbot.fr')

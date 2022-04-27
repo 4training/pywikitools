@@ -41,8 +41,11 @@ if __name__ == "__main__":
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
-    correctbot = CorrectBot(simulate=True)
-    for worksheet in ForTrainingLib("").get_worksheet_list():
+    # TODO read mediawiki baseurl from config.ini
+    fortraininglib = ForTrainingLib("https://www.4training.net")
+
+    correctbot = CorrectBot(fortraininglib, simulate=True)
+    for worksheet in fortraininglib.get_worksheet_list():
         correctbot.check_page(worksheet, args.language_code)
         print(f"{worksheet}: {correctbot.get_correction_counter()} corrections")
         if correctbot.get_correction_counter() > 0:

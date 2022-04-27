@@ -151,7 +151,8 @@ class TestLanguageCorrectors(unittest.TestCase):
                     continue
                 self.assertTrue(function_name.startswith("correct_")
                                 or function_name.endswith("_title")
-                                or function_name.endswith("_filename"))
+                                or function_name.endswith("_filename"),
+                                msg=f"Invalid function name {language_corrector.__name__}.{function_name}")
 
     def test_for_correct_parameters(self):
         """Make sure all correction functions take either one or two strings as parameters."""
@@ -169,8 +170,8 @@ class TestLanguageCorrectors(unittest.TestCase):
                     if parameter != "self":
                         count_parameters += 1
                         self.assertEqual(signature(corrector_function).parameters[parameter].annotation, str)
-                self.assertGreaterEqual(count_parameters, 1)
-                self.assertLessEqual(count_parameters, 2)
+                self.assertGreaterEqual(count_parameters, 1, msg=f"{language_corrector.__name__}.{function_name}")
+                self.assertLessEqual(count_parameters, 2, msg=f"{language_corrector.__name__}.{function_name}")
 
 
     def test_for_unique_function_names(self):
@@ -188,7 +189,27 @@ class TestLanguageCorrectors(unittest.TestCase):
                 if language_function.startswith('_'):
                     continue
                 if getattr(language_corrector, language_function).__module__ != MOD_UNIVERSAL:
-                    self.assertNotIn(language_function, flexible_functions)
+                    self.assertNotIn(language_function, flexible_functions, msg=f"{language_corrector.__name__}: "
+                        f"Function name {language_function} already exists in a flexible corrector")
+
+    def test_for_function_documentation(self):
+        """Make sure that each corrector function has a documentation and it's first line is not empty"""
+        for language_corrector in self.language_correctors:
+            for function_name in dir(language_corrector):
+                # Ignore private functions
+                if function_name.startswith('_'):
+                    continue
+                corrector_function = getattr(language_corrector, function_name)
+                # Ignore everything inherited from CorrectorBase
+                if corrector_function.__module__ == MOD_BASE:
+                    continue
+                # Make sure there is some documentation
+                self.assertTrue(corrector_function.__doc__.strip(),
+                    msg=f"Missing documentation of {language_corrector.__name__}.{function_name}")
+                # Make sure the first line of the documentation isn't empty (as we take that for reporting)
+                self.assertTrue(corrector_function.__doc__.partition("\n")[0].strip(),
+                    msg=f"Documentation of {language_corrector.__name__}.{function_name} starts with empty line")
+
 
 class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
     """With this class we can test the rules of UniversalCorrector"""
@@ -335,6 +356,8 @@ class TestFrenchCorrector(unittest.TestCase):
                                            "Comment prier\u00a0?<br/>Comment jeûner\u00a0?")
         self.assertEqual(correct(corrector, "Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu"),
                                            "Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu")
+        # Bible references (punctuation between digits) should not be touched
+        self.assertEqual(correct(corrector, "Romains 12:2"), "Romains 12:2")
 
     def test_false_friends_replacement(self):
         corrector = FrenchCorrector()
@@ -360,8 +383,7 @@ class TestArabicCorrector(CorrectorTestCase):
     def test_correct_punctuation(self):
         self.assertEqual(correct(self.corrector, ","), "،")
         self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
-        with self.assertLogs('pywikitools.correctbot.base', level='WARNING'):
-            self.assertEqual(correct(self.corrector, ";"),  "؛")
+        self.assertEqual(correct(self.corrector, ";"),  "؛")
         self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
 
     def test_correct_spaces(self):

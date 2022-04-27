@@ -48,8 +48,8 @@ class DummyLibreOffice(LibreOffice):
         self.logger.debug("DummyLibreOffice.set_default_style()")
 
 class DummyTranslateODT(TranslateODT):
-    def __init__(self, keep_english_file: bool = False):
-        super().__init__(True)
+    def __init__(self):
+        super().__init__(keep_english_file=True)
         #self._loffice = DummyLibreOffice(headless=False)
         self._loffice = Mock()
         self._loffice.search_and_replace.return_value = True
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     root.addHandler(sh)
 
     fortraininglib = ForTrainingLib("https://www.4training.net")
-    translate_odt = DummyTranslateODT(False)
-#    translate_odt = TranslateODT(False)    # uncomment this to invoke LibreOffice for each worksheet
+    translate_odt = DummyTranslateODT()
+#    translate_odt = TranslateODT(keep_english_file=False)    # uncomment this to invoke LibreOffice for each worksheet
     for worksheet in fortraininglib.get_worksheet_list():
         translate_odt.translate_worksheet(worksheet, args.language_code)

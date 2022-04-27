@@ -139,24 +139,9 @@ class TranslateODT:
             if replaced:
                 self.logger.debug(f"Replaced: {orig} with: {trans}")
             else:
-                # Second try: split at newlines (or similar strange breaks) and try again
-                self.logger.warning(f"Couldn't find {orig}. Splitting at newlines and trying again.")
-
-                orig_split = re.split("[\t\n\r\f\v]", orig)
-                trans_split = re.split("[\t\n\r\f\v]", trans)
-                if len(orig_split) != len(trans_split):
-                    self.logger.warning("Couldn't process the following translation snippet. Please check.")
-                    self.logger.warning(f"Original: \n{orig}")
-                    self.logger.warning(f"Translation: \n{trans}")
-                    return
-                for search, replace in zip(orig_split, trans_split):
-                    if not self._is_search_and_replace_necessary(search.strip(), replace.strip()):
-                        continue
-                    replaced = self._loffice.search_and_replace(search, replace, not self._did_page_count_change, True)
-                    if replaced:
-                        self.logger.debug(f"Replaced: {search} with: {replace}")
-                    else:
-                        self.logger.warning(f"Not found:\n{search}\nTranslation:\n{replace}")
+                self.logger.warning("Couldn't replace the following translation snippet. Please check.")
+                self.logger.warning(f"Original: \n{orig}")
+                self.logger.warning(f"Translation: \n{trans}")
 
         except AttributeError as error:
             self.logger.error(f"AttributeError: {error}")  # todo: wait some seconds and try again
@@ -171,22 +156,10 @@ class TranslateODT:
             self.logger.debug(f"Translation unit: {t.get_definition()}")
             t.remove_links()
 
-            # Check if number of <br/> is equal, otherwise replace by newline
-            br_in_orig = len(re.split("< *br */ *>", t.get_definition())) - 1
-            br_in_trans = len(re.split("< *br */ *>", t.get_translation())) - 1
-            if br_in_orig != br_in_trans:
-                # TODO in the future remove this? At least find out how much this is necessary
-                self.logger.warning("Number of <br/> differs between original and translations. Replacing with newlines.")
-                t.set_definition(re.sub("< *br */ *>", '\n', t.get_definition()))
-                t.set_translation(re.sub("< *br */ *>", '\n', t.get_translation()))
-
-            if not t.is_translation_well_structured(use_fallback=True):
-                # We can't process this translation unit. Logging messages are already written
+            is_well_structured, warning = t.is_translation_well_structured()
+            if not is_well_structured:  # We can't process this translation unit
+                self.logger.warning(warning)
                 continue
-            if br_in_orig != br_in_trans:
-                self.logger.warning(f"Issue with <br/> (line breaks). There are {br_in_orig} in the original "
-                                    f"but {br_in_trans} of them in the translation. "
-                                    f"We still can process {t.get_name()}. You may ignore this warning.")
 
             for (search, replace) in t:   # for each snippet of translation unit
                 self._process_snippet(search.content, replace.content)
@@ -275,13 +248,19 @@ class TranslateODT:
 
         result.sort()
 
-        # Compare all translation units with each other
+        # Compare all (well-structured) translation units with each other
         for i in range(len(result)):
+            if not result[i].is_translation_well_structured()[0]:
+                continue
             for j in range(len(result)):
                 if i == j:
                     continue
+                if not result[j].is_translation_well_structured()[0]:
+                    continue
                 # compare all of their snippets with each other
-                for i_snippet_orig, _ in result[i]:
+                for i_snippet_orig, i_snippet_trans in result[i]:
+                    if i_snippet_orig.content == i_snippet_trans.content:   # translation == original: will be ignored anyway
+                        continue
                     for _, j_snippet_trans in result[j]:
                         # warn in case a search string can be found in a translation (unlikely but better check)
                         if i_snippet_orig.content in j_snippet_trans.content:

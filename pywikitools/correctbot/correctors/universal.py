@@ -25,8 +25,7 @@ class UniversalCorrector():
 
     @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
-        """
-        Fix wrong capitalization at the beginning of a sentence or after a colon.
+        """Fix wrong capitalization at the beginning of a sentence or after a colon.
         Only do that if our text ends with a dot to avoid correcting single words / short phrases
         """
         # Or to say it differently: the letter following a .!?;: will be capitalized

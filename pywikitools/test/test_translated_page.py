@@ -71,8 +71,7 @@ class TestTranslationUnit(unittest.TestCase):
     def test_read_and_write(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         with_lists.set_definition(TEST_UNIT_WITH_HEADLINE)
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
-            self.assertFalse(with_lists.is_translation_well_structured())   # Split everything in snippets
+        self.assertFalse(with_lists.is_translation_well_structured()[0])   # Split everything in snippets
         self.assertEqual(with_lists.get_definition(), TEST_UNIT_WITH_HEADLINE)
         with_lists.set_translation(TEST_UNIT_WITH_DEFINITION_DE_ERROR)
         self.assertTrue(with_lists.has_translation_changes())
@@ -82,7 +81,7 @@ class TestTranslationUnit(unittest.TestCase):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
             with_lists.sync_from_snippets()
-        self.assertTrue(with_lists.is_translation_well_structured())
+        self.assertTrue(with_lists.is_translation_well_structured()[0])
         with_lists.sync_from_snippets()
         self.assertFalse(with_lists.has_translation_changes())
 
@@ -124,10 +123,13 @@ class TestTranslationUnit(unittest.TestCase):
 
     def test_is_translation_well_structured(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
-        self.assertTrue(with_lists.is_translation_well_structured())
+        well_structured, warnings = with_lists.is_translation_well_structured()
+        self.assertTrue(well_structured)
+        self.assertEqual(warnings, "")
         with_lists = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
-            self.assertFalse(with_lists.is_translation_well_structured())
+        well_structured, warnings = with_lists.is_translation_well_structured()
+        self.assertFalse(well_structured)
+        self.assertNotEqual(warnings, "")
 
     def test_iteration(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
@@ -136,7 +138,7 @@ class TestTranslationUnit(unittest.TestCase):
             self.assertTrue(orig.is_text())
             self.assertTrue(trans.is_text())
             counter += 1
-        self.assertTrue(with_lists.is_translation_well_structured())
+        self.assertTrue(with_lists.is_translation_well_structured()[0])
         self.assertGreaterEqual(counter, 7)
 
         # Iterating over not well-structured translation unit should give a warning (and not raise an error)
@@ -195,7 +197,7 @@ class TestTranslationUnit(unittest.TestCase):
 
     def test_sorting(self):
         # Test for correct sorting
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
             (orig_list, trans_list) = self._sort_units(["this", "this", "is", "thistle"],
                                                        ["same", "same", "same", "same"])
         self.assertListEqual(orig_list, ["thistle", "this", "this", "is"])
@@ -205,7 +207,7 @@ class TestTranslationUnit(unittest.TestCase):
                                                        ["same", "different", "same", "same"])
         self.assertListEqual(orig_list, ["this", "this", "other", "content"])
         # two snippets in a translation unit
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
             (orig_list, trans_list) = self._sort_units(["this<br/>is", "this<br/>thistle"],
                                                        ["same<br/>same", "same<br/>same"])
         self.assertListEqual(orig_list, ["this<br/>thistle", "this<br/>is"])
@@ -213,7 +215,7 @@ class TestTranslationUnit(unittest.TestCase):
         with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING') as cm:
             (orig_list, trans_list) = self._sort_units(["something<br/>range", "thing<br/>strange"],
                                                        ["same<br/>same", "same<br/>same"])
-        self.assertIn("reciprocal", cm.output[2])
+        self.assertIn("reciprocal", cm.output[0])
 
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):

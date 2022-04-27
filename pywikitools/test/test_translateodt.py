@@ -40,12 +40,12 @@ class TestTranslateODT(unittest.TestCase):
         self.translate_odt._loffice.search_and_replace.return_value = False
         with self.assertLogs('pywikitools.translateodt', level='WARNING'):
             self.translate_odt._process_snippet("original", "translation")
-        self.assertEqual(self.translate_odt._loffice.search_and_replace.call_count, 3)
+        self.assertEqual(self.translate_odt._loffice.search_and_replace.call_count, 2)
 
         self.translate_odt._loffice.search_and_replace.side_effect = AttributeError
         with self.assertLogs('pywikitools.translateodt', level='ERROR'):
             self.translate_odt._process_snippet("original", "translation")
-        self.assertEqual(self.translate_odt._loffice.search_and_replace.call_count, 4)
+        self.assertEqual(self.translate_odt._loffice.search_and_replace.call_count, 3)
 
     def test_get_odt_filename(self):
         # Headline and filename fit together
