@@ -1,6 +1,8 @@
 pywikitools.resourcesbot package
 ================================
 
+test here!
+
 Submodules
 ----------
 
@@ -18,7 +20,10 @@ pywikitools.resourcesbot.data\_structures module
 .. automodule:: pywikitools.resourcesbot.data_structures
    :members:
    :undoc-members:
-   :show-inheritance:
+   :show-inheritance: 
+
+
+
 
 pywikitools.resourcesbot.post\_processing module
 ------------------------------------------------
