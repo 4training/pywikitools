@@ -122,11 +122,6 @@ class TranslateODT:
         @param trans the translated string (what we're going to replace it with)
         """
         self.logger.debug(f"process_snippet, orig: {orig}, trans: {trans}")
-        # remove bold/italic/underline formatting from original
-        orig = re.sub("\'\'+|</?[biu]>", '', orig)
-        # replace '' / ''' with <i> / <b> in trans: only these are recognized by LibreOffice.search_and_replace()
-        corrector = UniversalCorrector()
-        trans = corrector.correct_mediawiki_bold_italic(trans)
 
         orig = orig.strip()
         trans = trans.strip()
@@ -154,7 +149,6 @@ class TranslateODT:
         with the translated text snippets"""
         for t in translated_page:           # for each translation unit:
             self.logger.debug(f"Translation unit: {t.get_definition()}")
-            t.remove_links()
 
             is_well_structured, warning = t.is_translation_well_structured()
             if not is_well_structured:  # We can't process this translation unit
@@ -215,6 +209,9 @@ class TranslateODT:
         """
         Clean up translation units before we do search and replace:
         - filter out empty/irrelevant units
+        - remove [[links]]
+        - remove bold/italic/underline formatting from definition
+        - replace '' / ''' with <i> / <b> in translation
         - check order of translation units and rearrange if necessary
         - process config: remove ignored units, replicate units that should be processed multiple times
 
@@ -240,34 +237,66 @@ class TranslateODT:
             if t.identifier in config.ignore:
                 self.logger.info(f"Ignoring translation unit {t.identifier}")
                 continue
+
+            # Do some normalization on the translation unit now: first remove [[Links]]
+            t.remove_links()
+            # remove bold/italic/underline formatting from definition
+            t.set_definition(re.sub("\'\'+|</?[biu]>", '', t.get_definition()))
+            # replace '' / ''' with <i> / <b> in translation (necessary for LibreOffice.search_and_replace())
+            corrector = UniversalCorrector()
+            t.set_translation(corrector.correct_mediawiki_bold_italic(t.get_translation()))
+
             if t.identifier in config.multiple:
                 self.logger.info(f"{t.identifier} will be processed {config.multiple[t.identifier]} times")
                 for i in range(1, config.multiple[t.identifier]):
                     result.append(t)
             result.append(t)
 
-        result.sort()
+        self.special_sort_units(result)
+        return TranslatedPage(translated_page.page, translated_page.language_code, result)
 
-        # Compare all (well-structured) translation units with each other
-        for i in range(len(result)):
-            if not result[i].is_translation_well_structured()[0]:
+    def special_sort_units(self, units: List[TranslationUnit]) -> None:
+        """
+        Order the TranslationUnits in such a way that units with a short snippet
+        (that is part of another one) are moved to the end of the list
+        ["long", "A long sentence", "long sentence"] -> ["A long sentence", "long sentence", "long"]
+
+        Then we first search and replace the long strings, avoiding replacing at the wrong places.
+        This is not a "typical" ordering like ordering alphabetically. That's why we can't use Python's sort()
+        method but really must compare each element with all other elements. This has O(n^2) complexity
+        but for normal use-cases (less than 1000 translation units) that shouldn't be an issue
+
+        If no snippet contains another one, nothing will be re-ordered
+        @param units: The list of translation units will be re-ordered in-place
+        """
+        for i in range(len(units)):
+            if not units[i].is_translation_well_structured()[0]:
                 continue
-            for j in range(len(result)):
+            for j in range(len(units)):
                 if i == j:
                     continue
-                if not result[j].is_translation_well_structured()[0]:
+                # Do the actual sorting
+                if (units[i] < units[j]) and (i < j):
+                    self.logger.info(f"{units[i].get_definition()} is part of {units[j].get_definition()}. "
+                                     f"Reordering. ({i} / {j})")
+                    temp_unit = units[i]
+                    units[i] = units[j]
+                    units[j] = temp_unit
+
+                # More consistency checks
+                if not units[j].is_translation_well_structured()[0]:
+                    self.logger.warning(f"{units[j].get_name()} is not well structured.")
                     continue
-                # compare all of their snippets with each other
-                for i_snippet_orig, i_snippet_trans in result[i]:
-                    if i_snippet_orig.content == i_snippet_trans.content:   # translation == original: will be ignored anyway
+                for i_snippet_orig, i_snippet_trans in units[i]:
+                    if i_snippet_orig.content == i_snippet_trans.content:
+                        # translation == original: will be ignored anyway
                         continue
-                    for _, j_snippet_trans in result[j]:
+                    for _, j_snippet_trans in units[j]:
                         # warn in case a search string can be found in a translation (unlikely but better check)
                         if i_snippet_orig.content in j_snippet_trans.content:
-                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({result[i].get_name()}) '
-                                                f'is in translation "{j_snippet_trans.content}" ({result[j].get_name()})!')
+                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) '
+                                            f'is in translation "{j_snippet_trans.content}" ({units[j].get_name()})!')
 
-        return TranslatedPage(translated_page.page, translated_page.language_code, result)
 
     def read_worksheet_config(self, worksheet: str) -> TranslateOdtConfig:
         """

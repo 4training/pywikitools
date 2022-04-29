@@ -281,20 +281,12 @@ class TranslationUnit:
             content += f"- {snippet}\n"
         return content
 
-    # The following comparison functions enable sorting of a List[TranslationUnit].
-    # It's not a "typical" ordering that would order alphabetically, rather we're only checking
-    # whether the definition of a snippet can be found in another snippet definition.
-    #
-    # This is problematic for TranslateODT, so we want to order a list of TranslationUnits in such a way that
-    # units with a short snippet (that is part of another one) are moved to the end of the list
-    # ["long", "A long sentence", "long sentence"] -> ["A long sentence", "long sentence", "long"]
-    # Then we first search and replace the long strings, avoiding replacing at the wrong places.
-    #
-    # If no snippet contains another one, sorting a List[TranslationUnit] doesn't change it at all.
-    def _comparison(self, other) -> Tuple[bool, bool]:
+    def __lt__(self, other) -> bool:
         """
-        Compare our TranslationUnit to another TranslationUnit: Is any of the snippet definitions a substring
-        of another snippet?
+        Compare our TranslationUnit to another TranslationUnit: Is any of our snippet definitions a substring
+        of a snippet of the other TranslationUnit?
+
+        Used in TranslateODT.special_sort_units()
 
         Remark: We don't check whether the snippets in self._definition_snippets contain each other -
         any translation administrator should make sure that never happens...
@@ -323,32 +315,10 @@ class TranslationUnit:
                     self.logger.info(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of "{snippet.content}" (in {self.get_name()})!')
                     other_is_in_self = True
         if self_is_in_other and other_is_in_self:
-            # Don't know what happens now, I hope the sort() is not going into an endless loop...
             self.logger.warning(f"{self.get_name()} and {other.get_name()} have reciprocal substrings: "
                                 f"{self.get_definition()} / {other.get_definition()} "
-                                 "This may lead to undefined behavior!")
-        return (self_is_in_other, other_is_in_self)
-
-    def __eq__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not self_is_in_other and not other_is_in_self
-
-    def __lt__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return other_is_in_self
-
-    def __gt__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
+                                 "Please resolve this conflict!")
         return self_is_in_other
-
-    def __le__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not self_is_in_other
-
-    def __ge__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not other_is_in_self
-
 
 class TranslatedPage:
     """

@@ -360,10 +360,11 @@ class ForTrainingLib():
             return []
 
 
-    def get_translation_units(self, page: str, language_code: str) -> Optional[TranslatedPage]:
+    def get_translation_units(self, page: str, language_code: str, limit: int = 500) -> Optional[TranslatedPage]:
         """
         Get the translation units of a page translated into the language identified by language_code
         Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
+        @param limit: Maximum number of translation units to return (default limit in API is also 500)
         @return None in case of an error
         """
         self.logger.info(f"Retrieving translation of {page} into language {language_code}...")
@@ -373,6 +374,7 @@ class ForTrainingLib():
             "list": "messagecollection",
             "mcgroup": f"page-{page}",
             "mclanguage": language_code,
+            "mclimit": str(limit)
         })
 
         result = []

@@ -179,43 +179,13 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 
-    def _sort_units(self, definitions: List[str], translations: List[str]) -> Tuple[List[str], List[str]]:
-        """Create translation units, sort them and return lists of definitions and translations
-        The return format is for easier comparison of the expected outcome
-        """
-        units: List[TranslationUnit] = []
-        for counter, definition in enumerate(definitions):
-            unit = TranslationUnit(f"Test/{counter}", "de", definition, translations[counter])
-            units.append(unit)
-        units.sort()
-        sorted_definitions_list: List[str] = []
-        sorted_translations_list: List[str] = []
-        for unit in units:
-            sorted_definitions_list.append(unit.get_definition())
-            sorted_translations_list.append(unit.get_translation())
-        return (sorted_definitions_list, sorted_translations_list)
-
-    def test_sorting(self):
-        # Test for correct sorting
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
-            (orig_list, trans_list) = self._sort_units(["this", "this", "is", "thistle"],
-                                                       ["same", "same", "same", "same"])
-        self.assertListEqual(orig_list, ["thistle", "this", "this", "is"])
-        # two different translation units with the same definition but different translations should give a warning
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
-            (orig_list, trans_list) = self._sort_units(["this", "this", "other", "content"],
-                                                       ["same", "different", "same", "same"])
-        self.assertListEqual(orig_list, ["this", "this", "other", "content"])
-        # two snippets in a translation unit
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
-            (orig_list, trans_list) = self._sort_units(["this<br/>is", "this<br/>thistle"],
-                                                       ["same<br/>same", "same<br/>same"])
-        self.assertListEqual(orig_list, ["this<br/>thistle", "this<br/>is"])
-        # reciprocal dependency should give a warning
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING') as cm:
-            (orig_list, trans_list) = self._sort_units(["something<br/>range", "thing<br/>strange"],
-                                                       ["same<br/>same", "same<br/>same"])
-        self.assertIn("reciprocal", cm.output[0])
+    def test_comparison(self):
+        unit1 = TranslationUnit("Test/1", "de", "this", "dies")
+        unit2 = TranslationUnit("Test/2", "de", "is", "ist")
+        unit3 = TranslationUnit("Test/3", "de", "different", "anders")
+        self.assertFalse(unit1 < unit2)
+        self.assertFalse(unit1 < unit3)
+        self.assertTrue(unit2 < unit1)
 
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):

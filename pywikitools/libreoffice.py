@@ -101,8 +101,9 @@ class LibreOffice:
         Replaces first occurence of search with replace in the currently opened LibreOffice document
         @param warn_if_pages_change: Log a warning if start and end of the passage aren't on the same page(s) as
                                      it was before the replace
-        @param parse_formatting: Should we take <i>,<b>,</i> and </b> in the replace string as formatting instruction?
-                                 The search string should still contain the text content only and no <tags>
+        @param parse_formatting: Should we take <i>,<b>,<u>,</i>,</b> and </u> in the replace string
+                                 as formatting instruction?
+                                 The search string should contain the text content only and no <tags>
         @return True if successful
         """
         # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
