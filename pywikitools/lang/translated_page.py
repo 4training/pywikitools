@@ -281,6 +281,10 @@ class TranslationUnit:
             content += f"- {snippet}\n"
         return content
 
+    def __copy__(self):
+        """Return a copy of our TranslationUnit"""
+        return TranslationUnit(self.identifier, self.language_code, self._definition, self._translation)
+
     def __lt__(self, other) -> bool:
         """
         Compare our TranslationUnit to another TranslationUnit: Is any of our snippet definitions a substring

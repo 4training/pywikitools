@@ -12,7 +12,7 @@ import logging
 import re
 from typing import List
 
-from pywikitools.correctbot.correctors.base import use_snippets
+from pywikitools.correctbot.correctors.base import suggest_only, use_snippets
 
 class UniversalCorrector():
     """Has language-independent correction functions"""
@@ -23,6 +23,7 @@ class UniversalCorrector():
 #        """TODO for testing only: Replace e with i"""
 #        return text.replace("e", "i")
 
+    @suggest_only
     @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
         """Fix wrong capitalization at the beginning of a sentence or after a colon.
@@ -34,17 +35,14 @@ class UniversalCorrector():
         # because there may be languages where this doesn't work
 
         # TODO: Quotation marks are not yet covered - double check if necessary
-        if len(text) > 1:
-            find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
-            result: str = text
-            for match in re.finditer(find_wrong_capitalization, text):
-                result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
-            result = result[0].upper() + result[1:]
-            if text.strip().endswith((".", "!", "?")):
-                return result
-            elif result != text:
-                logging.getLogger('pywikitools.correctbot.universal').warning(f"Please check capitalization in {repr(text)}")
-        return text
+        if len(text) <= 1:
+            return text
+        find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
+        result: str = text
+        for match in re.finditer(find_wrong_capitalization, text):
+            result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
+        result = result[0].upper() + result[1:]
+        return result
 
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:
         """Reduce multiple spaces to one space"""

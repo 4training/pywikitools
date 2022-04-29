@@ -1,3 +1,4 @@
+import copy
 from typing import List, Tuple
 import unittest
 from pywikitools.fortraininglib import ForTrainingLib
@@ -178,6 +179,23 @@ class TestTranslationUnit(unittest.TestCase):
         (definition, translation) = next(iter(link_unit))
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
+
+    def test_copy(self):
+        unit = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        unit.set_definition("Change " + unit.get_definition())
+        unit.set_translation("Change " + unit.get_translation())
+        for orig, trans in unit:
+            pass
+        self.assertEqual(unit._iterate_pos, 13)
+        self.assertTrue(unit.has_translation_changes())
+        well_structured, warnings = unit.is_translation_well_structured()
+        copied_unit = copy.copy(unit)
+        # The copied unit should be "fresh"
+        self.assertFalse(copied_unit.has_translation_changes())
+        self.assertEqual(copied_unit._original_definition, copied_unit._definition)
+        self.assertIsNone(copied_unit._definition_snippets)
+        self.assertIsNone(copied_unit._translation_snippets)
+        self.assertEqual(copied_unit._iterate_pos, 0)
 
     def test_comparison(self):
         unit1 = TranslationUnit("Test/1", "de", "this", "dies")

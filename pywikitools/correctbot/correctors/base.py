@@ -29,10 +29,11 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+import copy
 import functools
 from inspect import signature
 import logging
-from typing import Callable, Generator
+from typing import Callable, DefaultDict, Dict, Final, Generator, List
 from collections import defaultdict
 
 from pywikitools.lang.translated_page import TranslationUnit
@@ -45,6 +46,27 @@ def use_snippets(func):
     decorator_use_snippets.use_snippets = True
     return decorator_use_snippets
 
+def suggest_only(func):
+    """Decorator: correction function should not directly correct but suggest its changes to the user"""
+    @functools.wraps(func)
+    def decorator_suggest_only(*args, **kwargs):
+        return func(*args, **kwargs)
+    decorator_suggest_only.suggest_only = True
+    return decorator_suggest_only
+
+class CorrectionResult:
+    """Returns any warnings and suggestions of running a corrector on one translation unit
+
+    This data structure is meant to be read-only after creation.
+    """
+    __slots__ = ["corrections", "suggestions", "correction_stats", "suggestion_stats", "warnings"]
+    def __init__(self, corrections: TranslationUnit, suggestions: TranslationUnit,
+                 correction_stats: Dict[str, int], suggestion_stats: Dict[str, int], warnings: str):
+        self.corrections: Final[TranslationUnit] = corrections
+        self.suggestions: Final[TranslationUnit] = suggestions
+        self.correction_stats: Final[Dict[str, int]] = correction_stats
+        self.suggestion_stats: Final[Dict[str, int]] = suggestion_stats
+        self.warnings: Final[str] = warnings
 
 class CorrectorBase:
     """
@@ -53,66 +75,90 @@ class CorrectorBase:
     Correctors should inherit from this class first.
     Correctors for groups of languages should not inherit from the class.
 
+    correct(), title_correct() and filename_correct() are the three entry functions. They don't touch
+    the given translation unit but return all changes and suggestions in the CorrectionResult structure
     """
-    def __init__(self):
-        # Counter for how often a particular rule (function) corrected something
-        self._stats = defaultdict(int)
+    def correct(self, unit: TranslationUnit) -> CorrectionResult:
+        """Call all available correction functions one after the other"""
+        return self._run_functions(unit, (s for s in dir(self) if s.startswith("correct_")))
 
-    def correct(self, unit: TranslationUnit) -> str:
-        """Call all available correction functions one after the other to directly correct the unit
-
-        @return any warning message or empty string if there was no warning
+    def title_correct(self, unit: TranslationUnit) -> CorrectionResult:
+        """Call all correction functions for titles one after the other
+        We don't do any checks if unit actually is a title - that's the responsibility of the caller
         """
-        return self._run_correction_functions(unit, (s for s in dir(self) if s.startswith("correct_")))
+        return self._run_functions(unit, (s for s in dir(self) if s.endswith("_title")))
 
-    def title_correct(self, unit: TranslationUnit) -> str:
-        """Call all correction functions for titles one after the other to directly correct the unit
+    def filename_correct(self, unit: TranslationUnit) -> CorrectionResult:
+        """Call all correction functions for filenames one after the other
+        We don't do any checks if unit actually is a filename - that's the responsibility of the caller"""
+        return self._run_functions(unit, (s for s in dir(self) if s.endswith("_filename")))
 
-        @return any warning message or empty string if there was no warning
+    def _run_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> CorrectionResult:
         """
-        return self._run_correction_functions(unit, (s for s in dir(self) if s.endswith("_title")))
-
-    def filename_correct(self, unit: TranslationUnit) -> str:
-        """
-        Call all correction functions for filenames one after the other to directly correct the unit
-
-        Only correct if we have a file name with one of the following extensions: '.doc', '.odg', '.odt', '.pdf'
-        @return any warning message or empty string if there was no warning
-        """
-        if not unit.get_translation().lower().endswith(('.doc', '.odg', '.odt', '.pdf')):
-            logger = logging.getLogger("pywikitools.correctbot.base")
-            logger.warning(f"No file name: {unit.get_translation()} (in {unit.get_name()})")
-        else:
-            return self._run_correction_functions(unit, (s for s in dir(self) if s.endswith("_filename")))
-
-    def _run_correction_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> str:
-        """
-        Call all the functions given by the generator one after the other to directly correct the unit
+        Call all the functions given by the generator one after the other
 
         Caution: the generator must not yield any function from this class, otherwise we run into indefinite recursion
-        @return any warning message or empty string if there was no warning
         """
         is_unit_well_structured, warning = unit.is_translation_well_structured()
 
+        # Sort: which functions correct directly and which give only suggestions?
+        correction_functions: List[Callable] = []
+        suggestion_functions: List[Callable] = []
         for function_name in functions:
-            corrector_function: Callable = getattr(self, function_name)
-            if hasattr(corrector_function, "use_snippets"):
-                if is_unit_well_structured:
-                    # run correction function on snippets
-                    for orig_snippet, trans_snippet in unit:
-                        trans_snippet.content = self._call_function(corrector_function,
-                                                                    trans_snippet.content, orig_snippet.content)
-                    unit.sync_from_snippets()
-                    continue
-            # otherwise run correction function on the whole translation unit
-            unit.set_translation(self._call_function(corrector_function,
-                                                     unit.get_translation(), unit.get_definition()))
+            func: Callable = getattr(self, function_name)
+            if hasattr(func, "suggest_only"):
+                suggestion_functions.append(func)
+            else:
+                correction_functions.append(func)
 
-        return warning
+        # First run all functions that directly correct
+        corrections: TranslationUnit = copy.copy(unit)
+        correction_stats: DefaultDict[str, int] = defaultdict(int)
+        for correction_function in correction_functions:
+            if self._correct_unit(correction_function, corrections,
+                                  hasattr(correction_function, "use_snippets") and is_unit_well_structured):
+                correction_stats[correction_function.__name__] += 1
+
+        # Now run all functions that make suggestions
+        suggestions = copy.copy(corrections)
+        suggestion_stats: DefaultDict[str, int] = defaultdict(int)
+        for suggestion_function in suggestion_functions:
+            if self._correct_unit(suggestion_function, suggestions,
+                                  hasattr(suggestion_function, "use_snippets") and is_unit_well_structured):
+                suggestion_stats[suggestion_function.__name__] += 1
+
+        return CorrectionResult(corrections, suggestions, correction_stats, suggestion_stats, warning)
+
+    def _correct_unit(self, corrector_function: Callable, unit: TranslationUnit, correct_snippets: bool) -> bool:
+        """
+        Run a correction function on a translation unit
+        @param unit: the translation unit the correction function should be applied to. Will be modified directly
+        @param correct_snippets: Should we run all correction functions on each snippets or just on the complete unit?
+                                 Caution! The caller is responsible that the unit is well-structured!
+        @return did we make any changes?
+        """
+        has_changes = False
+        if correct_snippets:
+            # run correction function on snippets
+            for orig_snippet, trans_snippet in unit:
+                result = self._call_function(corrector_function, trans_snippet.content, orig_snippet.content)
+                if result != trans_snippet.content:
+                    has_changes = True
+                    trans_snippet.content = result
+            if has_changes:
+                unit.sync_from_snippets()
+        else:
+            # otherwise run the correction function on the whole translation unit
+            result = self._call_function(corrector_function, unit.get_translation(), unit.get_definition())
+            if result != unit.get_translation():
+                has_changes = True
+                unit.set_translation(result)
+
+        return has_changes
 
     def _call_function(self, corrector_function: Callable, text: str, original: str) -> str:
         """
-        Call a correction function with the correct number of parameters, update statistics if necessary
+        Call a correction function with the correct number of parameters
 
         We check with introspection if we need to give both parameters or just one.
         @return corrected text
@@ -122,34 +168,20 @@ class CorrectorBase:
         else:
             assert len(signature(corrector_function).parameters) == 1
             result = corrector_function(text)
-
-        # Update statistics if the correction function changed something
-        if text != result:
-            self._stats[corrector_function.__name__] += 1
         return result
 
-    def reset_stats(self) -> None:
-        """Reset all statistics gathered until now"""
-        self._stats.clear()
-
-    def count_corrections(self) -> int:
+    def print_stats(self, stats: Dict[str, int]) -> str:
         """
-        Returns the number of corrections that were made.
-        See print_stats() to get more details
-        """
-        return sum(self._stats.values())
-
-    def print_stats(self) -> str:
-        """
-        Give a detailed overview how much corrections were made and by which functions.
+        Write a detailed overview with how much corrections were made and by which functions.
 
         In the details we'll read from the documentation strings of the functions used
         and take the first line (in case the documentation has several lines)
         If a function is not documented then just its name is printed.
+        @param stats: Dictionary with the "raw" statistics (name of the function -> how many times was it applied)
         """
         details: str = ""
         total_counter: int = 0
-        for function_name, counter in self._stats.items():
+        for function_name, counter in stats.items():
             total_counter += counter
             documentation = getattr(self, function_name).__doc__
             if documentation is not None:
