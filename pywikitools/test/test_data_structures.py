@@ -11,7 +11,8 @@ import unittest
 import json
 from os.path import abspath, dirname, join
 from pywikitools.resourcesbot.changes import ChangeItem, ChangeType
-from pywikitools.resourcesbot.data_structures import FileInfo, TranslationProgress, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import FileInfo, TranslationProgress, WorksheetInfo, LanguageInfo, \
+                                                     DataStructureEncoder, json_decode
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
 # but datetime.fromisoformat() can't handle the "Z" in the end
@@ -32,6 +33,7 @@ TEST_LANG: str = "de"
 TEST_LANG_NAME: str = "German"
 TEST_TITLE: str = "Gottes Reden wahrnehmen"
 TEST_VERSION: str = "1.2"
+
 
 class TestTranslationProgress(unittest.TestCase):
     def test_everything(self):
@@ -255,6 +257,7 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertEqual(comparison.count_changes(), 1)
         self.assertEqual(next(iter(comparison)).change_type, ChangeType.NEW_WORKSHEET)
 
+
 class TestLanguageInfoComparison(unittest.TestCase):
     """Testing all the different possible outcomes of comparing two LanguageInfo objects"""
     def setUp(self):
@@ -278,7 +281,7 @@ class TestLanguageInfoComparison(unittest.TestCase):
         self.assertIsInstance(language_info2, LanguageInfo)
         changes = set([change_item for change_item in language_info2.compare(self.language_info)])
         self.assertSetEqual(changes, set([ChangeItem("Church", ChangeType.DELETED_ODT),
-                                           ChangeItem("Healing", ChangeType.DELETED_PDF)]))
+                                          ChangeItem("Healing", ChangeType.DELETED_PDF)]))
 
     def test_deleted_worksheet(self):
         with open(join(dirname(abspath(__file__)), "data", "ru_deleted_worksheet.json"), 'r') as f:
@@ -316,9 +319,9 @@ class TestLanguageInfoComparison(unittest.TestCase):
         self.assertSetEqual(changes, set([ChangeItem("Hearing_from_God", ChangeType.UPDATED_WORKSHEET),
                                           ChangeItem("Church", ChangeType.UPDATED_WORKSHEET)]))
 
-
     # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
     # and count_finished_translations()
+
 
 if __name__ == '__main__':
     unittest.main()

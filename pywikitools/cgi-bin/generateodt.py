@@ -44,7 +44,7 @@ path = Path(__file__)
 config.read(str(path.resolve().parent.parent) + '/config.ini')
 if config.has_option('Paths', 'pwb') and config.has_option('Paths', 'generateodtbot'):
     args = [config['Paths']['pwb'], config['Paths']['generateodtbot'],
-        worksheet, languagecode, username]
+            worksheet, languagecode, username]
     if config.has_option('Paths', 'python'):
         args.insert(0, config['Paths']['python'])
     if config.has_option('generateodtbot', 'sudouser'):

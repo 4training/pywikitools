@@ -42,7 +42,7 @@ class WriteList(LanguagePostProcessor):
                                            ChangeType.NEW_WORKSHEET, ChangeType.DELETED_WORKSHEET]:
                 needs_rewrite = True
             if (change_item.change_type in [ChangeType.NEW_ODT, ChangeType.DELETED_ODT]) \
-                and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
+                    and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
                 needs_rewrite = True
 
         if needs_rewrite:
@@ -121,8 +121,8 @@ class WriteList(LanguagePostProcessor):
                 return
 
         # Finding the exact positions of the existing list so that we know what to replace
-        language_re = language.replace('(', r'\(')    # in case language name contains brackets, we need to escape them
-        language_re = language_re.replace(')', r'\)') # Example would be language Turkish (secular)
+        language_re = language.replace('(', r'\(')     # if language name contains brackets, we need to escape them
+        language_re = language_re.replace(')', r'\)')  # Example would be language Turkish (secular)
         match = re.search(f"Available training resources in {language_re}\\s*?</translate>\\s*?==", page.text)
         if not match:
             self.logger.warning(f"Didn't find available training resources list in page {language}! Doing nothing.")
@@ -143,7 +143,7 @@ class WriteList(LanguagePostProcessor):
             list_end = m.end()
             self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
         if (list_start == 0) or (list_end == 0):
-            self.logger.warning(f"Couldn't find list entries of available training resources in {language}! Doing nothing.")
+            self.logger.warning(f"Couldn't find list of available training resources in {language}! Doing nothing.")
             return
         self.logger.debug(f"Found existing list of available training resources @{list_start}-{list_end}. Replacing...")
         new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info) + page.text[list_end+1:]
@@ -153,7 +153,7 @@ class WriteList(LanguagePostProcessor):
         if page.text == new_page_content:
             return
         page.text = new_page_content
-        page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
+        page.save("Updated list of available training resources")  # TODO write list of changes here in the save message
         if self._user_name != '' and self._password != '':
             self.fortraininglib.mark_for_translation(page.title(), self._user_name, self._password)
             self.logger.info(f"Updated language information page {language} and marked it for translation.")

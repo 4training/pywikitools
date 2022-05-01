@@ -34,7 +34,7 @@ from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 
-SNIPPET_WARN_LENGTH = 3 # give a warning when search or replace string is shorter than 3 characters
+SNIPPET_WARN_LENGTH = 3     # give a warning when search or replace string is shorter than 3 characters
 # The following templates don't contain any translation units and can be ignored
 IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
                     'Template:PrintPdfDownload',
@@ -44,6 +44,7 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 # because the translation of "version" is very close to the English word "version"
 # TODO should 'ko' be in this list?
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
+
 
 class TranslateOdtConfig:
     """Contains configuration on how to process one worksheet:
@@ -61,11 +62,13 @@ class TranslateOdtConfig:
     Template:BibleReadingHints/6 = 5
     """
     __slots__ = ["ignore", "multiple"]
+
     def __init__(self):
         # Set of translation unit identifiers that shouldn't be processed
         self.ignore: Final[Set[str]] = set()
         # Translation unit identifier -> number of times it should be processed
         self.multiple: Final[Dict[str, int]] = {}
+
 
 class TranslateODT:
     def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
@@ -75,9 +78,9 @@ class TranslateODT:
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
         self.config: ConfigParser = ConfigParser()
-        self.config.read_dict({'Paths' : {'worksheets' : os.path.abspath(os.getcwd()) + '/worksheets/'},
-                               'translateodt' : {'closeoffice': True,
-                                                 'headless': False}})
+        self.config.read_dict({'Paths': {'worksheets': os.path.abspath(os.getcwd()) + '/worksheets/'},
+                               'translateodt': {'closeoffice': True,
+                                                'headless': False}})
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
         self.config.read_dict(config)
 
@@ -98,7 +101,7 @@ class TranslateODT:
         Logs warnings for certain circumstances
         @return true if we need to do search and replace
         """
-        if orig.endswith((".pdf", ".odt", ".odg")): # if string is a file name, we ignore it
+        if orig.endswith((".pdf", ".odt", ".odg")):     # if string is a file name, we ignore it
             return False
 
         if orig == trans:
@@ -113,7 +116,6 @@ class TranslateODT:
                 self.logger.warning("Potential problem: short search string. "
                                     f"This can be totally normal but please check. Replaced {orig} with {trans}")
         return True
-
 
     def _process_snippet(self, orig: str, trans: str):
         """
@@ -294,9 +296,8 @@ class TranslateODT:
                     for _, j_snippet_trans in units[j]:
                         # warn in case a search string can be found in a translation (unlikely but better check)
                         if i_snippet_orig.content in j_snippet_trans.content:
-                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) '
-                                            f'is in translation "{j_snippet_trans.content}" ({units[j].get_name()})!')
-
+                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) is '
+                                                f'in translation "{j_snippet_trans.content}" ({units[j].get_name()})!')
 
     def read_worksheet_config(self, worksheet: str) -> TranslateOdtConfig:
         """
@@ -380,8 +381,8 @@ class TranslateODT:
 
         # Add footer (Template:CC0Notice) to translation list
         translated_page.add_translation_unit(TranslationUnit("Template:CC0Notice", language_code,
-            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),
-            self.fortraininglib.get_cc0_notice(translated_version, language_code)))
+            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),   # noqa: E128
+            self.fortraininglib.get_cc0_notice(translated_version, language_code)))                 # noqa: E128
 
         odt_path = self._fetch_english_file(translated_page.get_english_info().get_file_type_name("odt"))
         if not odt_path:
@@ -391,7 +392,7 @@ class TranslateODT:
         self.translate_odt(odt_path, translated_page, config)
         self._set_properties(translated_page)
         self._loffice.set_default_style(translated_page.language_code,
-            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
+            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")     # noqa: E128
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
         save_path = self.config['Paths']['worksheets'] + translated_page.language_code
@@ -446,7 +447,7 @@ class TranslateODT:
         headline += subtitle_lan
 
         # Subject: [English title] [Languagename in English] [Languagename autonym]
-        subject  = page.get_english_info().title
+        subject = page.get_english_info().title
         subject += subtitle_en
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code, 'en'))
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code))
@@ -460,6 +461,7 @@ class TranslateODT:
             cc0_notice += native_to_standard_numeral(page.language_code, page.get_worksheet_info().version)
 
         self._loffice.set_properties(headline, subject, cc0_notice)
+
 
 if __name__ == '__main__':
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']

@@ -14,6 +14,7 @@ from typing import List
 
 from pywikitools.correctbot.correctors.base import suggest_only, use_snippets
 
+
 class UniversalCorrector():
     """Has language-independent correction functions"""
     # TODO: Instead of ellipsis (…), use "..." - write a function for it.
@@ -54,10 +55,10 @@ class UniversalCorrector():
         check_missing_spaces = re.compile(r'([.!?;,؛،؟])([\w])')
         # As we need to check for exceptions (surrounded by digits), it's a bit complicated. Otherwise it'd be just
         # return re.sub(check_missing_spaces, r'\1 \2', text)
-        last_start_pos = 0          # necessary to not run into endless loops
+        last_start_pos = 0              # necessary to not run into endless loops
         while match := check_missing_spaces.search(text, last_start_pos):
-            if match.start(1) == 0: # it would be strange if our text directly started with a punctuation mark.
-                last_start_pos += 1 # also the following if statement would raise an IndexError
+            if match.start(1) == 0:     # it would be strange if our text directly started with a punctuation mark.
+                last_start_pos += 1     # also the following if statement would raise an IndexError
                 continue
             if match.string[match.start(1) - 1].isdigit() and match.group(2).isdigit():
                 # Exception: Don't correct if punctuation mark is directly between characters
@@ -124,8 +125,6 @@ class UniversalCorrector():
                 text += '<i>' if counter % 2 == 1 else '</i>'
                 text += splitted_text[counter]
         return text
-
-
 
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""

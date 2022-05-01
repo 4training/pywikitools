@@ -1,4 +1,3 @@
-from ast import For
 import re
 import logging
 import json
@@ -15,6 +14,7 @@ from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
+
 
 class ResourcesBot:
     """Contains all the logic of our bot"""
@@ -59,7 +59,7 @@ class ResourcesBot:
                 if self._limit_to_lang is None:
                     page = pywikibot.Page(self.site, "4training:languages.json")
                     if not page.exists():
-                        raise RuntimeError(f"Couldn't load list of languages from 4training:languages.json")
+                        raise RuntimeError("Couldn't load list of languages from 4training:languages.json")
                     language_list = json.loads(page.text)
                     assert isinstance(language_list, list)
                 else:
@@ -76,7 +76,7 @@ class ResourcesBot:
                     assert language_info.language_code == lang
                     self._result[lang] = language_info
             except AssertionError:
-                raise RuntimeError(f"Unexpected error while parsing JSON data from cache.")
+                raise RuntimeError("Unexpected error while parsing JSON data from cache.")
 
         else:
             self._result["en"] = LanguageInfo("en", "English")
@@ -103,8 +103,8 @@ class ResourcesBot:
 
         # Run all LanguagePostProcessors
         write_list = WriteList(self.fortraininglib, self.site,
-            self._config.get("resourcesbot", "username", fallback=""),
-            self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
+                               self._config.get("resourcesbot", "username", fallback=""),
+                               self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         write_report = WriteReport(self.site, self._rewrite_all)
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
@@ -138,7 +138,7 @@ class ResourcesBot:
             self.logger.warning(f"Internal error: translation unit is None in {english_file_info}, ignoring.")
             return
         file_name = self.fortraininglib.get_translated_unit(worksheet.page, worksheet.language_code,
-                                                       english_file_info.translation_unit)
+                                                            english_file_info.translation_unit)
         warning: str = ""
         if file_name is None:
             warning = "does not exist"
@@ -297,7 +297,7 @@ class ResourcesBot:
         encoded_json: str = json.dumps(language_list)
         previous_json: str = ""
 
-        page = pywikibot.Page(self.site, f"4training:languages.json")
+        page = pywikibot.Page(self.site, "4training:languages.json")
         if not page.exists():
             self.logger.warning("languages.json doesn't seem to exist yet. Creating...")
         else:
@@ -307,7 +307,7 @@ class ResourcesBot:
         if previous_json != encoded_json:
             page.text = encoded_json
             page.save("Updated list of languages")
-            self.logger.info(f"Updated 4training:languages.json")
+            self.logger.info("Updated 4training:languages.json")
 
     def _save_number_of_languages(self):
         """
@@ -327,7 +327,7 @@ class ResourcesBot:
         self.logger.info(f"Number of languages: {number_of_languages}")
 
         previous_number_of_languages: int = 0
-        page = pywikibot.Page(self.site, f"MediaWiki:Numberoflanguages")
+        page = pywikibot.Page(self.site, "MediaWiki:Numberoflanguages")
         if page.exists():
             previous_number_of_languages = int(page.text)
         else:
@@ -340,4 +340,3 @@ class ResourcesBot:
                 self.logger.info(f"Updated MediaWiki:Numberoflanguages to {number_of_languages}")
             except pywikibot.exceptions.PageSaveRelatedError as err:
                 self.logger.warning(f"Error while trying to update MediaWiki:Numberoflanguages: {err}")
-

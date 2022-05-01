@@ -13,6 +13,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.libreoffice import LibreOffice
 from pywikitools.translateodt import TranslateODT
 
+
 class DummyLibreOffice(LibreOffice):
     """Inherited class to produce a dummy LibreOffice that doesn't do anything
     TODO: Currently unused. Is their any benefit in this approach over just using a Mock()?
@@ -47,10 +48,11 @@ class DummyLibreOffice(LibreOffice):
     def set_default_style(self, language_code: str, rtl: bool = False):
         self.logger.debug("DummyLibreOffice.set_default_style()")
 
+
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
         super().__init__(keep_english_file=True)
-        #self._loffice = DummyLibreOffice(headless=False)
+        # self._loffice = DummyLibreOffice(headless=False)
         self._loffice = Mock()
         self._loffice.search_and_replace.return_value = True
 

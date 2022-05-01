@@ -3,6 +3,7 @@ from typing import Dict
 from urllib.parse import unquote
 from bs4 import BeautifulSoup, Comment
 
+
 class BeautifyHTML:
     """
     Take the original HTML coming from mediawiki and remove unnecessary tags or attributes.

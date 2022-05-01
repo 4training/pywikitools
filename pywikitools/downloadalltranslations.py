@@ -12,8 +12,10 @@ import getopt
 import requests
 from fortraininglib import ForTrainingLib
 
+
 def usage():
     print("Usage: python3 downloadalltranslations.py [-l {debug, info, warning, error, critical}] <worksheetname>")
+
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hl:", ["help", "loglevel"])

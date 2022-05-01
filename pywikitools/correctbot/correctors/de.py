@@ -5,6 +5,7 @@ from typing import List
 from .base import CorrectorBase
 from .universal import NoSpaceBeforePunctuationCorrector, UniversalCorrector
 
+
 class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector):
     """
     Correct typical German typos. Currently one rule is implemented

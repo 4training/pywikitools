@@ -6,7 +6,6 @@ TODO: Find ways to run meaningful tests that don't take too long...
 """
 from configparser import ConfigParser
 from datetime import datetime
-import logging
 from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import patch, Mock
@@ -24,6 +23,7 @@ HEARING_FROM_GOD = """[...]
 {{Version|<translate><!--T:55--> 1.2</translate>}}
 """
 
+
 class TestResourcesBot(unittest.TestCase):
     """
     We mock pywikibot because otherwise we would need to provide a valid user-config.py (and because it saves time)
@@ -32,7 +32,7 @@ class TestResourcesBot(unittest.TestCase):
     def setUp(self):
         self.config = ConfigParser()
         self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"},
-                               "Paths": {"logs": "~/"}}) # Fill this to prevent a warning
+                               "Paths": {"logs": "~/"}})    # Fill this to prevent a warning
         self.bot = ResourcesBot(self.config)
 
     @patch("pywikibot.FilePage")
@@ -87,7 +87,7 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
     def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
-                       mock_write_list, mock_write_report, mock_pywikibot_page, mock_pywikibot_site):
+                            mock_write_list, mock_write_report, mock_pywikibot_page, mock_pywikibot_site):
         def json_test_loader(site, page: str):
             """Load meaningful test data for languages.json, en.json and ru.json"""
             result = Mock()

@@ -13,16 +13,17 @@ TODO: Not yet operational
 """
 
 import argparse
-from collections import Counter, defaultdict
+from collections import Counter
 import logging
 import importlib
 import re
 import sys
-from typing import Callable, DefaultDict, List, Optional
+from typing import Callable, List, Optional
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.base import CorrectionResult, CorrectorBase
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+
 
 class CorrectBot:
     """Main class for doing corrections"""

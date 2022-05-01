@@ -1,18 +1,19 @@
-from typing import List, Set, Tuple
+from typing import List, Tuple
 from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import Mock
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
-from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR, TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE
 
 from pywikitools.translateodt import TranslateODT, TranslateOdtConfig
+
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
         super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net"}})
         self._loffice = Mock(spec=LibreOffice)
+
 
 class TestTranslateODT(unittest.TestCase):
     def setUp(self):
@@ -84,8 +85,8 @@ class TestTranslateODT(unittest.TestCase):
 
     def test_cleanup_units(self):
         # should warn because "sin" can be found in the German translation "Wir versinken..."
-        unit1 = TranslationUnit(f"Test/2", "de", "We're drowning in snow chaos", "Wir versinken im Schnee.")
-        unit2 = TranslationUnit(f"Test/1", "de", "sin", "Sünde")
+        unit1 = TranslationUnit("Test/2", "de", "We're drowning in snow chaos", "Wir versinken im Schnee.")
+        unit2 = TranslationUnit("Test/1", "de", "sin", "Sünde")
         translated_page = TranslatedPage("Test", "de", [unit1, unit2])
         with self.assertLogs('pywikitools.translateodt', level='WARNING'):
             cleaned_up_page = self.translate_odt._cleanup_units(translated_page, TranslateOdtConfig())
@@ -160,14 +161,12 @@ class TestTranslateODT(unittest.TestCase):
         self.translate_odt.fortraininglib.get_page_source.return_value = test_config
         result = self.translate_odt.read_worksheet_config("Test")
         self.assertSetEqual(result.ignore,
-            set(["Bible_Reading_Hints/1", "Bible_Reading_Hints/2", "Bible_Reading_Hints/3",
-                "Template:BibleReadingHints/18", "Template:BibleReadingHints/25", "Template:BibleReadingHints/26"]))
+            set(["Bible_Reading_Hints/1", "Bible_Reading_Hints/2", "Bible_Reading_Hints/3",     # noqa: E128
+                 "Template:BibleReadingHints/18", "Template:BibleReadingHints/25", "Template:BibleReadingHints/26"]))
         self.assertEqual(len(result.multiple), 2)
         self.assertEqual(result.multiple["Template:BibleReadingHints/6"], 5)
         self.assertEqual(result.multiple["Bible_Reading_Hints/7"], 2)
 
 
-
 if __name__ == '__main__':
     unittest.main()
-

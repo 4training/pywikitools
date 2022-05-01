@@ -5,7 +5,7 @@ Run tests:
     python3 test_lang.py
 """
 import unittest
-import uno
+import uno      # noqa: F401
 from com.sun.star.lang import Locale
 from pywikitools.lang.libreoffice_lang import FontType, Lang
 
@@ -47,6 +47,7 @@ class TestLang(unittest.TestCase):
     def test_to_locale(self):
         locale = Locale('de', 'DE', '')
         self.assertEqual(self.de.to_locale(), locale)
+
 
 if __name__ == '__main__':
     unittest.main()

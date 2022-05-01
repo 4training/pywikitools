@@ -7,7 +7,6 @@ We didn't name this 4traininglib.py because starting a python file name with a n
 import logging
 import re
 from typing import Any, Final, List, Optional, Dict
-
 import requests
 
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
@@ -16,9 +15,11 @@ from pywikitools.resourcesbot.data_structures import TranslationProgress
 # Language codes of all right-to-left languages we currently have
 RTL_LANGUAGES = ["ar", "fa", "ckb", "ar-urdun", "ps", "ur"]
 
+
 class ForTrainingLib():
     TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
     CONNECT_RETRIES: int = 3    # In case a request timed out, let's try again up to three times
+
     def __init__(self, base_url: str, api_path: str = "/mediawiki/api.php"):
         """
         @param base_url: Domain of the mediawiki system we want to query (example: "https://www.example.com")
@@ -50,7 +51,6 @@ class ForTrainingLib():
         self.logger.warning(f"Tried {retries} times to query {params}, all timed out. Giving up.")
         return {}
 
-
     def get_worksheet_list(self) -> List[str]:
         """
         Returns the list of all worksheets. For now hard-coded as this doesn't change very often. Could be changed to
@@ -72,7 +72,6 @@ class ForTrainingLib():
             "The_Role_of_a_Helper_in_Prayer", "Leading_a_Prayer_Time",
             "How_to_Continue_After_a_Prayer_Time", "Four_Kinds_of_Disciples"]
 
-
     def get_file_types(self) -> List[str]:
         """
         Returns the supported file types.
@@ -80,7 +79,6 @@ class ForTrainingLib():
         @return: file_types (list): list of supported file types
         """
         return ['pdf', 'odt', 'odg']
-
 
     def get_language_direction(self, language_code: str) -> str:
         """
@@ -93,7 +91,6 @@ class ForTrainingLib():
         if language_code in RTL_LANGUAGES:
             return "rtl"
         return "ltr"
-
 
     def get_language_name(self, language_code: str, translate_to: Optional[str] = None) -> Optional[str]:
         """ Returns the name of a language as either the autonym or translated into another language
@@ -129,7 +126,6 @@ class ForTrainingLib():
             self.logger.warning("fortraininglib.get_language_name({language_code}): Unexpected error")
             return None
 
-
     def get_file_url(self, filename: str) -> Optional[str]:
         """ Return the full URL of the requested file
 
@@ -151,11 +147,11 @@ class ForTrainingLib():
             if len(list(json["query"]["pages"])) == 1:
                 page_number = list(json["query"]["pages"])[0]
             else:
-                self.logger.warning(f"ForTrainingLib:get_file_url: Couldn't get URL of file {filename}: multiple pages detected")
+                self.logger.warning(f"Couldn't get URL of {filename}: multiple pages detected")
                 return None
 
             if int(page_number) == -1:
-                self.logger.info(f"ForTrainingLib:get_file_url: file {filename} doesn't seem to exist.")
+                self.logger.info(f"Couldn't get URL of {filename}: file doesn't seem to exist.")
                 return None
             return json["query"]["pages"][page_number]["imageinfo"][0]["url"]
         except KeyError:
@@ -199,14 +195,12 @@ class ForTrainingLib():
         except KeyError:
             return None
 
-
     def get_translated_title(self, page: str, language_code: str, revision_id: Optional[int] = None) -> Optional[str]:
         """
         Returns the translated title of a worksheet
         @return None on error
         """
         return self.get_page_source(f"Translations:{page}/Page display title/{language_code}", revision_id)
-
 
     def get_translated_unit(self, page: str, language_code: str, identifier: int,
                             revision_id: Optional[int] = None) -> Optional[str]:
@@ -223,7 +217,6 @@ class ForTrainingLib():
         @return the translated string or None if translation doesn't exist
         """
         return self.get_page_source(f"Translations:{page}/{identifier}/{language_code}", revision_id)
-
 
     def get_pdf_name(self, page: str, language_code: str) -> Optional[str]:
         """ returns the name of the PDF associated with that worksheet translated into a specific language
@@ -312,10 +305,10 @@ class ForTrainingLib():
                 break
             counter += 1
         if ('continue' in json) or (counter == 4):
-            self.logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, still no result")
+            self.logger.warning(f"Error while trying to get all translations of {page} - tried 3 times, giving up")
             return {}
 
-        available_translations: Dict[str, TranslationProgress] = {}     # map of language codes to the translation progress
+        available_translations: Dict[str, TranslationProgress] = {}     # map of language codes -> translation progress
         try:
             for line in json['query']['messagegroupstats']:
                 if line['translated'] > 0:
@@ -328,10 +321,9 @@ class ForTrainingLib():
 
         return available_translations
 
-
     def list_page_templates(self, page: str) -> List[str]:
         """ Returns list of templates that are transcluded by a given page
-        Strips potential language code at the end of a template (e.g. returns 'Template:Italic', not 'Template:Italic/en')
+        Strips potential language code at the end of a template (returns 'Template:Italic', not 'Template:Italic/en')
         See also https://translatewiki.net/w/api.php?action=help&modules=query%2Btemplates
         Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&titles=Polish&prop=templates
         @return empty list in case of an error
@@ -359,11 +351,10 @@ class ForTrainingLib():
         except KeyError:
             return []
 
-
     def get_translation_units(self, page: str, language_code: str, limit: int = 500) -> Optional[TranslatedPage]:
         """
         Get the translation units of a page translated into the language identified by language_code
-        Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de
+        Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de  # noqa: E501
         @param limit: Maximum number of translation units to return (default limit in API is also 500)
         @return None in case of an error
         """
@@ -388,10 +379,10 @@ class ForTrainingLib():
             for tu in json["query"]["messagecollection"]:
                 if str(tu["targetLanguage"]) != language_code:
                     self.logger.warning(f"Unexpected error in get_translation_units({page}/{language_code}): "
-                                f"{tu['key']} has targetLanguage {tu['targetLanguage']}")
+                                        f"{tu['key']} has targetLanguage {tu['targetLanguage']}")
                     continue
-                translation_unit = TranslationUnit(str(tu["key"]), language_code,
-                    str(tu["definition"]), tu["translation"])   # tu["translation"] may be None
+                translation_unit = TranslationUnit(str(tu["key"]), language_code, str(tu["definition"]),
+                                                   tu["translation"])   # tu["translation"] may be None
                 result.append(translation_unit)
             return TranslatedPage(page, language_code, result)
         except KeyError as err:
@@ -416,7 +407,6 @@ class ForTrainingLib():
         ret = ret.lower()
         return 'sidebar-' + ret
 
-
     def expand_template(self, raw_template: str) -> str:
         """
         TODO more documentation
@@ -433,7 +423,6 @@ class ForTrainingLib():
             self.logger.warning(f"Warning: couldn't expand template {raw_template}")
             return ""
 
-
     def get_cc0_notice(self, version: str, language_code: str) -> str:
         """
         Returns the translated CC0 notice (https://www.4training.net/Template:CC0Notice)
@@ -444,14 +433,13 @@ class ForTrainingLib():
         """
         expanded = self.expand_template("{{CC0Notice/" + language_code + "|" + version + "}}")
         if "mw-translate-fuzzy" in expanded:
-            self.logger.warning("Warning: Template:CC0Notice doesn't seem to be correctly translated into this language. "
-                        "Please check https://www.4training.net/Template:CC0Notice")
+            self.logger.warning("Warning: Template:CC0Notice not correctly translated into this language. "
+                                "Please check https://www.4training.net/Template:CC0Notice")
         if "Template:CC0Notice" in expanded:
-            self.logger.warning("Warning: Template:CC0Notice doesn't seem to be translated into this language. "
-                        "Please translate https://www.4training.net/Template:CC0Notice")
+            self.logger.warning("Warning: Template:CC0Notice not translated into this language. "
+                                "Please translate https://www.4training.net/Template:CC0Notice")
             return "TODO translate https://www.4training.net/Template:CC0Notice"
         return expanded
-
 
     def mark_for_translation(self, title: str, user_name: str, password: str):
         """
@@ -509,7 +497,6 @@ class ForTrainingLib():
             })
         except KeyError as error:
             self.logger.warning(f"mark_for_translation failed: KeyError, no key named {error}")
-
 
     # Other possibly relevant API calls:
     # https://www.4training.net/mediawiki/api.php?action=query&meta=messagetranslations&mttitle=Translations:Church/44

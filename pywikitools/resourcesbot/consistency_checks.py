@@ -52,8 +52,8 @@ class ConsistencyCheck(LanguagePostProcessor):
             if content is None:
                 self.logger.info(f"Couldn't load {page}/{identifier}/{language_info.language_code}")
                 return None
-            return TranslationUnit(f"{page}/{identifier}", language_info.language_code, \
-                "", content) # Leaving definition parameter empty because we don't have it and don't need it
+            # Leaving definition parameter empty because we don't have it and don't need it
+            return TranslationUnit(f"{page}/{identifier}", language_info.language_code, "", content)
 
         elif identifier == self.TITLE:
             worksheet_info: Optional[WorksheetInfo] = language_info.get_worksheet(page)
@@ -122,7 +122,6 @@ class ConsistencyCheck(LanguagePostProcessor):
                 language_info, "Bible_Reading_Hints_(Starting_with_the_Creation)", self.TITLE))
         return ret1 and ret2
 
-
     def check_gods_story_titles(self, language_info: LanguageInfo) -> bool:
         """Titles of the two different variants of God's Story should start the same"""
         ret1 = self.should_start_with(
@@ -136,7 +135,7 @@ class ConsistencyCheck(LanguagePostProcessor):
     def check_who_do_i_need_to_forgive(self, language_info: LanguageInfo) -> bool:
         """Should both be 'God, who do I need to forgive?'"""
         return self.should_be_equal(
-            self.load_translation_unit(language_info, "How_to_Continue_After_a_Prayer_Time", 11), \
+            self.load_translation_unit(language_info, "How_to_Continue_After_a_Prayer_Time", 11),
             self.load_translation_unit(language_info, "Forgiving_Step_by_Step", 34))
 
     def check_book_of_acts(self, language_info: LanguageInfo) -> bool:
@@ -156,6 +155,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         self.check_who_do_i_need_to_forgive(language_info)
         self.check_bible_reading_hints_links(language_info)
         self.check_book_of_acts(language_info)
+
 
 """
 TODO implement more consistency checks:

@@ -32,11 +32,11 @@ each base class gets called
 import copy
 import functools
 from inspect import signature
-import logging
 from typing import Callable, DefaultDict, Dict, Final, Generator, List
 from collections import defaultdict
 
 from pywikitools.lang.translated_page import TranslationUnit
+
 
 def use_snippets(func):
     """Decorator: indicate that a correction function should run on the snippets of a translation unit"""
@@ -46,6 +46,7 @@ def use_snippets(func):
     decorator_use_snippets.use_snippets = True
     return decorator_use_snippets
 
+
 def suggest_only(func):
     """Decorator: correction function should not directly correct but suggest its changes to the user"""
     @functools.wraps(func)
@@ -53,6 +54,7 @@ def suggest_only(func):
         return func(*args, **kwargs)
     decorator_suggest_only.suggest_only = True
     return decorator_suggest_only
+
 
 class CorrectionResult:
     """Returns any warnings and suggestions of running a corrector on one translation unit
@@ -67,6 +69,7 @@ class CorrectionResult:
         self.correction_stats: Final[Dict[str, int]] = correction_stats
         self.suggestion_stats: Final[Dict[str, int]] = suggestion_stats
         self.warnings: Final[str] = warnings
+
 
 class CorrectorBase:
     """

@@ -1,5 +1,4 @@
 import copy
-from typing import List, Tuple
 import unittest
 from pywikitools.fortraininglib import ForTrainingLib
 
@@ -35,9 +34,13 @@ negative feelings towards Him.
 """
 
 TEST_UNIT_WITH_DEFINITION_DE_ERROR = """;Mir selbst vergeben
-:Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen. Gott bietet uns einen Weg an, wie er uns durch Jesus Christus vergeben und reinigen möchte. Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden.
+:Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen.
+Gott bietet uns einen Weg an, wie er uns durch Jesus Christus vergeben und reinigen möchte.
+Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden.
 Gott „vergeben“
-:Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn. Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig, dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
+:Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn.
+Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig,
+dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
 """
 
 TEST_UNIT_WITH_HEADLINE = """== Dealing with Money ==
@@ -60,6 +63,7 @@ LIST_TEST = """* soll er Gott um Vergebung bitten, dass er die Lüge geglaubt un
 * fragen, „Gott, was ist die Wahrheit stattdessen?“
 Lass denjenigen fragen, „Welche Lüge habe ich dadurch über mich gelernt?“ und fahre wie oben fort.
 """
+
 
 class TestTranslationUnit(unittest.TestCase):
     def test_untranslated_unit(self):
@@ -121,6 +125,11 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(len(with_br), 3)
         self.assertEqual(len([s for s in with_br if s.is_text()]), 2)
         self.assertEqual(TEST_UNIT_WITH_BR, "".join([s.content for s in with_br]))
+
+        # Test that <br/> matches also a following new line
+        match_br = TranslationUnit.split_into_snippets("Line<br/>\nNext line")
+        self.assertEqual(match_br[1].content, "<br/>\n")
+        self.assertEqual(match_br[2].content, "Next line")
 
     def test_is_translation_well_structured(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
@@ -205,6 +214,7 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertFalse(unit1 < unit3)
         self.assertTrue(unit2 < unit1)
 
+
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):
         self.assertTrue(TranslationSnippet(SnippetType.MARKUP_SNIPPET, "<br>").is_br())
@@ -225,6 +235,7 @@ class TestTranslationSnippet(unittest.TestCase):
         snippet = TranslationSnippet(SnippetType.MARKUP_SNIPPET, "<br/>")
         self.assertTrue(str(snippet).endswith("<br/>"))
         self.assertTrue(str(snippet).startswith("MARKUP"))
+
 
 class TestTranslatedPage(unittest.TestCase):
     def test_untranslated_page(self):

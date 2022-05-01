@@ -8,6 +8,7 @@ from urllib.parse import unquote
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
+
 class TranslationProgress:
     __slots__ = ["translated", "fuzzy", "total"]
 
@@ -56,6 +57,7 @@ class FileInfo:
     This shouldn't be modified after creation
     """
     __slots__ = ['file_type', 'url', 'timestamp', 'translation_unit']
+
     def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str],
                  translation_unit: Optional[int] = None):
         """
@@ -99,7 +101,6 @@ class FileInfo:
         if pos > -1:
             return self.url[pos+1:]
         return self.url
-
 
     def __str__(self):
         return f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
@@ -187,7 +188,6 @@ class WorksheetInfo:
         if our_version == english_info.version:
             return True
         return False
-
 
     def __str__(self) -> str:
         """For debugging purposes: Format all data as a human-readable string"""
@@ -359,5 +359,5 @@ class DataStructureEncoder(json.JSONEncoder):
                 file_json["translation_unit"] = obj.translation_unit
             return file_json
         if isinstance(obj, TranslationProgress):
-            return { "translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total }
+            return {"translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total}
         return super().default(obj)

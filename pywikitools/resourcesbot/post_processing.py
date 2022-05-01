@@ -20,6 +20,7 @@ class LanguagePostProcessor(ABC):
         """Entry point"""
         pass
 
+
 class GlobalPostProcessor(ABC):
     """Base class for all functionality doing useful stuff with the data on all languages"""
 
