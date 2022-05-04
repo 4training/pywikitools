@@ -13,15 +13,13 @@ Python Mediawiki Tools
 ======================
 
 Python tools for mediawiki with the Translate plugin (some based on pywikibot).
-Used for https://www.4training.net but hopefully more projects will benefit from it.
-That's why currently it's focusing a lot on 4training.net but our plan is
-to make it more generic.
+This is used for https://www.4training.net to remove some bottlenecks of the project,
+providing different automation and reports (TODO: document the outcomes of these scripts).
+Hopefully others can benefit from some of the scripts as well!
 
 * Free software: GNU General Public License v3
 
 .. NOT YET * Documentation: https://pywikitools.readthedocs.io.
-
-See https://github.com/orgs/4training/projects/1 for the project roadmap
 
 | The tools use the mediawiki API. URL and all documentation:
   https://www.4training.net/mediawiki/api.php
@@ -32,12 +30,12 @@ See https://github.com/orgs/4training/projects/1 for the project roadmap
 Setup:
 ------
 
-**Note**: pywikitools base path refers to the directory, where you can find ``README.rst``, ``CONTRIBUTING.rst`` and ``requirements.txt``. 
+**Note**: pywikitools base path refers to the directory, where you can find ``README.rst``, ``CONTRIBUTING.rst`` and ``requirements.txt``.
 
 #. Install required libraries: ``pip install -r requirements.txt``:
 
     * Follow these steps if you are using a virtual environment on a Linux machine:
-    
+
    	    * To install ``virtualenv``: ``sudo python3 -m pip install virtualenv``
    	    * To create a new virtual environment: ``virtualenv --system-site-packages new_venv_name``. It is important to include the tag ``--system-site-packages``, else the virtual environment will not be able to import the uno package into your working environment.
    	    * To activate the virtual environment: ``source new_venv_name/bin/activate``
@@ -47,7 +45,7 @@ Setup:
 
     * This is not necessary for all scripts, only for our LibreOffice module and scripts using it (``translateodt.py``)
     * Running the complete test suite requires it, though
-        
+
 #. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
    (same directory where the python scripts you want to run are located).
 
@@ -58,19 +56,19 @@ Setup:
     * Copy the file ``4training_family.py`` from ``~/pywikitools/pywikibot/families`` into ``~/pywikitools/pywikibot/core_stable/pywikibot/families``.
     * Change into the ``~/pywikitools/pywikibot/core_stable`` directory, where you can also find the file ``pwb.py``.
     * Run this command from the terminal: ``python3 pwb.py generate_user_files``
-    
+
         * select 1: 4training family
         * enter the bot user name (Request the username from Samuel)
         * don't enter a new password here
     * Set up configuration in ``config.ini``:
-    
+
         * ``cp config.example.ini config.ini``
         * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
 
 #. Make sure the pywikitools package is found by python. Options:
 
     * Create a new PTH file in the site-packages directory:
-    
+
         * If you do not use a virtual environment: ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it
         * If you use a virtual environment: ``~/your_env_name/lib/python3.8/site-packages``
         * Create a new PTH file ``pywikitools.pth`` and copy the base path into the new file: ``/YOUR_HOME_PATH/pywikitools/``.
@@ -88,12 +86,18 @@ Run scripts
 
 If you're not yet logged in, pywikibot will ask you for the password for the user you defined in ``user-config.py``. After successful login, the login cookie is stored in ``pywikibot.lwp`` so you don't have to log in every time again.
 
-Testing
--------
+Testing and ensuring good code quality
+--------------------------------------
 
-From your base pywikitools path, run ``python3 -m unittest discover -s pywikitools/test``
+From your base pywikitools path, run ``python3 -m unittest discover -s pywikitools/test`` to run the test suite.
+Run also ``flake8 .`` to check for any linting issues.
 
-With GitHub Actions these are run also on any push or pull request in the repository. The goal is to cover all important code parts with good tests. Some of the tests are making real API calls, that's why running the tests can take half a minute. `More details`_
+With GitHub Actions these two commands are run also on any push or pull request in the repository.
+The goal is to cover all important code parts with good tests.
+Some of the tests are making real API calls, that's why running the tests can take half a minute. `More details`_
+
+We use codecov to calculate the coverage ratio. You can see it in the codecov badge on the repository page or
+check out the details on `codecov.io`_
 
 
 File overview
@@ -111,7 +115,7 @@ fortraininglib.py
     Our central library with important functions and API calls
 generateodtbot.py
     Wrapper script for translateodt.py (requires pywikibot)
-resourcesbot.py
+resources_bot.py
     Automatically fill out the “Available training resources in...” for each language (requires pywikibot)
 translateodt.py
     Processes English ODT file and replaces it with the translation into another language
@@ -157,6 +161,7 @@ Credits
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
-.. _More details: https://www.holydevelopers.net/python-setting-up-automatic-testing-with-github-actions`_
+.. _More details: https://www.holydevelopers.net/python-setting-up-automatic-testing-with-github-actions
+.. _codecov.io: https://app.codecov.io/gh/4training/pywikitools
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage

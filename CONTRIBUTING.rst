@@ -11,28 +11,11 @@ You can contribute in many ways:
 Types of Contributions
 ----------------------
 
-Report Bugs
-~~~~~~~~~~~
-
-Report bugs at https://github.com/4training/pywikitools/issues.
-
-If you are reporting a bug, please include:
-
-* Your operating system name and version.
-* Any details about your local setup that might be helpful in troubleshooting.
-* Detailed steps to reproduce the bug.
-
-Fix Bugs
-~~~~~~~~
-
-Look through the GitHub issues for bugs. Anything tagged with "bug" and "help
-wanted" is open to whoever wants to implement it.
-
 Implement Features
 ~~~~~~~~~~~~~~~~~~
 
-Look through the GitHub issues for features. Anything tagged with "enhancement"
-and "help wanted" is open to whoever wants to implement it.
+Look through the GitHub issues: If there is nobody assigned for an issue it is open to whoever wants to
+implement it.
 
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
@@ -63,11 +46,7 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
 
     $ git clone git@github.com:your_name_here/pywikitools.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
-
-    $ mkvirtualenv pywikitools
-    $ cd pywikitools/
-    $ python3 setup.py develop
+3. Follow the setup instructions in README.rst
 
 4. Create a branch for local development::
 
@@ -75,14 +54,10 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+5. When you're done making changes, check that all tests still pass and that flake8 has nothing to complain::
 
-    $ flake8 pywikitools tests
-    $ python3 setup.py test or pytest
-    $ tox
-
-   To get flake8 and tox, just pip install them into your virtualenv.
+    $ python3 -m unittest discover -s pywikitools/test
+    $ flake8 .
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -119,33 +94,13 @@ Pull Request Guidelines
 Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
-2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into a function with a docstring, and add the
-   feature to the list in README.rst.
-3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. Check
-   https://travis-ci.com/4training/pywikitools/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+2. If the pull request adds functionality, the docs should be updated. Minimum
+   is to make sure functions have correct docstrings.
+3. Write meaningful commit messages
 
 Tips
 ----
 
 To run a subset of tests::
 
-
-    $ python3 -m unittest tests.test_pywikitools
-
-Deploying
----------
-
-TODO we're not yet using Travis nor PyPI but that would be nice.
-Maybe someone can help with setting this up?
-
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
-
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
-
-Travis will then deploy to PyPI if tests pass.
+    $ python3 pywikitools/test/test_script.py
