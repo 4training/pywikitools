@@ -1,3 +1,4 @@
+import os
 import re
 import logging
 import json
@@ -6,6 +7,7 @@ from typing import List, Optional, Dict, Tuple
 import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
+from pywikitools.pdftools.metadata import check_metadata
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
@@ -34,6 +36,12 @@ class ResourcesBot:
         self.site: pywikibot.site.APISite = pywikibot.Site()
         if not self._config.has_option('mediawiki', 'baseurl'):
             raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+        if not self._config.has_option("Paths", "temp"):
+            self.logger.warning("Missing path for temporary files in config.ini")
+            self._config.set("Paths", "temp", os.path.abspath(os.getcwd()) + "/temp/")
+        if not os.path.isdir(self._config.get("Paths", "temp")):
+            os.makedirs(self._config.get("Paths", "temp"))
+
         # TODO also use config.get('mediawiki', 'apipath')
         self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'))
         self._limit_to_lang: Optional[str] = limit_to_lang
@@ -152,15 +160,31 @@ class ResourcesBot:
                 self.logger.warning(f"Warning: translation {worksheet.page}/{english_file_info.translation_unit}/"
                                     f"{worksheet.language_code} (for {english_file_info.file_type} file) {warning}")
             return
-        self._add_file_type(worksheet, english_file_info.file_type, file_name)   # type:ignore (file_name is not None)
+        assert file_name is not None    # Make mypy happy in the next line
+        self._add_file_type(worksheet, english_file_info.file_type, file_name)
 
     def _add_file_type(self, worksheet: WorksheetInfo, file_type: str, file_name: str, unit: Optional[int] = None):
         """Try to add details on this translated file to worksheet - warn if it doesn't exist."""
         try:
             file_page = pywikibot.FilePage(self.site, file_name)
             if file_page.exists():
+                metadata = None
+                if file_type == "pdf":
+                    # If it's a PDF, we try to analyze the metadata and save it also in our data structure
+                    temp_file = os.path.join(self._config.get("Paths", "temp"), file_name)
+                    if file_page.download(temp_file):
+                        metadata = check_metadata(self.fortraininglib, temp_file, worksheet)
+                        if not metadata.correct:
+                            self.logger.warning(f"{file_name} metadata is incorrect: {metadata.warnings}")
+                        if not metadata.pdf1a:
+                            self.logger.info(f"{file_name} is not PDF/1A")
+                        if metadata.only_docinfo:
+                            self.logger.info(f"{file_name} uses only outdated DocInfo in PDF metadata")
+                        os.remove(temp_file)
+                    else:
+                        self.logger.warning(f"Downloading {file_name} failed. Couldn't analyze PDF metadata")
                 worksheet.add_file_info(file_type=file_type, from_pywikibot=file_page.latest_file_info,
-                                        unit=unit)
+                                        unit=unit, metadata=metadata)
             else:
                 self.logger.warning(f"Page {worksheet.page}/{worksheet.language_code}: Couldn't find {file_name}.")
         except pywikibot.exceptions.Error as err:

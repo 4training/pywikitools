@@ -32,7 +32,7 @@ class TestResourcesBot(unittest.TestCase):
     def setUp(self):
         self.config = ConfigParser()
         self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"},
-                               "Paths": {"logs": "~/"}})    # Fill this to prevent a warning
+                               "Paths": {"logs": "~/", "temp": "~/temp/"}})    # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
 
     @patch("pywikibot.FilePage")
@@ -40,10 +40,12 @@ class TestResourcesBot(unittest.TestCase):
         mock_filepage.return_value.exists.return_value = True
         mock_filepage.return_value.latest_file_info.url = TEST_URL
         mock_filepage.return_value.latest_file_info.timestamp = datetime.fromisoformat(TEST_TIME)
+        mock_filepage.return_value.download.return_value = False
 
         progress = TranslationProgress(**TEST_PROGRESS)
         worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress, "1.2")
-        self.bot._add_english_file_infos(HEARING_FROM_GOD, worksheet_info)
+        with self.assertLogs("pywikitools.resourcesbot", level="WARNING"):  # warning for not checking PDF metadata
+            self.bot._add_english_file_infos(HEARING_FROM_GOD, worksheet_info)
         self.assertTrue(worksheet_info.has_file_type("pdf"))
         self.assertTrue(worksheet_info.has_file_type("odt"))
 
@@ -51,6 +53,23 @@ class TestResourcesBot(unittest.TestCase):
         worksheet_info = WorksheetInfo("Languages", "en", "Languages", progress, "1.2")
         self.bot._add_english_file_infos("Some mediawiki content...", worksheet_info)
         self.assertEqual(len(worksheet_info.get_file_infos()), 0)
+
+    @patch("pywikitools.resourcesbot.bot.os")
+    @patch("pywikibot.FilePage")
+    def test_add_file_type(self, mock_filepage, mock_os):
+        # Testing with reading metadata from a real PDF that is in our repo
+        mock_filepage.return_value.exists.return_value = True
+        mock_os.path.join.return_value = join(dirname(abspath(__file__)), "data", "Gottes_Reden_wahrnehmen.pdf")
+        mock_filepage.return_value.download.return_value = True
+        mock_filepage.return_value.latest_file_info.url = "https://www.4training.net/test/Gottes_Reden_wahrnehmen.pdf"
+        mock_filepage.return_value.latest_file_info.timestamp = datetime(1970, 1, 1)
+        progress = TranslationProgress(**TEST_PROGRESS)
+        worksheet_info = WorksheetInfo("Hearing_from_God", "de", "Gottes Reden wahrnehmen", progress, "1.2")
+        self.bot._add_file_type(worksheet_info, "pdf", "Gottes_Reden_wahrnehmen.pdf")
+        self.assertTrue(worksheet_info.has_file_type("pdf"))
+        pdf_info = worksheet_info.get_file_type_info("pdf")
+        self.assertIsNotNone(pdf_info.metadata)
+        self.assertTrue(pdf_info.metadata.correct)
 
     @patch("pywikibot.FilePage")
     def test_add_file_type_not_existing(self, mock_filepage):

@@ -23,7 +23,6 @@ Command line options:
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
     --rewrite-all: Rewrite all language information pages
     --read-from-cache: Read from the JSON structure instead of querying the current status of all worksheets
-      (TODO: currently only implemented in combination with --lang)
 
 Logging:
     If configured in config.ini (see config.example.ini), output will be logged to three different files
