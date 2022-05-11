@@ -12,7 +12,8 @@ import logging
 import re
 from typing import List
 
-from pywikitools.correctbot.correctors.base import use_snippets
+from pywikitools.correctbot.correctors.base import suggest_only, use_snippets
+
 
 class UniversalCorrector():
     """Has language-independent correction functions"""
@@ -23,6 +24,7 @@ class UniversalCorrector():
 #        """TODO for testing only: Replace e with i"""
 #        return text.replace("e", "i")
 
+    @suggest_only
     @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
         """Fix wrong capitalization at the beginning of a sentence or after a colon.
@@ -34,17 +36,14 @@ class UniversalCorrector():
         # because there may be languages where this doesn't work
 
         # TODO: Quotation marks are not yet covered - double check if necessary
-        if len(text) > 1:
-            find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
-            result: str = text
-            for match in re.finditer(find_wrong_capitalization, text):
-                result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
-            result = result[0].upper() + result[1:]
-            if text.strip().endswith((".", "!", "?")):
-                return result
-            elif result != text:
-                logging.getLogger('pywikitools.correctbot.universal').warning(f"Please check capitalization in {repr(text)}")
-        return text
+        if len(text) <= 1:
+            return text
+        find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
+        result: str = text
+        for match in re.finditer(find_wrong_capitalization, text):
+            result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
+        result = result[0].upper() + result[1:]
+        return result
 
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:
         """Reduce multiple spaces to one space"""
@@ -56,10 +55,10 @@ class UniversalCorrector():
         check_missing_spaces = re.compile(r'([.!?;,؛،؟])([\w])')
         # As we need to check for exceptions (surrounded by digits), it's a bit complicated. Otherwise it'd be just
         # return re.sub(check_missing_spaces, r'\1 \2', text)
-        last_start_pos = 0          # necessary to not run into endless loops
+        last_start_pos = 0              # necessary to not run into endless loops
         while match := check_missing_spaces.search(text, last_start_pos):
-            if match.start(1) == 0: # it would be strange if our text directly started with a punctuation mark.
-                last_start_pos += 1 # also the following if statement would raise an IndexError
+            if match.start(1) == 0:     # it would be strange if our text directly started with a punctuation mark.
+                last_start_pos += 1     # also the following if statement would raise an IndexError
                 continue
             if match.string[match.start(1) - 1].isdigit() and match.group(2).isdigit():
                 # Exception: Don't correct if punctuation mark is directly between characters
@@ -126,8 +125,6 @@ class UniversalCorrector():
                 text += '<i>' if counter % 2 == 1 else '</i>'
                 text += splitted_text[counter]
         return text
-
-
 
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""

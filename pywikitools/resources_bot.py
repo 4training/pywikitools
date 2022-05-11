@@ -10,7 +10,8 @@ Main steps:
        This will take quite some time as it is many API calls
     2. Update language overview pages where necessary
        For example: https://www.4training.net/German#Available_training_resources_in_German
-       To make that easier, a JSON representation is saved for every language, e.g. https://www.4training.net/4training:de.json
+       To make that easier, a JSON representation is saved for every language, e.g.
+       https://www.4training.net/4training:de.json
        The script will compare its results to the JSON and update the JSON and the language overview page when necessary
     3. Post-processing (TODO: not yet implemented)
        With information like "we now have a Hindi translation of the Prayer worksheet" we can do helpful things, e.g.
@@ -22,7 +23,6 @@ Command line options:
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
     --rewrite-all: Rewrite all language information pages
     --read-from-cache: Read from the JSON structure instead of querying the current status of all worksheets
-      (TODO: currently only implemented in combination with --lang)
 
 Logging:
     If configured in config.ini (see config.example.ini), output will be logged to three different files
@@ -70,7 +70,7 @@ def parse_arguments() -> ResourcesBot:
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
     parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
-    parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists, also if there have been no changes')
+    parser.add_argument('--rewrite-all', action='store_true', help='rewrites all overview lists')
 
     args = parser.parse_args()
     limit_to_lang = None
@@ -83,6 +83,7 @@ def parse_arguments() -> ResourcesBot:
     set_loglevel(config, numeric_level)
     return ResourcesBot(config, limit_to_lang=limit_to_lang, rewrite_all=args.rewrite_all,
                         read_from_cache=args.read_from_cache)
+
 
 def set_loglevel(config: ConfigParser, loglevel: int):
     """

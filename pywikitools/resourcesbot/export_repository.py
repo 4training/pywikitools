@@ -7,6 +7,7 @@ from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
+
 class ExportRepository(LanguagePostProcessor):
     """
     Export the html files (result of ExportHTML) to a git repository.
@@ -70,4 +71,3 @@ class ExportRepository(LanguagePostProcessor):
             self.logger.info(f"Pushed to remote, result: {result[0].summary}")
         else:
             self.logger.info(f"ExportRepository {language_info.language_code}: No changes.")
-

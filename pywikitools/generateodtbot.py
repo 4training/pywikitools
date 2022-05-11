@@ -8,7 +8,6 @@ Bot that is generating translated odt files:
     - sends notification to admin with log output (both warning and debug level)
 """
 import pywikibot
-from pywikibot.data import api
 import getopt
 import os
 import sys
@@ -32,7 +31,7 @@ config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 logger = logging.getLogger('pywikitools.generateodtbot')
 logger.setLevel(logging.DEBUG)
 fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
-log_path = config.get('Paths', 'logs', fallback = '')
+log_path = config.get('Paths', 'logs', fallback='')
 if log_path == '':
     logger.warning('No log directory specified in configuration. Using current working directory')
 if config.has_option('generateodtbot', 'logfile'):
@@ -58,9 +57,11 @@ sh_debug.setLevel(logging.DEBUG)
 sh_debug.setFormatter(fformatter)
 logger.addHandler(sh_debug)
 
+
 # Reading command line arguments
 def usage():
     print("Usage: python3 pwb.py generateodtbot.py worksheet languagecode username")
+
 
 def notify_user(username: str, worksheet: str, languagecode: str, admin: bool):
     user = pywikibot.User(global_site, username)
@@ -73,11 +74,13 @@ https://www.dropbox.com/sh/sghbc73ekwm39r2/AADPw-KftZkwjXUM6e3Xqdtpa?dl=0
 
 Please check it and adjust the formatting so that everything looks nice and fits well.
 When you're done, save the file and upload it into the system: https://www.4training.net/Special:Upload
-Export it as PDF (with the right options) and upload the PDF file as well. Afterwards it will be available for everyone to download and use it easily.
+Export it as PDF (with the right options) and upload the PDF file as well.
+Afterwards it will be available for everyone to download and use it easily.
 Here you find the detailed documentation for all the steps:
 https://www.4training.net/4training:Creating_and_Uploading_Files
 
-Take a moment to think and pray: Who would need that content and you could teach them? Who could you send this file so that they would benefit from it? Who could you give a printed copy?
+Take a moment to think and pray: Who would need that content and you could teach them?
+Who could you send this file so that they would benefit from it? Who could you give a printed copy?
 Ask us for support if you have any questions on how to teach this worksheet or want more training.
 
 Thank you very much for all your work!
@@ -118,9 +121,10 @@ for o, a in opts:
 
 logger.debug("worksheet: " + worksheet + ", languagecode: " + languagecode + ", username: " + username)
 
-# We use an exclusive lock here because I'm afraid there could be race conditions if two scripts access LibreOffice at the same time
+# We use an exclusive lock here because I'm afraid there could be race conditions if two scripts access
+# LibreOffice at the same time
 # So better safe than sorry: We use an exclusive lock here for the time the script is connecting with LibreOffice
-base_path = config.get('Paths', 'base', fallback = '')
+base_path = config.get('Paths', 'base', fallback='')
 if base_path == '':
     logger.warning('No base directory specified in configuration. Using current working directory')
 f = open(base_path + LOCKFILENAME, 'w')
@@ -128,8 +132,8 @@ retries = 0
 got_lock = False
 while not got_lock:
     try:
-       fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError as e:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
         retries += 1
         logger.debug("Couldn't get exclusive lock. Waiting 5s and trying again. This is attempt #" + str(retries))
         if retries > CONNECT_TRIES:

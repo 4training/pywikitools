@@ -14,6 +14,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 
 from pywikitools.correctbot.correct_bot import CorrectBot
 
+
 def parse_arguments() -> argparse.Namespace:
     """
     Parses the arguments given from outside

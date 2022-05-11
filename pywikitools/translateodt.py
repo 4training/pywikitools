@@ -34,7 +34,7 @@ from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
 
-SNIPPET_WARN_LENGTH = 3 # give a warning when search or replace string is shorter than 3 characters
+SNIPPET_WARN_LENGTH = 3     # give a warning when search or replace string is shorter than 3 characters
 # The following templates don't contain any translation units and can be ignored
 IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
                     'Template:PrintPdfDownload',
@@ -44,6 +44,7 @@ IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:Pd
 # because the translation of "version" is very close to the English word "version"
 # TODO should 'ko' be in this list?
 NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
+
 
 class TranslateOdtConfig:
     """Contains configuration on how to process one worksheet:
@@ -61,11 +62,13 @@ class TranslateOdtConfig:
     Template:BibleReadingHints/6 = 5
     """
     __slots__ = ["ignore", "multiple"]
+
     def __init__(self):
         # Set of translation unit identifiers that shouldn't be processed
         self.ignore: Final[Set[str]] = set()
         # Translation unit identifier -> number of times it should be processed
         self.multiple: Final[Dict[str, int]] = {}
+
 
 class TranslateODT:
     def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
@@ -75,9 +78,9 @@ class TranslateODT:
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
         self.config: ConfigParser = ConfigParser()
-        self.config.read_dict({'Paths' : {'worksheets' : os.path.abspath(os.getcwd()) + '/worksheets/'},
-                               'translateodt' : {'closeoffice': True,
-                                                 'headless': False}})
+        self.config.read_dict({'Paths': {'worksheets': os.path.abspath(os.getcwd()) + '/worksheets/'},
+                               'translateodt': {'closeoffice': True,
+                                                'headless': False}})
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
         self.config.read_dict(config)
 
@@ -98,7 +101,7 @@ class TranslateODT:
         Logs warnings for certain circumstances
         @return true if we need to do search and replace
         """
-        if orig.endswith((".pdf", ".odt", ".odg")): # if string is a file name, we ignore it
+        if orig.endswith((".pdf", ".odt", ".odg")):     # if string is a file name, we ignore it
             return False
 
         if orig == trans:
@@ -114,7 +117,6 @@ class TranslateODT:
                                     f"This can be totally normal but please check. Replaced {orig} with {trans}")
         return True
 
-
     def _process_snippet(self, orig: str, trans: str):
         """
         Looks at one snippet, does some preparations and tries to do search and replace
@@ -122,11 +124,6 @@ class TranslateODT:
         @param trans the translated string (what we're going to replace it with)
         """
         self.logger.debug(f"process_snippet, orig: {orig}, trans: {trans}")
-        # remove bold/italic/underline formatting from original
-        orig = re.sub("\'\'+|</?[biu]>", '', orig)
-        # replace '' / ''' with <i> / <b> in trans: only these are recognized by LibreOffice.search_and_replace()
-        corrector = UniversalCorrector()
-        trans = corrector.correct_mediawiki_bold_italic(trans)
 
         orig = orig.strip()
         trans = trans.strip()
@@ -154,7 +151,6 @@ class TranslateODT:
         with the translated text snippets"""
         for t in translated_page:           # for each translation unit:
             self.logger.debug(f"Translation unit: {t.get_definition()}")
-            t.remove_links()
 
             is_well_structured, warning = t.is_translation_well_structured()
             if not is_well_structured:  # We can't process this translation unit
@@ -215,6 +211,9 @@ class TranslateODT:
         """
         Clean up translation units before we do search and replace:
         - filter out empty/irrelevant units
+        - remove [[links]]
+        - remove bold/italic/underline formatting from definition
+        - replace '' / ''' with <i> / <b> in translation
         - check order of translation units and rearrange if necessary
         - process config: remove ignored units, replicate units that should be processed multiple times
 
@@ -240,34 +239,65 @@ class TranslateODT:
             if t.identifier in config.ignore:
                 self.logger.info(f"Ignoring translation unit {t.identifier}")
                 continue
+
+            # Do some normalization on the translation unit now: first remove [[Links]]
+            t.remove_links()
+            # remove bold/italic/underline formatting from definition
+            t.set_definition(re.sub("\'\'+|</?[biu]>", '', t.get_definition()))
+            # replace '' / ''' with <i> / <b> in translation (necessary for LibreOffice.search_and_replace())
+            corrector = UniversalCorrector()
+            t.set_translation(corrector.correct_mediawiki_bold_italic(t.get_translation()))
+
             if t.identifier in config.multiple:
                 self.logger.info(f"{t.identifier} will be processed {config.multiple[t.identifier]} times")
                 for i in range(1, config.multiple[t.identifier]):
                     result.append(t)
             result.append(t)
 
-        result.sort()
+        self.special_sort_units(result)
+        return TranslatedPage(translated_page.page, translated_page.language_code, result)
 
-        # Compare all (well-structured) translation units with each other
-        for i in range(len(result)):
-            if not result[i].is_translation_well_structured()[0]:
+    def special_sort_units(self, units: List[TranslationUnit]) -> None:
+        """
+        Order the TranslationUnits in such a way that units with a short snippet
+        (that is part of another one) are moved to the end of the list
+        ["long", "A long sentence", "long sentence"] -> ["A long sentence", "long sentence", "long"]
+
+        Then we first search and replace the long strings, avoiding replacing at the wrong places.
+        This is not a "typical" ordering like ordering alphabetically. That's why we can't use Python's sort()
+        method but really must compare each element with all other elements. This has O(n^2) complexity
+        but for normal use-cases (less than 1000 translation units) that shouldn't be an issue
+
+        If no snippet contains another one, nothing will be re-ordered
+        @param units: The list of translation units will be re-ordered in-place
+        """
+        for i in range(len(units)):
+            if not units[i].is_translation_well_structured()[0]:
                 continue
-            for j in range(len(result)):
+            for j in range(len(units)):
                 if i == j:
                     continue
-                if not result[j].is_translation_well_structured()[0]:
+                # Do the actual sorting
+                if (units[i] < units[j]) and (i < j):
+                    self.logger.info(f"{units[i].get_definition()} is part of {units[j].get_definition()}. "
+                                     f"Reordering. ({i} / {j})")
+                    temp_unit = units[i]
+                    units[i] = units[j]
+                    units[j] = temp_unit
+
+                # More consistency checks
+                if not units[j].is_translation_well_structured()[0]:
+                    self.logger.warning(f"{units[j].get_name()} is not well structured.")
                     continue
-                # compare all of their snippets with each other
-                for i_snippet_orig, i_snippet_trans in result[i]:
-                    if i_snippet_orig.content == i_snippet_trans.content:   # translation == original: will be ignored anyway
+                for i_snippet_orig, i_snippet_trans in units[i]:
+                    if i_snippet_orig.content == i_snippet_trans.content:
+                        # translation == original: will be ignored anyway
                         continue
-                    for _, j_snippet_trans in result[j]:
+                    for _, j_snippet_trans in units[j]:
                         # warn in case a search string can be found in a translation (unlikely but better check)
                         if i_snippet_orig.content in j_snippet_trans.content:
-                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({result[i].get_name()}) '
-                                                f'is in translation "{j_snippet_trans.content}" ({result[j].get_name()})!')
-
-        return TranslatedPage(translated_page.page, translated_page.language_code, result)
+                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) is '
+                                                f'in translation "{j_snippet_trans.content}" ({units[j].get_name()})!')
 
     def read_worksheet_config(self, worksheet: str) -> TranslateOdtConfig:
         """
@@ -351,8 +381,8 @@ class TranslateODT:
 
         # Add footer (Template:CC0Notice) to translation list
         translated_page.add_translation_unit(TranslationUnit("Template:CC0Notice", language_code,
-            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),
-            self.fortraininglib.get_cc0_notice(translated_version, language_code)))
+            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),   # noqa: E128
+            self.fortraininglib.get_cc0_notice(translated_version, language_code)))                 # noqa: E128
 
         odt_path = self._fetch_english_file(translated_page.get_english_info().get_file_type_name("odt"))
         if not odt_path:
@@ -362,7 +392,7 @@ class TranslateODT:
         self.translate_odt(odt_path, translated_page, config)
         self._set_properties(translated_page)
         self._loffice.set_default_style(translated_page.language_code,
-            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")
+            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")     # noqa: E128
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
         save_path = self.config['Paths']['worksheets'] + translated_page.language_code
@@ -417,7 +447,7 @@ class TranslateODT:
         headline += subtitle_lan
 
         # Subject: [English title] [Languagename in English] [Languagename autonym]
-        subject  = page.get_english_info().title
+        subject = page.get_english_info().title
         subject += subtitle_en
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code, 'en'))
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code))
@@ -431,6 +461,7 @@ class TranslateODT:
             cc0_notice += native_to_standard_numeral(page.language_code, page.get_worksheet_info().version)
 
         self._loffice.set_properties(headline, subject, cc0_notice)
+
 
 if __name__ == '__main__':
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']

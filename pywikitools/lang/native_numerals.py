@@ -48,6 +48,7 @@ class NativeNumerals:
         'ta': tamil
     }
 
+
 def native_to_standard_numeral(language_code: str, native_text: str) -> str:
     """
     Replace native numerals in a str with standard numerals.
@@ -61,4 +62,3 @@ def native_to_standard_numeral(language_code: str, native_text: str) -> str:
             native_text = native_text.replace(native_numeral, standard_numeral)
 
     return native_text
-

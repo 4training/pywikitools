@@ -7,6 +7,7 @@ from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
 
+
 class TestWriteReport(unittest.TestCase):
     def setUp(self):
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
@@ -63,6 +64,7 @@ class TestWriteReport(unittest.TestCase):
         write_report = WriteReport(None, force_rewrite=True)
         write_report.run(language_data, changes)
         mock_save.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()

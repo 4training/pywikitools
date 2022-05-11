@@ -4,6 +4,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 
+
 class TestConsistencyCheck(unittest.TestCase):
     def test_extract_link(self):
         cc = ConsistencyCheck(ForTrainingLib("https://www.4training.net"))
@@ -24,6 +25,7 @@ class TestConsistencyCheck(unittest.TestCase):
         self.assertTrue(cc.check_who_do_i_need_to_forgive(language_info))
         self.assertTrue(cc.check_bible_reading_hints_links(language_info))
         self.assertTrue(cc.check_book_of_acts(language_info))
+
 
 if __name__ == '__main__':
     unittest.main()

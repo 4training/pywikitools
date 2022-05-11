@@ -8,6 +8,7 @@ from urllib.parse import unquote
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
+
 class TranslationProgress:
     __slots__ = ["translated", "fuzzy", "total"]
 
@@ -50,17 +51,41 @@ class TranslationProgress:
         return f"{self.translated}+{self.fuzzy}/{self.total}"
 
 
+class PdfMetadataSummary:
+    """Read-only data structure with evaluation result of the PDF metadata"""
+    __slots__ = ["version", "correct", "pdf1a", "only_docinfo", "warnings"]
+
+    def __init__(self, version: str, correct: bool, pdf1a: bool, only_docinfo: bool, warnings: str):
+        """
+        @param version: Extracted version ("" means error)
+        @param correct: Do the metadata contents meet our standards?
+        @param pdf1a: Is the document PDF/1A compatible?
+        @param only_docinfo: Does the PDF only contain docinfo properties? (this is deprecated)
+        @param warnings: Can contain more details on issues
+        """
+        self.version: Final[str] = version
+        self.correct: Final[bool] = correct
+        self.pdf1a: Final[bool] = pdf1a
+        self.only_docinfo: Final[bool] = only_docinfo
+        self.warnings: Final[str] = warnings
+
+    def __str__(self) -> str:
+        result = f"Version: {self.version}, Correct: {self.correct}, PDF/1A: {self.pdf1a}"
+        result += f", only DocInfo: {self.only_docinfo}"
+        if self.warnings != "":
+            result += f" (Warnings: {self.warnings})"
+        return result
+
+
 class FileInfo:
     """
     Holds information on one file that is available on the website
     This shouldn't be modified after creation
     """
-    __slots__ = ['file_type', 'url', 'timestamp', 'translation_unit']
-    def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str],
-                 translation_unit: Optional[int] = None):
-        """
-            file_type: e.g. "pdf" (one of fortraininglib.get_file_types())
-        """
+    __slots__ = ['file_type', 'url', 'timestamp', 'translation_unit', 'metadata']
+
+    def __init__(self, file_type: str, url: str, timestamp: Union[datetime, str], *,
+                 translation_unit: Optional[int] = None, metadata: Optional[PdfMetadataSummary] = None):
         """
         @param file_type: e.g. "pdf" (one of fortraininglib.get_file_types())
         @param url: full URL where the file can be downloaded
@@ -70,10 +95,13 @@ class FileInfo:
                -> English file name can be found in Translations:My_Story_with_God/28/en
                -> German file name can be found in Translations:My_Story_with_God/28/de
                We only store this information for English worksheets
+        @param version: Version number as stored in the metadata (we only extract and store this for PDF files)
+        @param metadata_correct: Does the metadata conform to our standards? (we only check this for PDF files)
         """
         self.file_type: Final[str] = file_type
         self.url: Final[str] = url
         self.translation_unit: Final[Optional[int]] = translation_unit
+        self.metadata: Final[Optional[PdfMetadataSummary]] = metadata
         if isinstance(timestamp, pywikibot.Timestamp):
             # This is tricky: pywikibot.Timestamp derives from datetime
             # but its isoformat() method formats the output with "Z" instead of "+00:00"
@@ -90,7 +118,7 @@ class FileInfo:
                 self.timestamp = datetime.fromisoformat(timestamp)  # But we want to be able to read that format also
             except (ValueError, TypeError):
                 logger = logging.getLogger('pywikitools.resourcesbot.fileinfo')
-                logger.error("Invalid timestamp {timestamp}. {file_type}: {url}.")
+                logger.error(f"Invalid timestamp {timestamp}. {file_type}: {url}.")
                 self.timestamp = datetime(1970, 1, 1)
 
     def get_file_name(self) -> str:
@@ -100,9 +128,13 @@ class FileInfo:
             return self.url[pos+1:]
         return self.url
 
-
     def __str__(self):
-        return f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
+        result = f"{self.file_type} {self.url} {self.timestamp.isoformat()}"
+        if self.translation_unit is not None:
+            result += f", in translation unit: {self.translation_unit}"
+        if self.metadata is not None:
+            result += f", metadata: [{self.metadata}]"
+        return result
 
 
 class WorksheetInfo:
@@ -131,18 +163,20 @@ class WorksheetInfo:
     def add_file_info(self, file_info: Optional[FileInfo] = None,
                       file_type: Optional[str] = None,
                       from_pywikibot: Optional[pywikibot.page.FileInfo] = None,
-                      unit: Optional[int] = None):
+                      unit: Optional[int] = None,
+                      metadata: Optional[PdfMetadataSummary] = None):
         """Add information about another file associated with this worksheet.
         You can call the function in two different ways:
         - providing file_info
-        - providing file_type and from_pywikibot (and potentially unit)
+        - providing file_type and from_pywikibot (and potentially unit and/or metadata)
         This will log on errors but shouldn't raise exceptions
         """
         if file_info is not None:
             self._files[file_info.file_type] = file_info
             return
         assert file_type is not None and from_pywikibot is not None
-        self._files[file_type] = FileInfo(file_type, unquote(from_pywikibot.url), from_pywikibot.timestamp, unit)
+        self._files[file_type] = FileInfo(file_type, unquote(from_pywikibot.url), from_pywikibot.timestamp,
+                                          translation_unit=unit, metadata=metadata)
 
     def get_file_infos(self) -> Dict[str, FileInfo]:
         """Returns all available files associated with this worksheet"""
@@ -187,7 +221,6 @@ class WorksheetInfo:
         if our_version == english_info.version:
             return True
         return False
-
 
     def __str__(self) -> str:
         """For debugging purposes: Format all data as a human-readable string"""
@@ -294,15 +327,24 @@ def json_decode(data: Dict[str, Any]):
     TranslationProgress / FileInfo / WorksheetInfo / LanguageInfo objects.
     @raises AssertionError if data is malformatted
     """
-    if "file_type" in data:
+    if "pdf1a" in data:         # PdfMetadataSummary object
+        assert "version" in data and "correct" in data and "only_docinfo" in data and "warnings" in data
+        return PdfMetadataSummary(data["version"], bool(data["correct"]), bool(data["pdf1a"]),
+                                  bool(data["only_docinfo"]), data["warnings"])
+    if "file_type" in data:     # FileInfo object
         assert "url" in data and "timestamp" in data
         translation_unit: Optional[int] = int(data["translation_unit"]) if "translation_unit" in data else None
-        return FileInfo(data["file_type"], data["url"], data["timestamp"], translation_unit)
+        metadata: Optional[PdfMetadataSummary] = None
+        if "metadata" in data:
+            assert isinstance(data["metadata"], PdfMetadataSummary)
+            metadata = data["metadata"]
+        return FileInfo(data["file_type"], data["url"], data["timestamp"],
+                        translation_unit=translation_unit, metadata=metadata)
 
-    if "translated" in data:
+    if "translated" in data:    # TranslationProgress object
         return TranslationProgress(**data)
 
-    if "page" in data:
+    if "page" in data:          # WorksheetInfo object
         assert "language_code" in data and "title" in data and "version" in data and "progress" in data
         assert isinstance(data["progress"], TranslationProgress)
         version_unit: Optional[int] = int(data["version_unit"]) if "version_unit" in data else None
@@ -314,7 +356,7 @@ def json_decode(data: Dict[str, Any]):
                 worksheet_info.add_file_info(file_info=file_info)
         return worksheet_info
 
-    if "worksheets" in data:
+    if "worksheets" in data:    # LanguageInfo object
         assert "language_code" in data
         assert "english_name" in data
         language_info = LanguageInfo(data["language_code"], data["english_name"])
@@ -327,7 +369,10 @@ def json_decode(data: Dict[str, Any]):
 
 
 class DataStructureEncoder(json.JSONEncoder):
-    """Serializes a LanguageInfo / WorksheetInfo / FileInfo / TranslationProgress object into a JSON string"""
+    """
+    Serializes a LanguageInfo / WorksheetInfo / FileInfo / PdfMetadataSummary / TranslationProgress object
+    into a JSON string
+    """
     def default(self, obj):
         if isinstance(obj, LanguageInfo):
             return {
@@ -357,7 +402,17 @@ class DataStructureEncoder(json.JSONEncoder):
             }
             if obj.translation_unit is not None:
                 file_json["translation_unit"] = obj.translation_unit
+            if obj.metadata is not None:
+                file_json["metadata"] = obj.metadata
             return file_json
+        if isinstance(obj, PdfMetadataSummary):
+            return {
+                "version": obj.version,
+                "correct": obj.correct,
+                "pdf1a": obj.pdf1a,
+                "only_docinfo": obj.only_docinfo,
+                "warnings": obj.warnings
+            }
         if isinstance(obj, TranslationProgress):
-            return { "translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total }
+            return {"translated": obj.translated, "fuzzy": obj.fuzzy, "total": obj.total}
         return super().default(obj)

@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Final, Optional
+from typing import Final, Optional, Tuple
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
@@ -42,7 +42,7 @@ class WriteList(LanguagePostProcessor):
                                            ChangeType.NEW_WORKSHEET, ChangeType.DELETED_WORKSHEET]:
                 needs_rewrite = True
             if (change_item.change_type in [ChangeType.NEW_ODT, ChangeType.DELETED_ODT]) \
-                and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
+                    and language_info.worksheet_has_type(change_item.worksheet, "pdf"):
                 needs_rewrite = True
 
         if needs_rewrite:
@@ -99,6 +99,33 @@ class WriteList(LanguagePostProcessor):
         self.logger.debug(content)
         return content
 
+    def _find_resources_list(self, page_content: str, language: str) -> Tuple[int, int]:
+        """Find the exact positions of the existing list of available training resources in the page
+        @param page_content: mediawiki "source" of the language info page that we're searching through
+        @param language: The language name (as in LanguageInfo.english_name)
+        @return Tuple of start and end position. (0, 0) indicates we couldn't find it
+        """
+        language_re = language.replace('(', r'\(')     # if language name contains brackets, we need to escape them
+        language_re = language_re.replace(')', r'\)')  # Example would be language Turkish (secular)-
+        match = re.search(f"Available training resources in {language_re}\\s*?</translate>\\s*?==", page_content)
+        if not match:
+            return 0, 0
+        list_start = 0
+        list_end = 0
+        # Find all following list entries: must start with *
+        pattern = re.compile(r'^\*.*$', re.MULTILINE)
+        for m in pattern.finditer(page_content, match.end()):
+            if list_start == 0:
+                list_start = m.start()
+            else:
+                # Make sure there is no other line in between: We only want to find lines directly following each other
+                if m.start() > (list_end + 1):
+                    self.logger.info(f"Looks like there is another list later in page {language}. Ignoring it.")
+                    break
+            list_end = m.end()
+            self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
+        return list_start, list_end
+
     def run(self, language_info: LanguageInfo, change_log: ChangeLog) -> None:
         if not self.needs_rewrite(language_info, change_log):
             return
@@ -120,30 +147,10 @@ class WriteList(LanguagePostProcessor):
                 self.logger.warning(f"Redirect target for language {language} doesn't exist!")
                 return
 
-        # Finding the exact positions of the existing list so that we know what to replace
-        language_re = language.replace('(', r'\(')    # in case language name contains brackets, we need to escape them
-        language_re = language_re.replace(')', r'\)') # Example would be language Turkish (secular)
-        match = re.search(f"Available training resources in {language_re}\\s*?</translate>\\s*?==", page.text)
-        if not match:
-            self.logger.warning(f"Didn't find available training resources list in page {language}! Doing nothing.")
-            self.logger.info(page.text)
-            return
-        list_start = 0
-        list_end = 0
-        # Find all following list entries
-        pattern = re.compile(r'^\*.*$', re.MULTILINE)
-        for m in pattern.finditer(page.text, match.end()):
-            if list_start == 0:
-                list_start = m.start()
-            else:
-                # Make sure there is no other line in between: We only want to find lines directly following each other
-                if m.start() > (list_end + 1):
-                    self.logger.info(f"Looks like there is another list later in page {language}. Ignoring it.")
-                    break
-            list_end = m.end()
-            self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
+        list_start, list_end = self._find_resources_list(page.text, language)
         if (list_start == 0) or (list_end == 0):
-            self.logger.warning(f"Couldn't find list entries of available training resources in {language}! Doing nothing.")
+            self.logger.warning(f"Couldn't find list of available training resources in {language}! Doing nothing.")
+            self.logger.info(page.text)
             return
         self.logger.debug(f"Found existing list of available training resources @{list_start}-{list_end}. Replacing...")
         new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info) + page.text[list_end+1:]
@@ -153,7 +160,7 @@ class WriteList(LanguagePostProcessor):
         if page.text == new_page_content:
             return
         page.text = new_page_content
-        page.save("Updated list of available training resources") # TODO write human-readable changes here in the save message
+        page.save("Updated list of available training resources")  # TODO write list of changes here in the save message
         if self._user_name != '' and self._password != '':
             self.fortraininglib.mark_for_translation(page.title(), self._user_name, self._password)
             self.logger.info(f"Updated language information page {language} and marked it for translation.")

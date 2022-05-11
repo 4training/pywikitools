@@ -4,6 +4,7 @@ from typing import List
 from .base import CorrectorBase
 from .universal import UniversalCorrector
 
+
 class FrenchCorrector(CorrectorBase, UniversalCorrector):
     """
     Corrects typical French typos to follow the following rules:
@@ -49,7 +50,7 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
 
         # Now we insert non-breaking spaces if necessary
         text = re.sub('« ', '«\u00A0', text)
-        text = re.sub('«([^\s])', '«\u00A0\\1', text)
+        text = re.sub(r'«([^\s])', '«\u00A0\\1', text)
         text = re.sub(' »', '\u00A0»', text)
-        text = re.sub('([^\s])»', '\\1\u00A0»', text)
+        text = re.sub(r'([^\s])»', '\\1\u00A0»', text)
         return text

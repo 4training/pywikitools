@@ -11,7 +11,8 @@ import unittest
 import json
 from os.path import abspath, dirname, join
 from pywikitools.resourcesbot.changes import ChangeItem, ChangeType
-from pywikitools.resourcesbot.data_structures import FileInfo, TranslationProgress, WorksheetInfo, LanguageInfo, DataStructureEncoder, json_decode
+from pywikitools.resourcesbot.data_structures import FileInfo, PdfMetadataSummary, TranslationProgress, WorksheetInfo, \
+                                                     LanguageInfo, DataStructureEncoder, json_decode
 
 # Currently in our json files it is stored as "2018-12-20T12:58:57Z"
 # but datetime.fromisoformat() can't handle the "Z" in the end
@@ -33,6 +34,7 @@ TEST_LANG_NAME: str = "German"
 TEST_TITLE: str = "Gottes Reden wahrnehmen"
 TEST_VERSION: str = "1.2"
 
+
 class TestTranslationProgress(unittest.TestCase):
     def test_everything(self):
         is_incomplete = [False, False, True]
@@ -47,6 +49,16 @@ class TestTranslationProgress(unittest.TestCase):
             self.assertIn(str(progress.fuzzy), str(progress))
             self.assertIn(str(progress.translated), str(progress))
             self.assertIn(f"/{progress.total}", str(progress))
+
+
+class TestPdfMetadataSummary(unittest.TestCase):
+    def test_serialization(self):
+        summary = PdfMetadataSummary("1.2", True, False, True, "Warnings")
+        json_text = DataStructureEncoder().encode(summary)
+        decoded_summary = json.loads(json_text, object_hook=json_decode)
+        self.assertIsInstance(decoded_summary, PdfMetadataSummary)
+        self.assertEqual(str(decoded_summary), str(summary))
+        self.assertEqual(DataStructureEncoder().encode(decoded_summary), json_text)
 
 
 class TestFileInfo(unittest.TestCase):
@@ -73,13 +85,33 @@ class TestFileInfo(unittest.TestCase):
         self.assertEqual(str(decoded_file_info), str(file_info))
         self.assertEqual(DataStructureEncoder().encode(decoded_file_info), json_text)
 
-        # encode a FileInfo object with translation_unit information
-        file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME), 5)
+        # encode a FileInfo object with translation_unit and metadata information
+        summary = PdfMetadataSummary("1.2", True, False, True, "Warnings")
+        file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME),
+                             translation_unit=5, metadata=summary)
         json_text = DataStructureEncoder().encode(file_info)
         decoded_file_info = json.loads(json_text, object_hook=json_decode)
         self.assertIsInstance(decoded_file_info, FileInfo)
         self.assertEqual(decoded_file_info.translation_unit, 5)
+        self.assertTrue(decoded_file_info.metadata.correct)
+        self.assertFalse(decoded_file_info.metadata.pdf1a)
+        self.assertTrue(decoded_file_info.metadata.only_docinfo)
+        self.assertEqual(decoded_file_info.metadata.version, "1.2")
+        self.assertEqual(decoded_file_info.metadata.warnings, "Warnings")
         self.assertEqual(DataStructureEncoder().encode(decoded_file_info), json_text)
+
+    def test_str(self):
+        file_info = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME))
+        self.assertIn("pdf", str(file_info))
+        self.assertIn(TEST_URL, str(file_info))
+        self.assertIn(TEST_TIME, str(file_info))
+        self.assertNotIn("(", str(file_info))
+        self.assertNotIn(",", str(file_info))
+        summary = PdfMetadataSummary("1.2", True, False, True, "Warnings")
+        file_info2 = FileInfo("pdf", TEST_URL, datetime.fromisoformat(TEST_TIME), translation_unit=4, metadata=summary)
+        self.assertTrue(str(file_info2).startswith(str(file_info)))
+        self.assertIn("in translation unit: 4", str(file_info2))
+        self.assertIn("metadata:", str(file_info2))
 
 
 class TestWorksheetInfo(unittest.TestCase):
@@ -255,6 +287,7 @@ class TestLanguageInfo(unittest.TestCase):
         self.assertEqual(comparison.count_changes(), 1)
         self.assertEqual(next(iter(comparison)).change_type, ChangeType.NEW_WORKSHEET)
 
+
 class TestLanguageInfoComparison(unittest.TestCase):
     """Testing all the different possible outcomes of comparing two LanguageInfo objects"""
     def setUp(self):
@@ -278,7 +311,7 @@ class TestLanguageInfoComparison(unittest.TestCase):
         self.assertIsInstance(language_info2, LanguageInfo)
         changes = set([change_item for change_item in language_info2.compare(self.language_info)])
         self.assertSetEqual(changes, set([ChangeItem("Church", ChangeType.DELETED_ODT),
-                                           ChangeItem("Healing", ChangeType.DELETED_PDF)]))
+                                          ChangeItem("Healing", ChangeType.DELETED_PDF)]))
 
     def test_deleted_worksheet(self):
         with open(join(dirname(abspath(__file__)), "data", "ru_deleted_worksheet.json"), 'r') as f:
@@ -316,9 +349,9 @@ class TestLanguageInfoComparison(unittest.TestCase):
         self.assertSetEqual(changes, set([ChangeItem("Hearing_from_God", ChangeType.UPDATED_WORKSHEET),
                                           ChangeItem("Church", ChangeType.UPDATED_WORKSHEET)]))
 
-
     # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
     # and count_finished_translations()
+
 
 if __name__ == '__main__':
     unittest.main()

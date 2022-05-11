@@ -13,6 +13,7 @@ TODO: Not yet operational
 """
 
 import argparse
+from collections import Counter
 import logging
 import importlib
 import re
@@ -20,8 +21,9 @@ import sys
 from typing import Callable, List, Optional
 
 from pywikitools.fortraininglib import ForTrainingLib
-from pywikitools.correctbot.correctors.base import CorrectorBase
+from pywikitools.correctbot.correctors.base import CorrectionResult, CorrectorBase
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+
 
 class CorrectBot:
     """Main class for doing corrections"""
@@ -50,16 +52,13 @@ class CorrectBot:
 
         raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
-    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> str:
+    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> Optional[CorrectionResult]:
         """
         Check one specific translation unit: Run the right correction rules on it.
         For this we analyze: Is it a title, a file name or a "normal" translation unit?
-
-        Changes will be directly stored in this TranslationUnit.
-        @return any warnings (or empty string if there were none)
         """
         if unit.get_translation() == "":
-            return ""
+            return None
         if unit.is_title():
             # translation unit holds the title
             return corrector.title_correct(unit)
@@ -68,7 +67,7 @@ class CorrectBot:
             return corrector.filename_correct(unit)
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
-            return ""
+            return None
 
         return corrector.correct(unit)
 
@@ -83,18 +82,23 @@ class CorrectBot:
         self._diff = ""
         self._stats = None
         self._correction_counter = 0
+        correction_stats: Counter = Counter()
         translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
         if translated_page is None:
             return False
         corrector = self._load_corrector(language_code)()
         for translation_unit in translated_page:
-            warnings = self.check_unit(corrector, translation_unit)
-            if warnings != "":
-                self.logger.warning(warnings)
-            if (diff := translation_unit.get_translation_diff()) != "":
+            result = self.check_unit(corrector, translation_unit)
+            if result is None:
+                continue
+            if result.warnings != "":
+                self.logger.warning(result.warnings)
+            if (diff := result.corrections.get_translation_diff()) != "":
                 self._diff += f"{translation_unit.get_name()}: {diff}\n"
-        self._stats = corrector.print_stats()
-        self._correction_counter = corrector.count_corrections()
+            correction_stats += Counter(result.correction_stats)
+            # TODO Handle suggestions as well
+        self._stats = corrector.print_stats(correction_stats)
+        self._correction_counter = sum(correction_stats.values())
         return True
 
     def get_stats(self) -> str:

@@ -5,6 +5,7 @@ since the last run of the resourcesbot.
 from enum import Enum
 from typing import List
 
+
 class ChangeType(Enum):
     """
     The different types of changes that can happen.
@@ -19,6 +20,7 @@ class ChangeType(Enum):
     DELETED_WORKSHEET = 'deleted worksheet'
     DELETED_PDF = 'deleted PDF'
     DELETED_ODT = 'deleted ODT'
+
 
 class ChangeItem:
     """
@@ -39,6 +41,7 @@ class ChangeItem:
 
     def __hash__(self) -> int:
         return hash((self.worksheet, self.change_type))
+
 
 class ChangeLog:
     """

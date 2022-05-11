@@ -1,13 +1,15 @@
 from typing import Final, Dict, Optional
 from enum import Enum
-import uno                              # type: ignore
+import uno                              # type: ignore # noqa: F401
 from com.sun.star.lang import Locale    # type: ignore
+
 
 class FontType(Enum):
     """LibreOffice has three different font categories"""
     FONT_STANDARD = 1   # Western Text Font
     FONT_ASIAN = 2      # Asian Text Font
     FONT_CTL = 3        # Complex Text Layout (CTL) Font
+
 
 class Lang:
     """ Defining the parameters of a language for LibreOffice
@@ -52,6 +54,7 @@ class Lang:
     def to_locale(self) -> Locale:
         """ Return a LibreOffice Locale object """
         return Locale(self.language_code, self.country_code, '')
+
 
 # Configuration for each language:
 # - the LibreOffice language configuration counterpart (languagecode, countrycode, category)

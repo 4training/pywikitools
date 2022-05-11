@@ -16,11 +16,13 @@ logger = logging.getLogger('pywikitools.dropboxupload')
 config = configparser.ConfigParser()
 config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
+
 ############################################################################################
 # Check inputs
 ############################################################################################
 def usage():
     print("Usage: python3 dropboxupload.py [-l loglevel] languagecode filename")
+
 
 def _upload(filename: str, content: bytes) -> bool:
     """
@@ -40,7 +42,7 @@ def _upload(filename: str, content: bytes) -> bool:
 
     logger.debug("Trying to write to Dropbox file " + filename + " ...")
     try:
-        dbx.files_upload(content, config['Dropbox'].get('folder') + filename, mode = WriteMode('overwrite'))
+        dbx.files_upload(content, config['Dropbox'].get('folder') + filename, mode=WriteMode('overwrite'))
     except ApiError as err:
         # This checks for the specific error where a user doesn't have
         # enough Dropbox space quota to upload this file
@@ -57,6 +59,7 @@ def _upload(filename: str, content: bytes) -> bool:
     logger.debug("Dropbox upload was successful.")
     return True
 
+
 def upload_string(languagecode: str, filename: str, content: str) -> bool:
     """
     Create a new file in the dropbox (OAuth token in config.ini)
@@ -66,6 +69,7 @@ def upload_string(languagecode: str, filename: str, content: str) -> bool:
     @return True if successful
     """
     return _upload(languagecode + '/' + filename, content.encode())
+
 
 def upload_file(languagecode: str, filename: str) -> bool:
     """
@@ -86,10 +90,11 @@ def upload_file(languagecode: str, filename: str) -> bool:
         return _upload(upload_filename, f.read())
     return True
 
+
 # Check if the script is run as standalone or called by another script
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hl:", ["help","loglevel"])
+        opts, args = getopt.getopt(sys.argv[1:], "hl:", ["help", "loglevel"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)
@@ -104,8 +109,8 @@ if __name__ == '__main__':
         if o == "-l":
             numeric_level = getattr(logging, a.upper(), None)
             if not isinstance(numeric_level, int):
-                raise ValueError('Invalid log level: %s' % loglevel)
-            logging.basicConfig(level = numeric_level)
+                raise ValueError(f"Invalid log level: {a}")
+            logging.basicConfig(level=numeric_level)
             logger.setLevel(numeric_level)
         elif o in ("-h", "--help"):
             usage()
@@ -113,4 +118,3 @@ if __name__ == '__main__':
         else:
             logger.warning("Unhandled option: " + o)
     upload_file(languagecode, filename)
-

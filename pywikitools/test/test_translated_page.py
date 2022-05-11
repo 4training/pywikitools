@@ -1,4 +1,4 @@
-from typing import List, Tuple
+import copy
 import unittest
 from pywikitools.fortraininglib import ForTrainingLib
 
@@ -34,9 +34,13 @@ negative feelings towards Him.
 """
 
 TEST_UNIT_WITH_DEFINITION_DE_ERROR = """;Mir selbst vergeben
-:Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen. Gott bietet uns einen Weg an, wie er uns durch Jesus Christus vergeben und reinigen möchte. Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden.
+:Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen.
+Gott bietet uns einen Weg an, wie er uns durch Jesus Christus vergeben und reinigen möchte.
+Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden.
 Gott „vergeben“
-:Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn. Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig, dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
+:Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn.
+Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig,
+dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
 """
 
 TEST_UNIT_WITH_HEADLINE = """== Dealing with Money ==
@@ -59,6 +63,7 @@ LIST_TEST = """* soll er Gott um Vergebung bitten, dass er die Lüge geglaubt un
 * fragen, „Gott, was ist die Wahrheit stattdessen?“
 Lass denjenigen fragen, „Welche Lüge habe ich dadurch über mich gelernt?“ und fahre wie oben fort.
 """
+
 
 class TestTranslationUnit(unittest.TestCase):
     def test_untranslated_unit(self):
@@ -121,6 +126,11 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(len([s for s in with_br if s.is_text()]), 2)
         self.assertEqual(TEST_UNIT_WITH_BR, "".join([s.content for s in with_br]))
 
+        # Test that <br/> matches also a following new line
+        match_br = TranslationUnit.split_into_snippets("Line<br/>\nNext line")
+        self.assertEqual(match_br[1].content, "<br/>\n")
+        self.assertEqual(match_br[2].content, "Next line")
+
     def test_is_translation_well_structured(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         well_structured, warnings = with_lists.is_translation_well_structured()
@@ -179,43 +189,31 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(definition.content, DEFINITION_WITHOUT_LINK)
         self.assertEqual(translation.content, TRANSLATION_WITHOUT_LINK)
 
-    def _sort_units(self, definitions: List[str], translations: List[str]) -> Tuple[List[str], List[str]]:
-        """Create translation units, sort them and return lists of definitions and translations
-        The return format is for easier comparison of the expected outcome
-        """
-        units: List[TranslationUnit] = []
-        for counter, definition in enumerate(definitions):
-            unit = TranslationUnit(f"Test/{counter}", "de", definition, translations[counter])
-            units.append(unit)
-        units.sort()
-        sorted_definitions_list: List[str] = []
-        sorted_translations_list: List[str] = []
-        for unit in units:
-            sorted_definitions_list.append(unit.get_definition())
-            sorted_translations_list.append(unit.get_translation())
-        return (sorted_definitions_list, sorted_translations_list)
+    def test_copy(self):
+        unit = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        unit.set_definition("Change " + unit.get_definition())
+        unit.set_translation("Change " + unit.get_translation())
+        for orig, trans in unit:
+            pass
+        self.assertEqual(unit._iterate_pos, 13)
+        self.assertTrue(unit.has_translation_changes())
+        well_structured, warnings = unit.is_translation_well_structured()
+        copied_unit = copy.copy(unit)
+        # The copied unit should be "fresh"
+        self.assertFalse(copied_unit.has_translation_changes())
+        self.assertEqual(copied_unit._original_definition, copied_unit._definition)
+        self.assertIsNone(copied_unit._definition_snippets)
+        self.assertIsNone(copied_unit._translation_snippets)
+        self.assertEqual(copied_unit._iterate_pos, 0)
 
-    def test_sorting(self):
-        # Test for correct sorting
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
-            (orig_list, trans_list) = self._sort_units(["this", "this", "is", "thistle"],
-                                                       ["same", "same", "same", "same"])
-        self.assertListEqual(orig_list, ["thistle", "this", "this", "is"])
-        # two different translation units with the same definition but different translations should give a warning
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
-            (orig_list, trans_list) = self._sort_units(["this", "this", "other", "content"],
-                                                       ["same", "different", "same", "same"])
-        self.assertListEqual(orig_list, ["this", "this", "other", "content"])
-        # two snippets in a translation unit
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='INFO'):
-            (orig_list, trans_list) = self._sort_units(["this<br/>is", "this<br/>thistle"],
-                                                       ["same<br/>same", "same<br/>same"])
-        self.assertListEqual(orig_list, ["this<br/>thistle", "this<br/>is"])
-        # reciprocal dependency should give a warning
-        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING') as cm:
-            (orig_list, trans_list) = self._sort_units(["something<br/>range", "thing<br/>strange"],
-                                                       ["same<br/>same", "same<br/>same"])
-        self.assertIn("reciprocal", cm.output[0])
+    def test_comparison(self):
+        unit1 = TranslationUnit("Test/1", "de", "this", "dies")
+        unit2 = TranslationUnit("Test/2", "de", "is", "ist")
+        unit3 = TranslationUnit("Test/3", "de", "different", "anders")
+        self.assertFalse(unit1 < unit2)
+        self.assertFalse(unit1 < unit3)
+        self.assertTrue(unit2 < unit1)
+
 
 class TestTranslationSnippet(unittest.TestCase):
     def test_simple_functions(self):
@@ -237,6 +235,7 @@ class TestTranslationSnippet(unittest.TestCase):
         snippet = TranslationSnippet(SnippetType.MARKUP_SNIPPET, "<br/>")
         self.assertTrue(str(snippet).endswith("<br/>"))
         self.assertTrue(str(snippet).startswith("MARKUP"))
+
 
 class TestTranslatedPage(unittest.TestCase):
     def test_untranslated_page(self):

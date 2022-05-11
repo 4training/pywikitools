@@ -1,6 +1,7 @@
 from .base import CorrectorBase
 from .universal import UniversalCorrector, RTLCorrector
 
+
 class ArabicCorrector(CorrectorBase, UniversalCorrector, RTLCorrector):
 
     def correct_punctuation(self, text: str) -> str:

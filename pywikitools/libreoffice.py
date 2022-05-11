@@ -12,10 +12,11 @@ from com.sun.star.task import ErrorCodeIOException      # type: ignore
 from com.sun.star.io import IOException                 # type: ignore
 from com.sun.star.awt import FontWeight, FontUnderline  # type: ignore
 
+from pywikitools.lang.libreoffice_lang import LANG_LOCALE
+
+
 class FontSlant():
     from com.sun.star.awt.FontSlant import (NONE, ITALIC)   # type: ignore
-
-from pywikitools.lang.libreoffice_lang import LANG_LOCALE
 
 
 class LibreOffice:
@@ -88,7 +89,7 @@ class LibreOffice:
             sleep(2)
 
         if not search_ready:
-            raise ConnectionError("Error trying to access the LibreOffice document."
+            raise ConnectionError("Error trying to access the LibreOffice document {file_name}."
                                   f"Tried {retries} times, giving up now.")
 
     def get_page_count(self) -> int:
@@ -101,8 +102,9 @@ class LibreOffice:
         Replaces first occurence of search with replace in the currently opened LibreOffice document
         @param warn_if_pages_change: Log a warning if start and end of the passage aren't on the same page(s) as
                                      it was before the replace
-        @param parse_formatting: Should we take <i>,<b>,</i> and </b> in the replace string as formatting instruction?
-                                 The search string should still contain the text content only and no <tags>
+        @param parse_formatting: Should we take <i>,<b>,<u>,</i>,</b> and </u> in the replace string
+                                 as formatting instruction?
+                                 The search string should contain the text content only and no <tags>
         @return True if successful
         """
         # source: https://wiki.openoffice.org/wiki/Documentation/BASIC_Guide/Editing_Text_Documents
@@ -154,10 +156,9 @@ class LibreOffice:
                 end_page_after = view_cursor.getPage()
                 if (start_page_before != start_page_after) or (end_page_before != end_page_after):
                     self.logger.warning(f"Page structure changed while replacing '{search}' with '{replace}'. "
-                                         "Please check and correct manually (is the page break at the right place?)")
+                                        "Please check and correct manually (is the page break at the right place?)")
 
         return found is not None
-
 
     def save_odt(self, file_name: str):
         """
@@ -176,7 +177,7 @@ class LibreOffice:
 
         assert self._model is not None
         try:
-            self._model.storeAsURL(uri, args) # save as ODT
+            self._model.storeAsURL(uri, args)   # save as ODT
         except ErrorCodeIOException as err:
             raise FileExistsError(err)
         except IOException as err:
@@ -270,8 +271,8 @@ class LibreOffice:
 
         if rtl:
             self.logger.debug("Setting language direction to RTL")
-            default_style.ParaAdjust = 1 # alignment (0: left; 1: right; 2: justified; 3: center)
-            default_style.WritingMode = 1 # writing direction (0: LTR; 1: RTL; 4: use superordinate object settings)
+            default_style.ParaAdjust = 1   # alignment (0: left; 1: right; 2: justified; 3: center)
+            default_style.WritingMode = 1  # writing direction (0: LTR; 1: RTL; 4: use superordinate object settings)
 
         # default_style.CharLocale.Language and .Country seem to be read-only
         self.logger.debug("Setting language locale of Default Style")

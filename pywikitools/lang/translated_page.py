@@ -8,6 +8,7 @@ from typing import Final, List, Optional, Tuple
 
 from pywikitools.resourcesbot.data_structures import TranslationProgress, FileInfo, WorksheetInfo
 
+
 class SnippetType(Enum):
     """
     Markup means mediawiki formatting instructions (e.g. <b>, ===, <br/>, ''', ;, # , </i> )
@@ -188,7 +189,7 @@ class TranslationUnit:
         """
         snippets: List[TranslationSnippet] = []
         last_pos = 0
-        pattern = re.compile("<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
+        pattern = re.compile(r"<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
         for match in re.finditer(pattern, text):
             if match.start() > last_pos:
                 text_snippet = TranslationSnippet(SnippetType.TEXT_SNIPPET, text[last_pos:match.start()])
@@ -235,11 +236,11 @@ class TranslationUnit:
             br_in_definition = len([s for s in self._definition_snippets if s.is_br()])
             br_in_translation = len([s for s in self._translation_snippets if s.is_br()])
             if br_in_definition != br_in_translation:
-                warning_message  = f"Missing/wrong <br/> in {self.get_name()} "
+                warning_message = f"Missing/wrong <br/> in {self.get_name()} "
                 warning_message += f"(in original: {br_in_definition}, in translation: {br_in_translation})"
             else:
-                warning_message  = f"Formatting issues in {self.get_name()}. "
-                warning_message += f"Please check that all special characters like * = # ; : <b> <i> are correct."
+                warning_message = f"Formatting issues in {self.get_name()}. "
+                warning_message += "Please check that all special characters like * = # ; : <b> <i> are correct."
             warning_message += f"\nOriginal: \n{self._definition}"
             warning_message += f"\nTranslation: \n{self._translation}"
             return (False, warning_message)
@@ -272,7 +273,7 @@ class TranslationUnit:
         raise StopIteration
 
     def __str__(self) -> str:
-        content  = f"{self.identifier}/{self.language_code}: "
+        content = f"{self.identifier}/{self.language_code}: "
         content += f"Definition={self._definition} (original: {self._original_definition}) "
         content += f"Translation={self._translation} (original: {self._original_translation}). Snippets:\n"
         self._ensure_split()
@@ -281,20 +282,16 @@ class TranslationUnit:
             content += f"- {snippet}\n"
         return content
 
-    # The following comparison functions enable sorting of a List[TranslationUnit].
-    # It's not a "typical" ordering that would order alphabetically, rather we're only checking
-    # whether the definition of a snippet can be found in another snippet definition.
-    #
-    # This is problematic for TranslateODT, so we want to order a list of TranslationUnits in such a way that
-    # units with a short snippet (that is part of another one) are moved to the end of the list
-    # ["long", "A long sentence", "long sentence"] -> ["A long sentence", "long sentence", "long"]
-    # Then we first search and replace the long strings, avoiding replacing at the wrong places.
-    #
-    # If no snippet contains another one, sorting a List[TranslationUnit] doesn't change it at all.
-    def _comparison(self, other) -> Tuple[bool, bool]:
+    def __copy__(self):
+        """Return a copy of our TranslationUnit"""
+        return TranslationUnit(self.identifier, self.language_code, self._definition, self._translation)
+
+    def __lt__(self, other) -> bool:
         """
-        Compare our TranslationUnit to another TranslationUnit: Is any of the snippet definitions a substring
-        of another snippet?
+        Compare our TranslationUnit to another TranslationUnit: Is any of our snippet definitions a substring
+        of a snippet of the other TranslationUnit?
+
+        Used in TranslateODT.special_sort_units()
 
         Remark: We don't check whether the snippets in self._definition_snippets contain each other -
         any translation administrator should make sure that never happens...
@@ -317,37 +314,18 @@ class TranslationUnit:
                                             f"{other_snippet_translation.content}")
                     continue
                 if snippet.content in other_snippet.content:
-                    self.logger.info(f'"{snippet.content}" (in {self.get_name()}) is a substring of "{other_snippet.content}" (in {other.get_name()})!')
+                    self.logger.info(f'"{snippet.content}" (in {self.get_name()}) is a substring of '
+                                     f'"{other_snippet.content}" (in {other.get_name()})!')
                     self_is_in_other = True
                 elif other_snippet.content in snippet.content:
-                    self.logger.info(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of "{snippet.content}" (in {self.get_name()})!')
+                    self.logger.info(f'"{other_snippet.content}" (in {other.get_name()}) is a substring of '
+                                     f'"{snippet.content}" (in {self.get_name()})!')
                     other_is_in_self = True
         if self_is_in_other and other_is_in_self:
-            # Don't know what happens now, I hope the sort() is not going into an endless loop...
             self.logger.warning(f"{self.get_name()} and {other.get_name()} have reciprocal substrings: "
                                 f"{self.get_definition()} / {other.get_definition()} "
-                                 "This may lead to undefined behavior!")
-        return (self_is_in_other, other_is_in_self)
-
-    def __eq__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not self_is_in_other and not other_is_in_self
-
-    def __lt__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return other_is_in_self
-
-    def __gt__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
+                                "Please resolve this conflict!")
         return self_is_in_other
-
-    def __le__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not self_is_in_other
-
-    def __ge__(self, other) -> bool:
-        (self_is_in_other, other_is_in_self) = self._comparison(other)
-        return not other_is_in_self
 
 
 class TranslatedPage:
@@ -418,11 +396,11 @@ class TranslatedPage:
                 version_translation = u.get_translation()
 
         self._english_info = WorksheetInfo(self.page, "en", headline_original,
-            TranslationProgress(len(self.units), 0, len(self.units)), version_original)
+            TranslationProgress(len(self.units), 0, len(self.units)), version_original)      # noqa: E128
         if odt_original != "":
             self._english_info.add_file_info(FileInfo("odt", odt_original, datetime(1970, 1, 1)))
         self._worksheet_info = WorksheetInfo(self.page, self.language_code, headline_translation,
-            TranslationProgress(translated_units, 0, len(self.units)), version_translation)
+            TranslationProgress(translated_units, 0, len(self.units)), version_translation)  # noqa: E128
         if odt_translation != "":
             self._worksheet_info.add_file_info(FileInfo("odt", odt_translation, datetime(1970, 1, 1)))
 

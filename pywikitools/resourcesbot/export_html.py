@@ -11,6 +11,7 @@ from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
+
 class CustomBeautifyHTML(BeautifyHTML):
     """
     Class to collect all images used in the generated HTML files
@@ -23,6 +24,7 @@ class CustomBeautifyHTML(BeautifyHTML):
     def img_rewrite_handler(self, element):
         super().img_rewrite_handler(element)
         self.file_collector.add(element['src'][6:])     # Remove leading "files/"
+
 
 class ExportHTML(LanguagePostProcessor):
     """
@@ -150,7 +152,7 @@ class ExportHTML(LanguagePostProcessor):
             for worksheet, info in language_info.worksheets.items():
                 structure.append({worksheet: self.make_html_name(info.title)})
             with open(os.path.join(structure_folder, "contents.json"), "w") as f:
-                self.logger.info(f"Exporting contents.json")
+                self.logger.info("Exporting contents.json")
                 f.write(json.dumps(structure))
 
         self.logger.info(f"ExportHTML {language_info.language_code}: "

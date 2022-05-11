@@ -6,6 +6,7 @@ from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.post_processing import GlobalPostProcessor
 
+
 class Color(Enum):
     GREEN = "green"
     ORANGE = "orange"
@@ -27,7 +28,7 @@ class WriteReport(GlobalPostProcessor):
     We can't implement this as a LanguagePostProcessor because we need the English LanguageInfo object
     as well to write a report for one language.
     """
-    def __init__(self, site: pywikibot.site.APISite, force_rewrite: bool=False):
+    def __init__(self, site: pywikibot.site.APISite, force_rewrite: bool = False):
         """
         @param site: our pywikibot object to be able to write to the mediawiki system
         @param force_rewrite: rewrite even if there were no (relevant) changes
@@ -38,7 +39,7 @@ class WriteReport(GlobalPostProcessor):
 
     def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
         """Entry function"""
-        if not "en" in language_data:
+        if "en" not in language_data:
             self.logger.warning("No English language info found. Don't writing any reports.")
             return
         english_info = language_data["en"]
@@ -71,7 +72,7 @@ class WriteReport(GlobalPostProcessor):
         else:
             if page.text != report:
                 page.text = report
-                page.save("Updated language report") # TODO write human-readable changes here in the save message
+                page.save("Updated language report")    # TODO write human-readable changes here in the save message
                 self.logger.info(f"Updated language report for {language_info.english_name}")
 
     def create_mediawiki(self, language_info: LanguageInfo, english_info: LanguageInfo) -> str:
@@ -103,7 +104,7 @@ class WriteReport(GlobalPostProcessor):
         else:
             content += "| -\n"
 
-        #column 6: Version information (we need to process this here because version_color is needed for other columns)
+        # column 6: Version information (we need to process this here because version_color is needed for other columns)
         version_color = Color.RED
         if worksheet_info is None:
             version_content = f'| style="background-color:{Color.RED}" | -\n'
@@ -111,7 +112,7 @@ class WriteReport(GlobalPostProcessor):
             version_color = Color.GREEN
             version_content = f'| style="background-color:{Color.GREEN}" | {english_info.version}\n'
         else:
-            version_content  = f'| style="background-color:{Color.RED}" '
+            version_content = f'| style="background-color:{Color.RED}" '
             version_content += f"| {worksheet_info.version} (Original: {english_info.version})\n"
 
         # column 3: Translation progress
@@ -158,5 +159,3 @@ class WriteReport(GlobalPostProcessor):
             line_color = Color.GREEN
         content = f'|- style="background-color:{line_color}"\n' + content
         return content
-
-

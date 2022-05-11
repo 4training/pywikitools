@@ -8,14 +8,14 @@ Run tests:
 import unittest
 from unittest.mock import Mock, patch
 import requests
-#import logging
 
 from pywikitools.fortraininglib import ForTrainingLib
 
+
 class TestFortrainingLib(unittest.TestCase):
     def setUp(self):
-# use this to see logging messages (can be increased to logging.DEBUG)
-#        logging.basicConfig(level=logging.INFO)
+        # use this to see logging messages (can be increased to logging.DEBUG)
+        # logging.basicConfig(level=logging.INFO)
         self.lib = ForTrainingLib("https://www.4training.net")
 
     @patch("pywikitools.fortraininglib.requests.get")
@@ -133,6 +133,7 @@ class TestFortrainingLib(unittest.TestCase):
             counter += 1
             self.assertGreater(len([snippet for snippet in translation_unit]), 0)
         self.assertGreater(counter, 10)
+
 
 if __name__ == '__main__':
     unittest.main()

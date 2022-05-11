@@ -1,18 +1,19 @@
-from typing import Set
+from typing import List, Tuple
 from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import Mock
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
-from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR, TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE
 
 from pywikitools.translateodt import TranslateODT, TranslateOdtConfig
+
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
         super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net"}})
         self._loffice = Mock(spec=LibreOffice)
+
 
 class TestTranslateODT(unittest.TestCase):
     def setUp(self):
@@ -84,8 +85,8 @@ class TestTranslateODT(unittest.TestCase):
 
     def test_cleanup_units(self):
         # should warn because "sin" can be found in the German translation "Wir versinken..."
-        unit1 = TranslationUnit(f"Test/2", "de", "We're drowning in snow chaos", "Wir versinken im Schnee.")
-        unit2 = TranslationUnit(f"Test/1", "de", "sin", "Sünde")
+        unit1 = TranslationUnit("Test/2", "de", "We're drowning in snow chaos", "Wir versinken im Schnee.")
+        unit2 = TranslationUnit("Test/1", "de", "sin", "Sünde")
         translated_page = TranslatedPage("Test", "de", [unit1, unit2])
         with self.assertLogs('pywikitools.translateodt', level='WARNING'):
             cleaned_up_page = self.translate_odt._cleanup_units(translated_page, TranslateOdtConfig())
@@ -102,7 +103,43 @@ class TestTranslateODT(unittest.TestCase):
         cleaned_up_page = self.translate_odt._cleanup_units(translated_page, config)
         self.assertListEqual([tu.identifier for tu in cleaned_up_page.units], ["Test/1"] * 3)
 
-        # TODO test some more stuff
+    def _sort_units(self, definitions: List[str], translations: List[str]) -> Tuple[List[str], List[str]]:
+        """Create translation units, sort them and return lists of definitions and translations
+        The return format is for easier comparison of the expected outcome
+        """
+        units: List[TranslationUnit] = []
+        for counter, definition in enumerate(definitions):
+            unit = TranslationUnit(f"Test/{counter}", "de", definition, translations[counter])
+            units.append(unit)
+        self.translate_odt.special_sort_units(units)
+        sorted_definitions_list: List[str] = []
+        sorted_translations_list: List[str] = []
+        for unit in units:
+            sorted_definitions_list.append(unit.get_definition())
+            sorted_translations_list.append(unit.get_translation())
+        return (sorted_definitions_list, sorted_translations_list)
+
+    def test_special_sort_units(self):
+        # Test correct sorting
+        with self.assertLogs('pywikitools.translateodt', level='INFO'):
+            (orig_list, trans_list) = self._sort_units(["this", "this", "is", "thistle"],
+                                                       ["same", "same", "same", "same"])
+        self.assertListEqual(orig_list, ["thistle", "this", "this", "is"])
+        # two different translation units with the same definition but different translations should give a warning
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING'):
+            (orig_list, trans_list) = self._sort_units(["this", "this", "other", "content"],
+                                                       ["same", "different", "same", "same"])
+        self.assertListEqual(orig_list, ["this", "this", "other", "content"])
+        # two snippets in a translation unit
+        with self.assertLogs('pywikitools.translateodt', level='INFO'):
+            (orig_list, trans_list) = self._sort_units(["this<br/>is", "this<br/>thistle"],
+                                                       ["same<br/>same", "same<br/>same"])
+        self.assertListEqual(orig_list, ["this<br/>thistle", "this<br/>is"])
+        # reciprocal dependency should give a warning
+        with self.assertLogs('pywikitools.lang.TranslationUnit', level='WARNING') as cm:
+            (orig_list, trans_list) = self._sort_units(["something<br/>range", "thing<br/>strange"],
+                                                       ["same<br/>same", "same<br/>same"])
+        self.assertIn("reciprocal", cm.output[0])
 
     def test_read_worksheet_config(self):
         # TranslateOdtConfig should be empty if there is no config in the mediawiki system
@@ -124,14 +161,12 @@ class TestTranslateODT(unittest.TestCase):
         self.translate_odt.fortraininglib.get_page_source.return_value = test_config
         result = self.translate_odt.read_worksheet_config("Test")
         self.assertSetEqual(result.ignore,
-            set(["Bible_Reading_Hints/1", "Bible_Reading_Hints/2", "Bible_Reading_Hints/3",
-                "Template:BibleReadingHints/18", "Template:BibleReadingHints/25", "Template:BibleReadingHints/26"]))
+            set(["Bible_Reading_Hints/1", "Bible_Reading_Hints/2", "Bible_Reading_Hints/3",     # noqa: E128
+                 "Template:BibleReadingHints/18", "Template:BibleReadingHints/25", "Template:BibleReadingHints/26"]))
         self.assertEqual(len(result.multiple), 2)
         self.assertEqual(result.multiple["Template:BibleReadingHints/6"], 5)
         self.assertEqual(result.multiple["Bible_Reading_Hints/7"], 2)
 
 
-
 if __name__ == '__main__':
     unittest.main()
-

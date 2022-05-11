@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup, Comment
 import configparser
 from pywikitools.fortraininglib import ForTrainingLib
 
+
 class Mediawiki2Drupal():
     """The main class containing all major functionality to import pages from mediawiki into Drupal"""
 
@@ -33,8 +34,8 @@ class Mediawiki2Drupal():
     }
 
     def __init__(self, fortraininglib: ForTrainingLib, endpoint: str, username: str, password: str,
-                 content_type: str="page", change_hrefs: Dict[str, str]=None,
-                 img_src_rewrite: Dict[str, str]=None):
+                 content_type: str = "page", change_hrefs: Dict[str, str] = None,
+                 img_src_rewrite: Dict[str, str] = None):
         """
         @param content_type refers to the Drupal content type that we should create articles with.
         This needs to be the system name of a content type
@@ -51,7 +52,7 @@ class Mediawiki2Drupal():
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self.logger: logging.Logger = logging.getLogger('pywikitools.mediawiki2drupal')
 
-    def _process_html(self, input: str, custom_fields: Dict[str, str]=None) -> str:
+    def _process_html(self, input: str, custom_fields: Dict[str, str] = None) -> str:
         """
         TODO Start using pywikitools.lib.html.BeautifyHTML
         TODO Subclass BeautifyHTML and overwrite image_rewrite_handler to add customizations for "hands" images
@@ -93,7 +94,7 @@ class Mediawiki2Drupal():
             if (self._img_src_rewrite is not None) and (img_src in self._img_src_rewrite):
                 self.logger.info(f"Replacing img src {element['src']} with {self._img_src_rewrite[img_src]}")
                 element['src'] = self._img_src_rewrite[img_src]
-                if img_src.startswith('30px-Hand'): # some customizations for the five "hands" images in God's Story
+                if img_src.startswith('30px-Hand'):  # some customizations for the five "hands" images in God's Story
                     del element['height']
                     del element['width']
                     element['style'] = 'height:80px; margin-right:20px'
@@ -109,7 +110,8 @@ class Mediawiki2Drupal():
             # Rewrite hrefs
             if self._change_hrefs is not None:
                 if element['href'] in self._change_hrefs:
-                    self.logger.info(f"Rewriting a href source {element['href']} with {self._change_hrefs[element['href']]}")
+                    self.logger.info(f"Rewriting a href source {element['href']} "
+                                     f"with {self._change_hrefs[element['href']]}")
                     element['href'] = self._change_hrefs[element['href']]
                 else:
                     self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}")
@@ -130,7 +132,7 @@ class Mediawiki2Drupal():
         for field_name, value in search_criteria.items():
             payload[f"filter[{field_name}][value]"] = value
         r = requests.get(f"{self._endpoint}/node/{self._content_type}",
-                auth=(self._username, self._password), params=payload)
+                         auth=(self._username, self._password), params=payload)
         if "data" not in r.json():
             return None
         if not isinstance(r.json()["data"], list):
@@ -141,8 +143,8 @@ class Mediawiki2Drupal():
             self.logger.warning(f"Found more than one page with search criteria {field_name}={value}.")
         return r.json()["data"][0]["id"]
 
-
-    def import_page(self, page: str, language_code: str, article_id=None, custom_fields: Dict[str, str]=None) -> bool:
+    def import_page(self, page: str, language_code: str, article_id: int = None,
+                    custom_fields: Dict[str, str] = None) -> bool:
         """
         Request the translated page and import it to Drupal
         @param article_id if given, try to patch this existing node. If None, create new node
@@ -176,17 +178,16 @@ class Mediawiki2Drupal():
         if article_id is None:
             # Create new article
             r = requests.post(f"{self._endpoint}/node/{self._content_type}",
-                    headers=self.HEADERS, auth=(self._username, self._password), json=payload)
+                              headers=self.HEADERS, auth=(self._username, self._password), json=payload)
             self.logger.debug(r.status_code)
             self.logger.debug(r.json())
         else:
             # Update existing article
             payload["data"]["id"] = article_id
             r = requests.patch(f"{self._endpoint}/node/{self._content_type}/{article_id}",
-                    headers=self.HEADERS, auth=(self._username, self._password), json=payload)
+                               headers=self.HEADERS, auth=(self._username, self._password), json=payload)
             self.logger.debug(r.status_code)
             self.logger.debug(r.json())
-
 
         if r.status_code not in [200, 201]:
             error = 'No error details given.'
@@ -203,13 +204,12 @@ if __name__ == "__main__":
     # Read the configuration from config.ini in the same directory
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-    if config.has_option("mediawiki", "baseurl") and \
-    config.has_option("mediawiki2drupal", "endpoint") and \
-    config.has_option("mediawiki2drupal", "username") and \
-    config.has_option("mediawiki2drupal", "password"):
+    if config.has_option("mediawiki", "baseurl") and config.has_option("mediawiki2drupal", "endpoint") and \
+       config.has_option("mediawiki2drupal", "username") and config.has_option("mediawiki2drupal", "password"):
         fortraininglib = ForTrainingLib(config.get("mediawiki", "baseurl"))
         mediawiki2drupal = Mediawiki2Drupal(fortraininglib, config.get("mediawiki2drupal", "endpoint"),
-            config.get("mediawiki2drupal", "username"), config.get("mediawiki2drupal", "password"))
+                                            config.get("mediawiki2drupal", "username"),
+                                            config.get("mediawiki2drupal", "password"))
         # TODO: Read parameters from command line
         mediawiki2drupal.import_page("Prayer", "de")
     else:
