@@ -11,6 +11,7 @@ class Color(Enum):
     GREEN = "green"
     ORANGE = "orange"
     RED = "red"
+    GREY = "grey"
 
     def __str__(self) -> str:
         return self.value
@@ -104,7 +105,7 @@ class WriteReport(GlobalPostProcessor):
         else:
             content += "| -\n"
 
-        # column 6: Version information (we need to process this here because version_color is needed for other columns)
+        # column 7: Version information (we need to process this here because version_color is needed for other columns)
         version_color = Color.RED
         if worksheet_info is None:
             version_content = f'| style="background-color:{Color.RED}" | -\n'
@@ -129,22 +130,30 @@ class WriteReport(GlobalPostProcessor):
         content += f"| {progress}%\n"
 
         # column 4: Link to translated PDF file (if existing)
-        if worksheet_info is not None and worksheet_info.has_file_type("pdf"):
+        if worksheet_info is not None and (file_info := worksheet_info.get_file_type_info("pdf")) is not None:
             pdf_color = Color.GREEN if version_color == Color.GREEN else Color.ORANGE
+            if file_info.metadata is not None and not file_info.metadata.correct:
+                pdf_color = Color.ORANGE
             content += f'| style="background-color:{pdf_color}" '
             content += f"| [[File:{worksheet_info.get_file_type_name('pdf')}]]\n"
+
+            # column 5: PDF metadata details
+            if file_info.metadata is not None:
+                content += f'| style="background-color:{pdf_color}" | {file_info.metadata.to_html()}\n'
+            else:
+                content += f'| style="background-color:{Color.GREY} | ?\n'
         else:
             pdf_color = Color.RED
-            content += f'| style="background-color:{Color.RED}" | -\n'
+            content += f'| colspan="2" style="background-color:{Color.RED}; text-align:center" | -\n'
 
-        # column 5: Link to translated ODT file (if existing)
+        # column 6: Link to translated ODT file (if existing)
         if worksheet_info is not None and worksheet_info.has_file_type("odt"):
             odt_color = Color.GREEN if version_color == Color.GREEN else Color.ORANGE
             content += f'| style="background-color:{odt_color}" '
             content += f"| [[File:{worksheet_info.get_file_type_name('odt')}]]\n"
         else:
             odt_color = Color.RED
-            content += f'| style="background-color:{Color.RED}" | -\n'
+            content += f'| style="background-color:{Color.RED}; text-align:center" | -\n'
 
         # Now we append content for column 6: version information
         content += version_content

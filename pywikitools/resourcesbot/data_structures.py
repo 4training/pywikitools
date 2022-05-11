@@ -69,12 +69,32 @@ class PdfMetadataSummary:
         self.only_docinfo: Final[bool] = only_docinfo
         self.warnings: Final[str] = warnings
 
-    def __str__(self) -> str:
-        result = f"Version: {self.version}, Correct: {self.correct}, PDF/1A: {self.pdf1a}"
-        result += f", only DocInfo: {self.only_docinfo}"
+    def to_string(self, include_version: bool) -> str:
+        """Write a human-readable string"""
+        result = f'Metadata: {"correct" if self.correct else "incorrect"}. '
+        if include_version:
+            result += "Version: {self.version}. "
+        result += f'PDF/1A: {"yes" if self.pdf1a else "no"}. '
+        if self.only_docinfo:
+            result += "Metadata only in DocInfo (deprecated). "
         if self.warnings != "":
-            result += f" (Warnings: {self.warnings})"
+            result += f"(Warnings: {self.warnings})"
         return result
+
+    def to_html(self) -> str:
+        """Write a HTML string (specifically for the use case of the WriteReport plugin)"""
+        result = f'<div title="{self.to_string(False)}">'
+        if self.correct:
+            result += "✓"
+            if (not self.pdf1a) or self.only_docinfo:
+                result += " ?"
+        else:
+            result += "⚠"
+        result += "</div>"
+        return result
+
+    def __str__(self) -> str:
+        return self.to_string(True)
 
 
 class FileInfo:
