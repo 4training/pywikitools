@@ -10,7 +10,8 @@ from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
-from pywikitools.correctbot.correctors.universal import RTLCorrector, UniversalCorrector
+from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, RTLCorrector, \
+                                                        UniversalCorrector
 
 from typing import Callable, List, Optional
 from os import listdir
@@ -234,6 +235,8 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
         self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
         self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
+        self.assertEqual(correct(corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
+        self.assertEqual(correct(corrector, "How do I survive if … ?"), "How do I survive if … ?")
 
         # TODO Test also print_stats()
 #        self.assertIn("6 corrections", corrector.print_stats())
@@ -276,6 +279,19 @@ class TestUniversalCorrector(unittest.TestCase):
 # TODO    def test_correct_ellipsis(self):
 #        corrector = UniversalCorrectorTester()
 #        self.assertEqual(correct(corrector, "…"), "...")
+
+
+class NoSpaceBeforePunctuationCorrectorTester(CorrectorBase, NoSpaceBeforePunctuationCorrector):
+    """With this class we can test the rules of NoSpaceBeforePunctuationCorrector"""
+    pass
+
+
+class TestNoSpaceBeforePunctuationCorrector(CorrectorTestCase):
+    def test_spaces(self):
+        corrector = NoSpaceBeforePunctuationCorrectorTester()
+        self.assertEqual(correct(corrector, "I want this ! And you   ?"), "I want this! And you?")
+        self.assertEqual(correct(corrector, "I want ... ! How about ___ ?"), "I want ... ! How about ___ ?")
+        self.assertEqual(correct(corrector, "Ellipsis … ? Sure … !"), "Ellipsis … ? Sure … !")
 
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):

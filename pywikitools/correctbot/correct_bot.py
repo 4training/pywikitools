@@ -56,6 +56,10 @@ class CorrectBot:
         """
         Check one specific translation unit: Run the right correction rules on it.
         For this we analyze: Is it a title, a file name or a "normal" translation unit?
+
+        Returns:
+            Result of running all correction functions on the translation unit
+            None if we didn't run correctors (because the unit is not translated e.g.)
         """
         if unit.get_translation() == "":
             return None
@@ -71,13 +75,16 @@ class CorrectBot:
 
         return corrector.correct(unit)
 
-    def check_page(self, page: str, language_code: str) -> bool:
+    def check_page(self, page: str, language_code: str) -> Optional[List[CorrectionResult]]:
         """
         Check one specific page and store the results in this class
 
         This does not write anything back to the server. Changes can be read with
         get_stats(), get_correction_counter() and get_diff()
-        @returns True on success, False if an error occurred
+
+        Returns:
+            CorrectionResult for each processed translation unit
+            None if an error occurred
         """
         self._diff = ""
         self._stats = None
@@ -85,12 +92,14 @@ class CorrectBot:
         correction_stats: Counter = Counter()
         translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
         if translated_page is None:
-            return False
+            return None
         corrector = self._load_corrector(language_code)()
+        results: List[CorrectionResult] = []
         for translation_unit in translated_page:
             result = self.check_unit(corrector, translation_unit)
             if result is None:
                 continue
+            results.append(result)
             if result.warnings != "":
                 self.logger.warning(result.warnings)
             if (diff := result.corrections.get_translation_diff()) != "":
@@ -99,7 +108,7 @@ class CorrectBot:
             # TODO Handle suggestions as well
         self._stats = corrector.print_stats(correction_stats)
         self._correction_counter = sum(correction_stats.values())
-        return True
+        return results
 
     def get_stats(self) -> str:
         """Return a summary: which correction rules could be applied (in the last run)?"""
