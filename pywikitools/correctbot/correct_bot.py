@@ -13,8 +13,11 @@ Run with dummy page:
 
 import argparse
 from collections import Counter
+from configparser import ConfigParser
 import logging
 import importlib
+from os.path import abspath, dirname, join
+import subprocess
 import pywikibot
 import re
 import sys
@@ -27,8 +30,11 @@ from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 class CorrectBot:
     """Main class for doing corrections"""
-    def __init__(self, fortraininglib: ForTrainingLib, simulate: bool = False):
-        self.fortraininglib: ForTrainingLib = fortraininglib
+    def __init__(self, config: ConfigParser, simulate: bool = False):
+        self._config = config
+        if not self._config.has_option('mediawiki', 'baseurl'):
+            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'))
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
         self.site: pywikibot.site.APISite = pywikibot.Site()
         self._simulate: bool = simulate
@@ -161,6 +167,50 @@ class CorrectBot:
         """Print a diff of the suggestions (made in the last run)"""
         return self._suggestion_diff
 
+    def save_to_mediawiki(self, results: List[CorrectionResult]):
+        """
+        Write changes back to mediawiki
+
+        You should disable pywikibot throttling to avoid CorrectBot runs to take quite long:
+        `put_throttle = 0` in user-config.py
+        """
+        for result in results:
+            if result.corrections.has_translation_changes():
+                mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
+                mediawiki_page.text = result.corrections.get_translation()
+                mediawiki_page.save(minor=True)
+
+    def save_report(self, page: str, results: List[CorrectionResult]):
+        # TODO: save report
+        # report_page = pywikibot.Page(self.site, f"CorrectBot:{page}")
+        pass
+
+    def empty_job_queue(self) -> bool:
+        """
+        Empty the mediawiki job queue by running the runJobs.php maintenance script
+
+        See https://www.mediawiki.org/wiki/Manual:RunJobs.php
+
+        Returns:
+            True if we could successfully run this script
+            False if paths were not configured or there was an error while executing
+        """
+        if self._config.has_option('Paths', 'php') and self._config.has_option('correctbot', 'runjobs'):
+            args = [self._config['Paths']['php'], self._config['correctbot']['runjobs']]
+            try:
+                script = subprocess.Popen(args)
+                exit_code = script.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                self.logger.warning("Invoking runJobs.php didn't finished - job queue is maybe still not empty")
+                return False
+            if exit_code != 0:
+                self.logger.warning(f"runJobs.php did not finish successfully. Exit code: {exit_code}")
+                return False
+            return True
+        else:
+            self.logger.warning("Settings for invoking runJobs.php missing in config.ini. Can't empty job queue.")
+            return False
+
     def run(self, page: str, language_code: str):
         """
         Correct the translation of a page.
@@ -172,12 +222,8 @@ class CorrectBot:
         if self._simulate:
             print("We're running with --simulate. No changes are written back to the mediawiki system")
         else:
-            # Write changes back to mediawiki
-            for result in results:
-                if result.corrections.has_translation_changes():
-                    mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
-                    mediawiki_page.text = result.corrections.get_translation()
-                    mediawiki_page.save(minor=True)
+            self.save_to_mediawiki(results)
+            self.empty_job_queue()
 
         print(self.get_correction_stats())
         if self._correction_counter > 0:
@@ -188,7 +234,12 @@ class CorrectBot:
 
 
 def parse_arguments() -> argparse.Namespace:
-    """Parses the arguments given from outside"""
+    """
+    Parse command-line arguments
+
+    Returns:
+        CorrectBot instance
+    """
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
 
     parser = argparse.ArgumentParser()
@@ -202,6 +253,8 @@ def parse_arguments() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_arguments()
+
+    # Set up logging
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     sh = logging.StreamHandler(sys.stdout)
@@ -212,6 +265,8 @@ if __name__ == "__main__":
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
-    # TODO read mediawiki baseurl from config.ini
-    correctbot = CorrectBot(ForTrainingLib("https://www.4training.net"), args.simulate)
+    config = ConfigParser()
+    config.read(join(dirname(abspath(__file__)), "..", "config.ini"))
+
+    correctbot = CorrectBot(config, args.simulate)
     correctbot.run(args.page, args.language_code)

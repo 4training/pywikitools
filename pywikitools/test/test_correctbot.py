@@ -1,10 +1,14 @@
 """
 Test cases for CorrectBot: Testing core functionality as well as language-specific rules
 """
+from configparser import ConfigParser
 from inspect import signature
+import subprocess
 import unittest
 import importlib
 import os
+from unittest.mock import patch
+from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
@@ -413,6 +417,36 @@ class TestArabicCorrector(CorrectorTestCase):
         self.compare_title_revisions("How to Continue After a Prayer Time", "ar", 62193, 62274)
 #       TODO this would require passing the original text as well so that final dot gets added
 #        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
+
+
+class TestCorrectBot(unittest.TestCase):
+    @patch("pywikitools.correctbot.correct_bot.subprocess.Popen")
+    def test_empty_job_queue(self, mock_popen):
+        config = ConfigParser()
+        config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"}})
+
+        # configuration for emptying job queue missing
+        correctbot = CorrectBot(config, True)
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.assertFalse(correctbot.empty_job_queue())
+
+        config.read_dict({"Paths": {"php": "path/to/php"},
+                          "correctbot": {"runjobs": "/path/to/runJobs.php"}})
+
+        # successfully emptying job queue
+        mock_popen.return_value.wait.return_value = 0
+        self.assertTrue(correctbot.empty_job_queue())
+
+        # runJobs.php failed
+        mock_popen.return_value.wait.return_value = 1
+        with self.assertLogs("pywikitools.correctbot", level="WARNING") as logs:
+            self.assertFalse(correctbot.empty_job_queue())
+        self.assertIn("Exit code: 1", logs.output[0])
+
+        # runJobs.php times out
+        mock_popen.return_value.wait.side_effect = subprocess.TimeoutExpired("", 15)
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.assertFalse(correctbot.empty_job_queue())
 
 
 if __name__ == '__main__':
