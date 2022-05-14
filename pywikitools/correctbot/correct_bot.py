@@ -9,13 +9,13 @@ Run with dummy page:
     python3 correct_bot.py Test de
     python3 correct_bot.py CorrectTestpage fr
 
-TODO: Not yet operational
 """
 
 import argparse
 from collections import Counter
 import logging
 import importlib
+import pywikibot
 import re
 import sys
 from typing import Callable, List, Optional
@@ -30,10 +30,14 @@ class CorrectBot:
     def __init__(self, fortraininglib: ForTrainingLib, simulate: bool = False):
         self.fortraininglib: ForTrainingLib = fortraininglib
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
+        self.site: pywikibot.site.APISite = pywikibot.Site()
         self._simulate: bool = simulate
-        self._diff: str = ""
-        self._stats: Optional[str] = None
+        self._correction_diff: str = ""
+        self._suggestion_diff: str = ""
+        self._correction_stats: Optional[str] = None
+        self._suggestion_stats: Optional[str] = None
         self._correction_counter: int = 0
+        self._suggestion_counter: int = 0
 
     def _load_corrector(self, language_code: str) -> Callable:
         """Load the corrector class for the specified language and return it.
@@ -86,10 +90,15 @@ class CorrectBot:
             CorrectionResult for each processed translation unit
             None if an error occurred
         """
-        self._diff = ""
-        self._stats = None
+        self._correction_diff = ""
+        self._suggestion_diff = ""
+        self._correction_stats = None
+        self._suggestion_stats = None
         self._correction_counter = 0
+        self._suggestion_counter = 0
         correction_stats: Counter = Counter()
+        suggestion_stats: Counter = Counter()
+
         translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
         if translated_page is None:
             return None
@@ -102,39 +111,80 @@ class CorrectBot:
             results.append(result)
             if result.warnings != "":
                 self.logger.warning(result.warnings)
-            if (diff := result.corrections.get_translation_diff()) != "":
-                self._diff += f"{translation_unit.get_name()}: {diff}\n"
+
+            if (correction_diff := result.corrections.get_translation_diff()) != "":
+                self._correction_diff += f"{translation_unit.get_name()}: {correction_diff}\n"
+            if (suggestion_diff := result.suggestions.get_translation_diff()) != "":
+                self._suggestion_diff += f"{translation_unit.get_name()}: {suggestion_diff}\n"
             correction_stats += Counter(result.correction_stats)
-            # TODO Handle suggestions as well
-        self._stats = corrector.print_stats(correction_stats)
+            suggestion_stats += Counter(result.suggestion_stats)
+
+        self._correction_stats = corrector.print_stats(correction_stats)
+        self._suggestion_stats = corrector.print_stats(suggestion_stats)
         self._correction_counter = sum(correction_stats.values())
+        self._suggestion_counter = sum(suggestion_stats.values())
         return results
 
-    def get_stats(self) -> str:
+    def get_correction_stats(self) -> str:
         """Return a summary: which correction rules could be applied (in the last run)?"""
-        if self._stats is None:
+        if self._correction_stats is None:
             self.logger.warning("No statistics available. You need to run check_page() first.")
             return ""
-        return self._stats
+        stats: str = f"{self._correction_counter} corrections"
+        if self._correction_counter > 0:
+            stats += ":\n" + self._correction_stats
+        return stats
+
+    def get_suggestion_stats(self) -> str:
+        """Return a summary: which corrections are suggested (in the last run)?"""
+        if self._suggestion_stats is None:
+            self.logger.warning("No statistics available. You need to run check_page() first.")
+            return ""
+        stats: str = f"{self._suggestion_counter} suggestions"
+        if self._suggestion_counter > 0:
+            stats += ":\n" + self._suggestion_stats
+        return stats
 
     def get_correction_counter(self) -> int:
         """How many corrections did we do (in the last run)?"""
         return self._correction_counter
 
-    def get_diff(self) -> str:
+    def get_suggestion_counter(self) -> int:
+        """How many suggestions did we receive (in the last run)?"""
+        return self._suggestion_counter
+
+    def get_correction_diff(self) -> str:
         """Print a diff of the corrections (made in the last run)"""
-        return self._diff
+        return self._correction_diff
+
+    def get_suggestion_diff(self) -> str:
+        """Print a diff of the suggestions (made in the last run)"""
+        return self._suggestion_diff
 
     def run(self, page: str, language_code: str):
         """
         Correct the translation of a page.
-        TODO write it back to the system if we're not in simulation mode
         """
-        self.check_page(page, language_code)
-        print(self.get_diff())
-        print(self.get_stats())
+        results = self.check_page(page, language_code)
+        if results is None:
+            print(f"Error while trying to correct {page}")
+            return
+        if self._simulate:
+            print("We're running with --simulate. No changes are written back to the mediawiki system")
+        else:
+            # Write changes back to mediawiki
+            for result in results:
+                if result.corrections.has_translation_changes():
+                    mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
+                    mediawiki_page.text = result.corrections.get_translation()
+                    mediawiki_page.save(minor=True)
 
-        # TODO save changes back to mediawiki system
+        print(self.get_correction_stats())
+        if self._correction_counter > 0:
+            print(self.get_correction_diff())
+        print(self.get_suggestion_stats())
+        if self._suggestion_counter > 0:
+            print(self.get_suggestion_diff())
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -144,7 +194,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("page", help="Name of the mediawiki page")
     parser.add_argument("language_code", help="Language code")
-    parser.add_argument("-s", "--simulate", type=bool, default=False, required=False,
+    parser.add_argument("-s", "--simulate", action="store_true",
                         help="Simulates the corrections but does not apply them to the webpage.")
     parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
     return parser.parse_args()

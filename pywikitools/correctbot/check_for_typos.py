@@ -50,5 +50,7 @@ if __name__ == "__main__":
         correctbot.check_page(worksheet, args.language_code)
         print(f"{worksheet}: {correctbot.get_correction_counter()} corrections")
         if correctbot.get_correction_counter() > 0:
-            print(correctbot.get_diff())
-            print(correctbot.get_stats())
+            print(correctbot.get_correction_stats())
+            print(correctbot.get_correction_diff())
+            print(correctbot.get_suggestion_stats())
+            print(correctbot.get_suggestion_diff())
