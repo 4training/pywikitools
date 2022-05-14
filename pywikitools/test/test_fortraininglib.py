@@ -134,6 +134,16 @@ class TestFortrainingLib(unittest.TestCase):
             self.assertGreater(len([snippet for snippet in translation_unit]), 0)
         self.assertGreater(counter, 10)
 
+    @patch("pywikitools.fortraininglib.ForTrainingLib._get")
+    def test_count_jobs(self, mock_get):
+        mock_get.return_value = {"query": {"statistics": {"jobs": 42}}}
+        self.assertEqual(self.lib.count_jobs(), 42)
+
+        # When API query fails a warning is logged and return value is 0
+        mock_get.return_value = {}
+        with self.assertLogs("pywikitools.lib", level="WARNING"):
+            self.assertEqual(self.lib.count_jobs(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

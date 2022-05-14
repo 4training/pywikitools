@@ -441,6 +441,25 @@ class ForTrainingLib():
             return "TODO translate https://www.4training.net/Template:CC0Notice"
         return expanded
 
+    def count_jobs(self) -> int:
+        """
+        Return the number of jobs in the mediawiki job queue
+
+        https://www.4training.net/mediawiki/api.php?action=query&meta=siteinfo&siprop=statistics
+        """
+        json = self._get({
+            "action": "query",
+            "format": "json",
+            "meta": "siteinfo",
+            "siprop": "statistics"
+        })
+
+        try:
+            return int(json["query"]["statistics"]["jobs"])
+        except KeyError:
+            self.logger.warning("Querying number of jobs in job queue failed.")
+            return 0
+
     def mark_for_translation(self, title: str, user_name: str, password: str):
         """
         Mark a page for translation
