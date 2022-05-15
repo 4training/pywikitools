@@ -423,7 +423,7 @@ class TestCorrectBot(unittest.TestCase):
     @patch("pywikitools.correctbot.correct_bot.subprocess.Popen")
     def test_empty_job_queue(self, mock_popen):
         config = ConfigParser()
-        config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"}})
+        config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net", "scriptpath": "/mediawiki"}})
 
         # configuration for emptying job queue missing
         correctbot = CorrectBot(config, True)

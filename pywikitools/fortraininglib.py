@@ -20,14 +20,17 @@ class ForTrainingLib():
     TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
     CONNECT_RETRIES: int = 3    # In case a request timed out, let's try again up to three times
 
-    def __init__(self, base_url: str, api_path: str = "/mediawiki/api.php"):
+    __slots__ = ["base_url", "script_path", "api_url", "index_url", "logger"]
+
+    def __init__(self, base_url: str, script_path: str = "/mediawiki"):
         """
         @param base_url: Domain of the mediawiki system we want to query (example: "https://www.example.com")
         @param api_path: path of the mediawiki API endpoint (relative to base_url)
         """
         self.base_url: Final[str] = base_url
-        self.api_path: Final[str] = api_path
-        self.api_url: Final[str] = f"{base_url}{api_path}"
+        self.script_path: Final[str] = script_path
+        self.api_url: Final[str] = f"{base_url}{script_path}/api.php"
+        self.index_url: Final[str] = f"{base_url}{script_path}/index.php"
         self.logger: logging.Logger = logging.getLogger('pywikitools.lib')
 
     def _get(self, params: Dict[str, str]) -> Any:
@@ -494,7 +497,7 @@ class ForTrainingLib():
             })
 
             # First step of marking a page for translation
-            response = session.get(f"{self.base_url}/mediawiki/index.php", params={
+            response = session.get(f"{self.index_url}", params={
                 "title": "Special:PageTranslation",
                 "target": title,
                 "do": "mark"})

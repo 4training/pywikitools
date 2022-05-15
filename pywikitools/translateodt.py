@@ -86,10 +86,10 @@ class TranslateODT:
 
         self.logger = logging.getLogger('pywikitools.translateodt')
         self.keep_english_file: bool = keep_english_file
-        if not self.config.has_option('mediawiki', 'baseurl'):
+        if not self.config.has_option('mediawiki', 'baseurl') or not self.config.has_option('mediawiki', 'scriptpath'):
             raise RuntimeError("Missing settings for mediawiki connection in config.ini")
-        # TODO also use config.get('mediawiki', 'apipath')
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self.config.get('mediawiki', 'baseurl'))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self.config.get('mediawiki', 'baseurl'),
+                                                             self.config.get('mediawiki', 'scriptpath'))
 
         self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
         self._original_page_count: int = 0          # How many pages did the currently opened file have originally?

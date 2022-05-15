@@ -34,7 +34,8 @@ class ResourcesBot:
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.site: pywikibot.site.APISite = pywikibot.Site()
-        if not self._config.has_option('mediawiki', 'baseurl'):
+        if not self._config.has_option('mediawiki', 'baseurl') or \
+           not self._config.has_option('mediawiki', 'scriptpath'):
             raise RuntimeError("Missing settings for mediawiki connection in config.ini")
         if not self._config.has_option("Paths", "temp"):
             self.logger.warning("Missing path for temporary files in config.ini")
@@ -42,8 +43,9 @@ class ResourcesBot:
         if not os.path.isdir(self._config.get("Paths", "temp")):
             os.makedirs(self._config.get("Paths", "temp"))
 
-        # TODO also use config.get('mediawiki', 'apipath')
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'),
+                                                             self._config.get('mediawiki', 'scriptpath'))
+
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
         self._rewrite_all: bool = rewrite_all

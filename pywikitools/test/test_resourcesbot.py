@@ -31,7 +31,7 @@ class TestResourcesBot(unittest.TestCase):
 
     def setUp(self):
         self.config = ConfigParser()
-        self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net"},
+        self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net", "scriptpath": "/mediawiki"},
                                "Paths": {"logs": "~/", "temp": "~/temp/"}})    # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
 
