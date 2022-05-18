@@ -20,6 +20,10 @@ class TestTranslateODT(unittest.TestCase):
     def setUp(self):
         self.translate_odt = DummyTranslateODT()
 
+    def tearDown(self):
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        self.translate_odt.fortraininglib.session.close()
+
     def test_is_search_and_replace_necessary(self):
         is_necessary = self.translate_odt._is_search_and_replace_necessary  # Shorten this long name
         for extension in ForTrainingLib("").get_file_types():

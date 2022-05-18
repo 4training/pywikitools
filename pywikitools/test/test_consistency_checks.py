@@ -6,8 +6,15 @@ from pywikitools.resourcesbot.data_structures import LanguageInfo
 
 
 class TestConsistencyCheck(unittest.TestCase):
+    def setUp(self):
+        self.fortraininglib = ForTrainingLib("https://www.4training.net")
+
+    def tearDown(self):
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        self.fortraininglib.session.close()
+
     def test_extract_link(self):
-        cc = ConsistencyCheck(ForTrainingLib("https://www.4training.net"))
+        cc = ConsistencyCheck(self.fortraininglib)
         dest, title = cc.extract_link("Here is a link: [[Destination|Title]].")
         self.assertEqual(dest, "Destination")
         self.assertEqual(title, "Title")
@@ -18,7 +25,7 @@ class TestConsistencyCheck(unittest.TestCase):
 
     def test_everything_in_english(self):
         """All consistency checks should pass in English"""
-        cc = ConsistencyCheck(ForTrainingLib("https://www.4training.net"))
+        cc = ConsistencyCheck(self.fortraininglib)
         language_info = LanguageInfo("en", "English")
         self.assertTrue(cc.check_bible_reading_hints_titles(language_info))
         self.assertTrue(cc.check_gods_story_titles(language_info))

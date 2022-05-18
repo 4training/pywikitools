@@ -18,6 +18,10 @@ class TestFortrainingLib(unittest.TestCase):
         # logging.basicConfig(level=logging.INFO)
         self.lib = ForTrainingLib("https://www.4training.net")
 
+    def tearDown(self):
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        self.lib.session.close()
+
     @patch("pywikitools.fortraininglib.requests.Session.get")
     def test_get(self, mock_get):
         # Emulate a successful get request

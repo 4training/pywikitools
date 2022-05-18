@@ -35,6 +35,10 @@ class TestResourcesBot(unittest.TestCase):
                                "Paths": {"logs": "~/", "temp": "~/temp/"}})    # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
 
+    def tearDown(self):
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        self.bot.fortraininglib.session.close()
+
     @patch("pywikibot.FilePage")
     def test_add_english_file_infos(self, mock_filepage):
         mock_filepage.return_value.exists.return_value = True
