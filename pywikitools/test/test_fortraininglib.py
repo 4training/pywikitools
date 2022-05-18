@@ -18,7 +18,7 @@ class TestFortrainingLib(unittest.TestCase):
         # logging.basicConfig(level=logging.INFO)
         self.lib = ForTrainingLib("https://www.4training.net")
 
-    @patch("pywikitools.fortraininglib.requests.get")
+    @patch("pywikitools.fortraininglib.requests.Session.get")
     def test_get(self, mock_get):
         # Emulate a successful get request
         response = requests.Response()
@@ -29,7 +29,7 @@ class TestFortrainingLib(unittest.TestCase):
         self.lib._get({})
         mock_get.assert_called_once()
 
-    @patch("pywikitools.fortraininglib.requests.get")
+    @patch("pywikitools.fortraininglib.requests.Session.get")
     def test_get_with_timeouts(self, mock_get):
         # Let's emulate repeated Timeouts and assert that requests.get() got called CONNECT_RETRIES times
         mock_get.side_effect = requests.exceptions.Timeout
@@ -38,7 +38,7 @@ class TestFortrainingLib(unittest.TestCase):
             self.assertEqual(len(logs.output), self.lib.CONNECT_RETRIES + 1)
         self.assertEqual(mock_get.call_count, self.lib.CONNECT_RETRIES)
 
-    @patch("pywikitools.fortraininglib.requests.get")
+    @patch("pywikitools.fortraininglib.requests.Session.get")
     def test_get_with_single_timeout(self, mock_get):
         # One request times out and afterwards all works fine again
         response = requests.Response()
@@ -51,7 +51,7 @@ class TestFortrainingLib(unittest.TestCase):
             self.assertEqual(len(logs.output), 1)   # there should be only one warning
         self.assertEqual(mock_get.call_count, 2)
 
-    @patch("pywikitools.fortraininglib.requests.get")
+    @patch("pywikitools.fortraininglib.requests.Session.get")
     def test_get_with_json_decode_error(self, mock_get):
         response = requests.Response()
         response.status_code = 200
