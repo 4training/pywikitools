@@ -32,9 +32,11 @@ class CorrectBot:
     """Main class for doing corrections"""
     def __init__(self, config: ConfigParser, simulate: bool = False):
         self._config = config
-        if not self._config.has_option('mediawiki', 'baseurl'):
+        if not self._config.has_option('mediawiki', 'baseurl') or \
+           not self._config.has_option('mediawiki', 'scriptpath'):
             raise RuntimeError("Missing settings for mediawiki connection in config.ini")
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'),
+                                                             self._config.get('mediawiki', 'scriptpath'))
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
         self.site: pywikibot.site.APISite = pywikibot.Site()
         self._simulate: bool = simulate
@@ -50,8 +52,9 @@ class CorrectBot:
 
         Raises ImportError if corrector class can't be found"""
         # Dynamically load e.g. correctors/de.py
-        module_name = f"correctors.{language_code}"
-        module = importlib.import_module(module_name, ".")
+        module_name = f"pywikitools.correctbot.correctors.{language_code}"
+        module = importlib.import_module(module_name)
+
         # There should be exactly one class named "XYCorrector" in there - let's get it
         for class_name in dir(module):
             if "Corrector" in class_name:
@@ -180,10 +183,36 @@ class CorrectBot:
                 mediawiki_page.text = result.corrections.get_translation()
                 mediawiki_page.save(minor=True)
 
-    def save_report(self, page: str, results: List[CorrectionResult]):
-        # TODO: save report
-        # report_page = pywikibot.Page(self.site, f"CorrectBot:{page}")
-        pass
+    def save_report(self, page: str, language_code: str, results: List[CorrectionResult]):
+        report: str = f"Results for this CorrectBot run of [[{page}/{language_code}]]: "
+        report += f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions.\n\n"
+        if self.get_correction_counter() > 0:
+            report += "== Changes ==\n<i>You can also look at the "
+            report += f"[[Special:PageHistory/{page}/{language_code}|version history of {page}/{language_code}]]"
+            report += " and compare revisions.</i>\n"
+            for result in results:
+                if result.corrections.has_translation_changes():
+                    report += f"=== [[{result.corrections.get_name()}]] ===\n"
+                    report += "{{StringDiff|" + result.corrections.get_original_translation()
+                    report += "|" + result.corrections.get_translation() + "}}\n"
+        if self.get_suggestion_counter() > 0:
+            report += "== Suggestions ==\n<i>Look at the following suggestions. If you find good ones, "
+            report += f"please correct them manually in [{self.fortraininglib.index_url}"
+            report += f"?title=Special:Translate&group=page-{page}&action=page&filter=&language={language_code}"
+            report += " the translation view]</i>\n"
+            for result in results:
+                if result.suggestions.has_translation_changes():
+                    report += f"=== [[{result.suggestions.get_name()}]] ===\n"
+                    report += "{{StringDiff|" + result.suggestions.get_original_translation()
+                    report += "|" + result.suggestions.get_translation() + "}}\n"
+
+#        TODO: add warning if job queue is not 0
+
+        report_page = pywikibot.Page(self.site, f"CorrectBot:{page}/{language_code}")
+        if report_page.text != report:
+            report_page.text = report
+            report_page.save()
+        return report
 
     def empty_job_queue(self) -> bool:
         """
@@ -224,6 +253,7 @@ class CorrectBot:
         else:
             self.save_to_mediawiki(results)
             self.empty_job_queue()
+            self.save_report(page, language_code, results)
 
         print(self.get_correction_stats())
         if self._correction_counter > 0:
