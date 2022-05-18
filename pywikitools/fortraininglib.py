@@ -20,7 +20,7 @@ class ForTrainingLib():
     TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
     CONNECT_RETRIES: int = 3    # In case a request timed out, let's try again up to three times
 
-    __slots__ = ["base_url", "script_path", "api_url", "index_url", "logger"]
+    __slots__ = ["base_url", "script_path", "api_url", "index_url", "logger", "session"]
 
     def __init__(self, base_url: str, script_path: str = "/mediawiki"):
         """
