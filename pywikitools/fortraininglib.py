@@ -32,16 +32,17 @@ class ForTrainingLib():
         self.api_url: Final[str] = f"{base_url}{script_path}/api.php"
         self.index_url: Final[str] = f"{base_url}{script_path}/index.php"
         self.logger: logging.Logger = logging.getLogger('pywikitools.lib')
+        self.session: requests.Session = requests.Session()
 
     def _get(self, params: Dict[str, str]) -> Any:
         """
-        Wrapper around requests.get to handle timeouts and other issues
+        Wrapper around requests.Session.get to handle timeouts and other issues
         @return JSON (as from response.json()) or {} in case of an error
         """
         retries = 0
         while retries < self.CONNECT_RETRIES:
             try:
-                response = requests.get(self.api_url, params=params, timeout=self.TIMEOUT)
+                response = self.session.get(self.api_url, params=params, timeout=self.TIMEOUT)
                 self.logger.debug(f"API Request with parameters {params}... {response.status_code}")
                 return response.json()
             except requests.exceptions.Timeout:
