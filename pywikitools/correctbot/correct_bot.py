@@ -184,10 +184,17 @@ class CorrectBot:
                 mediawiki_page.save(minor=True)
 
     def save_report(self, page: str, language_code: str, results: List[CorrectionResult]):
-        report: str = f"Results for this CorrectBot run of [[{page}/{language_code}]]: "
-        report += f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions.\n\n"
+        # We'll save the report in our custom CorrectBot namespace
+        page_name: str = f"CorrectBot:{page}/{language_code}"
+        summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions."
+
+        report: str = f"__NOTOC__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
+        report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|page history]])\n"
+        if self.fortraininglib.count_jobs() > 0:
+            self.logger.warning("MediaWiki job queue is not empty!")
+            report += "  <i>Warning: MediaWiki job queue is not empty, some changes may not be visible yet.</i>\n"
         if self.get_correction_counter() > 0:
-            report += "== Changes ==\n<i>You can also look at the "
+            report += f"\n== Changes ==\n{self.get_correction_stats()}\n<i>You can also look at the "
             report += f"[[Special:PageHistory/{page}/{language_code}|version history of {page}/{language_code}]]"
             report += " and compare revisions.</i>\n"
             for result in results:
@@ -196,8 +203,8 @@ class CorrectBot:
                     report += "{{StringDiff|" + result.corrections.get_original_translation()
                     report += "|" + result.corrections.get_translation() + "}}\n"
         if self.get_suggestion_counter() > 0:
-            report += "== Suggestions ==\n<i>Look at the following suggestions. If you find good ones, "
-            report += f"please correct them manually in [{self.fortraininglib.index_url}"
+            report += f"\n== Suggestions ==\n{self.get_suggestion_stats()}\n<i>Look at the following suggestions. "
+            report += f"If you find good ones, please correct them manually in [{self.fortraininglib.index_url}"
             report += f"?title=Special:Translate&group=page-{page}&action=page&filter=&language={language_code}"
             report += " the translation view]</i>\n"
             for result in results:
@@ -206,12 +213,10 @@ class CorrectBot:
                     report += "{{StringDiff|" + result.suggestions.get_original_translation()
                     report += "|" + result.suggestions.get_translation() + "}}\n"
 
-#        TODO: add warning if job queue is not 0
-
-        report_page = pywikibot.Page(self.site, f"CorrectBot:{page}/{language_code}")
+        report_page = pywikibot.Page(self.site, page_name)
         if report_page.text != report:
             report_page.text = report
-            report_page.save()
+            report_page.save(summary)
         return report
 
     def empty_job_queue(self) -> bool:

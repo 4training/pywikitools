@@ -1,6 +1,11 @@
-Results for this CorrectBot run of [[Test/fr]]: 5 changes, 1 suggestions.
+__NOTOC__
+Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|page history]])
 
 == Changes ==
+5 corrections:
+* Erase redundant spaces before commas and dots (2x)
+* Ensure we have non-breaking spaces before : ; ! ? (3x)
+
 <i>You can also look at the [[Special:PageHistory/Test/fr|version history of Test/fr]] and compare revisions.</i>
 === [[Translations:Test/1/fr]] ===
 {{StringDiff|Mais moi , je vous dis: Si|Mais moi, je vous dis : Si}}
@@ -10,7 +15,11 @@ Results for this CorrectBot run of [[Test/fr]]: 5 changes, 1 suggestions.
 {{StringDiff|Comment prier?<br/>Comment jeûner?|Comment prier ?<br/>Comment jeûner ?}}
 === [[Translations:Test/4/fr]] ===
 {{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu|Ne jugez pas les autres,et Dieu ne vous jugera pas. En effet,Dieu}}
+
 == Suggestions ==
+1 suggestions:
+* Insert missing spaces between punctuation and characters (1x)
+
 <i>Look at the following suggestions. If you find good ones, please correct them manually in [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Test&action=page&filter=&language=fr the translation view]</i>
 === [[Translations:Test/4/fr]] ===
 {{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas. En effet,Dieu|Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu}}

@@ -185,15 +185,16 @@ class CorrectorBase:
             stats: Dictionary with the "raw" statistics (name of the function -> how many times was it applied)
 
         Returns:
-            A human-readable string with individual lines for each rule that was applied at least once
+            A human-readable string with individual lines for each rule that was applied at least once.
+            The string is at the same time valid mediawiki code for rendering a list
             An empty string if no rules were applied
         """
         details: str = ""
         for function_name, counter in stats.items():
             documentation = getattr(self, function_name).__doc__
             if documentation is not None:
-                details += " - " + documentation.partition("\n")[0]
+                details += "* " + documentation.partition("\n")[0]
             else:
-                details += " - " + function_name
+                details += "* " + function_name
             details += f" ({counter}x)\n"
         return details

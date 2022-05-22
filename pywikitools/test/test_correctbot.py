@@ -507,11 +507,19 @@ class TestCorrectBot(unittest.TestCase):
         mock_lib = Mock()
         mock_lib.index_url = "https://www.4training.net/mediawiki/index.php"
         mock_lib.get_translation_units.return_value = self.prepare_translated_page()
+        mock_lib.count_jobs.return_value = 0
         self.correctbot.fortraininglib = mock_lib
         results = self.correctbot.check_page("Test", "fr")
         self.correctbot.save_report("Test", "fr", results)
         with open(join(dirname(abspath(__file__)), "data", "correctbot_report.mediawiki"), 'r') as f:
             self.assertEqual(mock_page.return_value.text, f.read())
+
+        # if job queue is not empty a warning will be added to the report page
+        self.assertNotIn("job queue is not empty", mock_page.return_value.text)
+        mock_lib.count_jobs.return_value = 42
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.correctbot.save_report("Test", "fr", results)
+        self.assertIn("job queue is not empty", mock_page.return_value.text)
 
 
 if __name__ == '__main__':
