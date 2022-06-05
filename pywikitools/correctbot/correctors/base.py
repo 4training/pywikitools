@@ -175,24 +175,26 @@ class CorrectorBase:
 
     def print_stats(self, stats: Dict[str, int]) -> str:
         """
-        Write a detailed overview with how much corrections were made and by which functions.
+        Write a detailed overview with how many corrections were made and by which functions.
 
         In the details we'll read from the documentation strings of the functions used
         and take the first line (in case the documentation has several lines)
         If a function is not documented then just its name is printed.
-        @param stats: Dictionary with the "raw" statistics (name of the function -> how many times was it applied)
+
+        Args:
+            stats: Dictionary with the "raw" statistics (name of the function -> how many times was it applied)
+
+        Returns:
+            A human-readable string with individual lines for each rule that was applied at least once.
+            The string is at the same time valid mediawiki code for rendering a list
+            An empty string if no rules were applied
         """
         details: str = ""
-        total_counter: int = 0
         for function_name, counter in stats.items():
-            total_counter += counter
             documentation = getattr(self, function_name).__doc__
             if documentation is not None:
-                details += " - " + documentation.partition("\n")[0]
+                details += "* " + documentation.partition("\n")[0]
             else:
-                details += " - " + function_name
+                details += "* " + function_name
             details += f" ({counter}x)\n"
-        result = f"{total_counter} corrections"
-        if details != "":
-            result += ":\n" + details
-        return result
+        return details

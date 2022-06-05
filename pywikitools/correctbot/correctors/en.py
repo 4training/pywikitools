@@ -1,5 +1,5 @@
 import re
-from .base import CorrectorBase
+from .base import CorrectorBase, suggest_only
 from .universal import UniversalCorrector
 
 
@@ -12,6 +12,7 @@ class EnglishCorrector(CorrectorBase, UniversalCorrector):
     * Substitute wrong apostrophe
     """
 
+    @suggest_only
     def correct_single_apostrophe(self, text: str) -> str:
         """Correct single apostrophe ' with ’"""
         # TODO what if we have ''/''' as markup for italics/bold in text?

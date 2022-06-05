@@ -47,6 +47,7 @@ class TestBeautifyHTML(unittest.TestCase):
         # There should be no empty <span> sections anymore
         fortraininglib = ForTrainingLib("https://www.4training.net")
         soup = BeautifulSoup(BeautifyHTML().process_html(fortraininglib.get_page_html("Church/en")), 'html.parser')
+        fortraininglib.session.close()      # workaround to remove annoying ResourceWarnings on unclosed SSLSockets
         self.assertEqual(len(soup.find_all("div", class_="mw-parser-output")), 0)
         for element in soup.find_all("span"):
             self.assertIsNotNone(element.string)

@@ -11,13 +11,18 @@ from pywikitools.translateodt import TranslateODT, TranslateOdtConfig
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
-        super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net"}})
+        super().__init__(keep_english_file=True, config={"mediawiki": {"baseurl": "https://www.4training.net",
+                                                                       "scriptpath": "/mediawiki"}})
         self._loffice = Mock(spec=LibreOffice)
 
 
 class TestTranslateODT(unittest.TestCase):
     def setUp(self):
         self.translate_odt = DummyTranslateODT()
+
+    def tearDown(self):
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        self.translate_odt.fortraininglib.session.close()
 
     def test_is_search_and_replace_necessary(self):
         is_necessary = self.translate_odt._is_search_and_replace_necessary  # Shorten this long name

@@ -89,7 +89,14 @@
           {
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/f/f0/Исцеление.pdf",
-            "timestamp": "2022-03-18T14:55:22+00:00"
+            "timestamp": "2022-03-18T14:55:22+00:00",
+            "metadata": {
+              "version": "1.0",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": ""
+            }
           }
         ]
       },
@@ -107,7 +114,15 @@
           {
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/d/d5/Моё_свидетельство.pdf",
-            "timestamp": "2020-10-11T21:40:08+00:00"
+            "timestamp": "2020-10-11T21:40:08+00:00",
+            "metadata": {
+              "version": "1.1",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+
           },
           {
             "file_type": "odt",
@@ -130,7 +145,15 @@
           {
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/4/45/Подсказки_для_чтения_Библии.pdf",
-            "timestamp": "2021-04-21T10:11:30+00:00"
+            "timestamp": "2021-04-21T10:11:30+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": false,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": "Expected subject to start with 'Prayer' but found ''"
+            }
+
           },
           {
             "file_type": "printPdf",
@@ -181,7 +204,14 @@
           {
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/0/0b/Подсказки_для_чтения_Библии_(Начиная_с_Сотворения).pdf",
-            "timestamp": "2021-04-21T10:30:14+00:00"
+            "timestamp": "2021-04-21T10:30:14+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": false,
+              "warnings": ""
+            }
           },
           {
             "file_type": "odt",
@@ -226,7 +256,14 @@
           {
             "file_type": "pdf",
             "url": "https://www.4training.net/mediawiki/images/d/d2/Четыре_вида_учеников.pdf",
-            "timestamp": "2021-05-28T13:04:18+00:00"
+            "timestamp": "2021-05-28T13:04:18+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": false,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": "Expected title to start with 'Четыре вида учеников' but found 'Training meeting outline'"
+            }
           },
           {
             "file_type": "odt",

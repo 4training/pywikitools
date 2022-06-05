@@ -299,6 +299,9 @@ class TestTranslatedPage(unittest.TestCase):
         # Make sure we have now all translation units combined
         self.assertEqual(len(translated_page.units), unit_counter + template_unit_counter)
 
+        # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
+        fortraininglib.session.close()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -105,6 +105,10 @@ class TranslationUnit:
         """Returns an empty string if no translation exists"""
         return self._translation
 
+    def get_original_translation(self) -> str:
+        """Return the original translation this TranslationUnit was constructed with"""
+        return self._original_translation
+
     def set_translation(self, text: str):
         """Changes the translation of this translation unit. Caution: Changes in snippets will be discarded."""
         self._translation = text

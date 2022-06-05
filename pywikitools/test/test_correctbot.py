@@ -1,22 +1,25 @@
 """
 Test cases for CorrectBot: Testing core functionality as well as language-specific rules
 """
+from configparser import ConfigParser
 from inspect import signature
+import subprocess
 import unittest
 import importlib
-import os
+from os import listdir
+from os.path import abspath, dirname, isfile, join, normpath
+from typing import Callable, Dict, List, Optional
+from unittest.mock import patch, Mock
+
+from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
-from pywikitools.correctbot.correctors.universal import RTLCorrector, UniversalCorrector
-
-from typing import Callable, List, Optional
-from os import listdir
-from os.path import isfile, join
-
-from pywikitools.lang.translated_page import TranslationUnit
+from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, RTLCorrector, \
+                                                        UniversalCorrector
+from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 # Package and module names
 PKG_CORRECTORS = "pywikitools.correctbot.correctors"
@@ -81,6 +84,7 @@ class CorrectorTestCase(unittest.TestCase):
         fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
+        fortraininglib.session.close()
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
         self.assertEqual(correct(self.corrector, old_content), new_content)
@@ -90,6 +94,7 @@ class CorrectorTestCase(unittest.TestCase):
         fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_title(page, language_code, old_revision)
         new_content = fortraininglib.get_translated_title(page, language_code, new_revision)
+        fortraininglib.session.close()
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
         self.assertEqual(title_correct(self.corrector, old_content), new_content)
@@ -100,6 +105,7 @@ class CorrectorTestCase(unittest.TestCase):
         fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
+        fortraininglib.session.close()
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
         # Check that we really have a translation unit with a file name. TODO use the following line instead:
@@ -112,7 +118,7 @@ class TestLanguageCorrectors(unittest.TestCase):
     def setUp(self):
         """Load all language-specific corrector classes so that we can afterwards easily run our checks on them"""
         self.language_correctors: List[Callable] = []
-        folder = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), CORRECTORS_FOLDER))
+        folder = normpath(join(dirname(abspath(__file__)), CORRECTORS_FOLDER))
 
         # Search for all language-specific files in the correctors/ folder and get the classes in them
         for corrector_file in [f for f in listdir(folder) if isfile(join(folder, f))]:
@@ -234,6 +240,8 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
         self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
         self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
+        self.assertEqual(correct(corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
+        self.assertEqual(correct(corrector, "How do I survive if … ?"), "How do I survive if … ?")
 
         # TODO Test also print_stats()
 #        self.assertIn("6 corrections", corrector.print_stats())
@@ -276,6 +284,19 @@ class TestUniversalCorrector(unittest.TestCase):
 # TODO    def test_correct_ellipsis(self):
 #        corrector = UniversalCorrectorTester()
 #        self.assertEqual(correct(corrector, "…"), "...")
+
+
+class NoSpaceBeforePunctuationCorrectorTester(CorrectorBase, NoSpaceBeforePunctuationCorrector):
+    """With this class we can test the rules of NoSpaceBeforePunctuationCorrector"""
+    pass
+
+
+class TestNoSpaceBeforePunctuationCorrector(CorrectorTestCase):
+    def test_spaces(self):
+        corrector = NoSpaceBeforePunctuationCorrectorTester()
+        self.assertEqual(correct(corrector, "I want this ! And you   ?"), "I want this! And you?")
+        self.assertEqual(correct(corrector, "I want ... ! How about ___ ?"), "I want ... ! How about ___ ?")
+        self.assertEqual(correct(corrector, "Ellipsis … ? Sure … !"), "Ellipsis … ? Sure … !")
 
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
@@ -339,6 +360,17 @@ class TestEnglishCorrector(unittest.TestCase):
             self.assertEqual(correct(corrector, wrong), '“Test”')
 """
 
+FRENCH_CORRECTIONS: Dict[str, str] = {
+    "Mais moi , je vous dis: Si":
+    "Mais moi, je vous dis\u00a0: Si",
+    "Si quelqu’un dit à son frère: “Imbécile!”":
+    "Si quelqu’un dit à son frère\u00a0: “Imbécile\u00a0!”",
+    "Comment prier?<br/>Comment jeûner?":
+    "Comment prier\u00a0?<br/>Comment jeûner\u00a0?",
+    "Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu":
+    "Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu"
+}
+
 
 class TestFrenchCorrector(unittest.TestCase):
     def test_punctuation(self):
@@ -349,13 +381,8 @@ class TestFrenchCorrector(unittest.TestCase):
         Space after all punctuation marks.
         """
         corrector = FrenchCorrector()
-        self.assertEqual(correct(corrector, "Mais moi , je vous dis: Si"), "Mais moi, je vous dis\u00a0: Si")
-        self.assertEqual(correct(corrector, "Si quelqu’un dit à son frère: “Imbécile!”"),
-                                           "Si quelqu’un dit à son frère\u00a0: “Imbécile\u00a0!”")
-        self.assertEqual(correct(corrector, "Comment prier?<br/>Comment jeûner?"),
-                                           "Comment prier\u00a0?<br/>Comment jeûner\u00a0?")
-        self.assertEqual(correct(corrector, "Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu"),
-                                           "Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu")
+        for faulty, corrected in FRENCH_CORRECTIONS.items():
+            self.assertEqual(correct(corrector, faulty), corrected)
         # Bible references (punctuation between digits) should not be touched
         self.assertEqual(correct(corrector, "Romains 12:2"), "Romains 12:2")
 
@@ -397,6 +424,102 @@ class TestArabicCorrector(CorrectorTestCase):
         self.compare_title_revisions("How to Continue After a Prayer Time", "ar", 62193, 62274)
 #       TODO this would require passing the original text as well so that final dot gets added
 #        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
+
+
+class TestCorrectBot(unittest.TestCase):
+    def setUp(self):
+        self.config = ConfigParser()
+        self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net", "scriptpath": "/mediawiki"}})
+        self.correctbot = CorrectBot(self.config, True)
+
+    @patch("pywikitools.correctbot.correct_bot.subprocess.Popen")
+    def test_empty_job_queue(self, mock_popen):
+        # configuration for emptying job queue missing
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.assertFalse(self.correctbot.empty_job_queue())
+
+        self.config.read_dict({"Paths": {"php": "path/to/php"},
+                               "correctbot": {"runjobs": "/path/to/runJobs.php"}})
+
+        # successfully emptying job queue
+        mock_popen.return_value.wait.return_value = 0
+        self.assertTrue(self.correctbot.empty_job_queue())
+
+        # runJobs.php failed
+        mock_popen.return_value.wait.return_value = 1
+        with self.assertLogs("pywikitools.correctbot", level="WARNING") as logs:
+            self.assertFalse(self.correctbot.empty_job_queue())
+        self.assertIn("Exit code: 1", logs.output[0])
+
+        # runJobs.php times out
+        mock_popen.return_value.wait.side_effect = subprocess.TimeoutExpired("", 15)
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.assertFalse(self.correctbot.empty_job_queue())
+
+    def test_check_unit(self):
+        corrector = FrenchCorrector()
+        # check_unit() should return None if translation is empty
+        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "de", "Test", "")))
+
+        # check_unit() should return None if we have the translation unit with version information
+        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "de", "1.2", "1.2a")))
+
+        for faulty, corrected in FRENCH_CORRECTIONS.items():
+            translation_unit = TranslationUnit("Test", "fr", "ignored", faulty)
+            result = self.correctbot.check_unit(corrector, translation_unit)
+            self.assertEqual(faulty, result.corrections.get_original_translation())
+            self.assertEqual(corrected, result.suggestions.get_translation())
+
+        # TODO add checks for the other (normal) cases
+
+    def prepare_translated_page(self) -> TranslatedPage:
+        """Prepare a TranslatedPage object out of the FRENCH_CORRECTIONS dictionary"""
+        translation_units: List[TranslationUnit] = []
+        counter = 1
+        for faulty in FRENCH_CORRECTIONS.keys():
+            # The structure of original and translation needs to be the same
+            original = "ignored" if "<br/>" not in faulty else "ignored<br/>ignored"
+            translation_units.append(TranslationUnit(f"Test/{counter}", "fr", original, faulty))
+            counter += 1
+        return TranslatedPage("Test", "fr", translation_units)
+
+    def test_check_page(self):
+        # check_page() returns None if the page isn't existing
+        mock_lib = Mock()
+        mock_lib.get_translation_units.return_value = None
+        self.correctbot.fortraininglib = mock_lib
+        results = self.correctbot.check_page("NotExisting", "fr")
+        mock_lib.get_translation_units.assert_called_once()
+        self.assertIsNone(results)
+
+        # let's correct a page with some French translation units for testing
+        mock_lib.get_translation_units.return_value = self.prepare_translated_page()
+        results = self.correctbot.check_page("Test", "fr")
+        self.assertIsNotNone(results)
+        self.assertEqual(len(results), 4)
+        for result in results:
+            faulty = result.corrections.get_original_translation()
+            self.assertEqual(FRENCH_CORRECTIONS[faulty], result.suggestions.get_translation())
+
+    @patch("pywikibot.Page")
+    def test_save_report(self, mock_page):
+        """Check that output of CorrectBot.save_report() is the same as expected in data/correctbot_report.mediawiki"""
+        mock_lib = Mock()
+        mock_lib.index_url = "https://www.4training.net/mediawiki/index.php"
+        mock_lib.get_translation_units.return_value = self.prepare_translated_page()
+        mock_lib.count_jobs.return_value = 0
+        self.correctbot.fortraininglib = mock_lib
+        results = self.correctbot.check_page("Test", "fr")
+        self.correctbot.save_report("Test", "fr", results)
+        with open(join(dirname(abspath(__file__)), "data", "correctbot_report.mediawiki"), 'r') as f:
+            self.assertEqual(mock_page.return_value.text, f.read())
+
+        # if job queue is not empty a warning will be added to the report page
+        self.assertNotIn("job queue is not empty", mock_page.return_value.text)
+        mock_lib.count_jobs.return_value = 42
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.correctbot.save_report("Test", "fr", results)
+        self.assertIn("job queue is not empty", mock_page.return_value.text)
 
 
 if __name__ == '__main__':

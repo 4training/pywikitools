@@ -45,14 +45,17 @@ class UniversalCorrector():
         result = result[0].upper() + result[1:]
         return result
 
+    @suggest_only
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:
         """Reduce multiple spaces to one space"""
         check_multiple_spaces = re.compile(r'( ){2,}')
         return re.sub(check_multiple_spaces, ' ', text)
 
+    @suggest_only
     def correct_missing_spaces(self, text: str) -> str:
         """Insert missing spaces between punctuation and characters"""
-        check_missing_spaces = re.compile(r'([.!?;,؛،؟])([\w])')
+        # not including : and ; because that would give too many false positives from definition lists
+        check_missing_spaces = re.compile(r'([.!?,؛،؟])([\w])')
         # As we need to check for exceptions (surrounded by digits), it's a bit complicated. Otherwise it'd be just
         # return re.sub(check_missing_spaces, r'\1 \2', text)
         last_start_pos = 0              # necessary to not run into endless loops
@@ -72,15 +75,18 @@ class UniversalCorrector():
 
     def correct_spaces_before_comma_and_dot(self, text: str) -> str:
         """Erase redundant spaces before commas and dots"""
-        # basically we check for r' +([.,])'. But we don't want to capture ... so we add [^.]
+        # basically we check for r' +([.,])'.
+        # We want to allow "I forgive ___ ." so we add [^_] in the beginning
+        # But we don't want to capture ... so we add [^.] in the end
         # Now we would miss "end ." so we add the alternative with |
-        check_wrong_spaces = re.compile(r' +([.,])$| +([.,])([^.])')
-        return re.sub(check_wrong_spaces, r'\1\2\3', text)
+        check_wrong_spaces = re.compile(r'([^_]) +([.,])$|([^_]) +([.,])([^.])')
+        return re.sub(check_wrong_spaces, r'\1\2\3\4\5', text)
 
     def correct_wrong_dash_also_in_title(self, text: str) -> str:
         """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
         return re.sub(' - ', ' – ', text)
 
+    @suggest_only
     @use_snippets
     def correct_missing_final_dot(self, text: str, original: str) -> str:
         """If the original has a trailing dot, the translation also needs one at the end."""
@@ -91,7 +97,10 @@ class UniversalCorrector():
 
     def correct_mediawiki_bold_italic(self, text: str) -> str:
         """Replace mediawiki formatting '''bold''' with <b>bold</b> and ''italic'' with <i>italic</i>"""
-        # Is a shorter implementation possible?
+        # Three times doing almost the same but order is important: We need to start with the longest search string
+        # So first correcting ''''', then ''' and finally '' - is a shorter implementation possible?
+
+        # Replacing ''''' (bold and italic)
         splitted_text: List[str] = re.split("'''''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''''': we don't do anything
             logger = logging.getLogger('pywikitools.correctbot.universal')
@@ -103,6 +112,7 @@ class UniversalCorrector():
                 text += '<b><i>' if counter % 2 == 1 else '</i></b>'
                 text += splitted_text[counter]
 
+        # Replacing ''' (bold)
         splitted_text = re.split("'''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''': we don't do anything
             logger = logging.getLogger('pywikitools.correctbot.universal')
@@ -114,6 +124,7 @@ class UniversalCorrector():
                 text += '<b>' if counter % 2 == 1 else '</b>'
                 text += splitted_text[counter]
 
+        # Replacing '' (italic)
         splitted_text = re.split("''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of '': we don't do anything
             logger = logging.getLogger('pywikitools.correctbot.universal')
@@ -151,8 +162,9 @@ class NoSpaceBeforePunctuationCorrector():
     """
     def correct_no_spaces_before_punctuation(self, text: str) -> str:
         """Erase redundant spaces before punctuation marks."""
-        check_wrong_spaces = re.compile(r' +([!?;:])')
-        return re.sub(check_wrong_spaces, r'\1', text)
+        # Having things like ... ? is okay so we add [^.…_] in the beginning
+        check_wrong_spaces = re.compile(r'([^.…_]) +([!?;:])')
+        return re.sub(check_wrong_spaces, r'\1\2', text)
 
 
 class RTLCorrector():
