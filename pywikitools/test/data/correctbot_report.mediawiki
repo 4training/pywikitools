@@ -1,5 +1,5 @@
 __NOTOC__
-Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|page history]])
+Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
 
 == Changes ==
 5 corrections:

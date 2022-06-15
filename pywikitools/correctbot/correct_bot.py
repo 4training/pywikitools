@@ -189,7 +189,7 @@ class CorrectBot:
         summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions."
 
         report: str = f"__NOTOC__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
-        report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|page history]])\n"
+        report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|report history]])\n"
         if self.fortraininglib.count_jobs() > 0:
             self.logger.warning("MediaWiki job queue is not empty!")
             report += "  <i>Warning: MediaWiki job queue is not empty, some changes may not be visible yet.</i>\n"
