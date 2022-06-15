@@ -160,6 +160,13 @@ class TestWorksheetInfo(unittest.TestCase):
         for file_type in expected_file_types:
             self.assertTrue(self.worksheet_info.has_file_type(file_type))
 
+    def test_show_in_list(self):
+        self.assertFalse(self.worksheet_info.show_in_list())
+        self.test_add_file_info()
+        self.assertTrue(self.worksheet_info.show_in_list())
+        self.worksheet_info.progress.translated = 0
+        self.assertFalse(self.worksheet_info.show_in_list())
+
     def test_is_incomplete(self):
         self.assertFalse(self.worksheet_info.is_incomplete())
 

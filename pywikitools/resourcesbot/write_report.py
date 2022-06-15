@@ -96,7 +96,9 @@ class WriteReport(GlobalPostProcessor):
         """
         content: str = "== Worksheets ==\n"
         content += '{| class="wikitable" style="width:100%"\n'
-        content += "|-\n! Worksheet\n! Translation\n! Progress\n! PDF\n! ODT\n! Version\n"
+        content += "|-\n! Worksheet\n! Translation\n! Progress\n! colspan=\"2\" | PDF\n! ODT\n! Version\n"
+        content += f"! [[{language_info.english_name}#Available_training_resources_in_{language_info.english_name}|"
+        content += "Listed?]]\n"
         for page, en_worksheet in english_info.worksheets.items():
             lang_worksheet = language_info.worksheets[page] if page in language_info.worksheets else None
             content += self.create_worksheet_line(language_info.language_code, en_worksheet, lang_worksheet)
@@ -178,8 +180,14 @@ class WriteReport(GlobalPostProcessor):
             odt_color = Color.RED
             content += f'| style="background-color:{Color.RED}; text-align:center" | -\n'
 
-        # Now we append content for column 6: version information
+        # Now we append content for column 7: version information
         content += version_content
+
+        # column 8: Is this worksheet listed in the language overview page?
+        if lang_worksheet is not None and lang_worksheet.show_in_list():
+            content += "| style=\"text-align:center\" | ✓\n"
+        else:
+            content += "| style=\"text-align:center\" | -\n"
 
         # Determine the line color (for the first two cells)
         line_color = Color.RED

@@ -81,20 +81,17 @@ class WriteList(LanguagePostProcessor):
         """
         content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
-            if worksheet_info.progress.is_unfinished():
-                continue
-            if not worksheet_info.has_file_type('pdf'):
-                # Only show worksheets where we have a PDF file in the list
-                self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"
-                                    " not including in list.")
-                continue
-
-            content += f"* [[{worksheet}/{language_info.language_code}|"
-            content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
-            content += "\n"
+            if worksheet_info.show_in_list():
+                content += f"* [[{worksheet}/{language_info.language_code}|"
+                content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
+                content += "\n"
+            else:
+                if not worksheet_info.progress.is_unfinished() and not worksheet_info.has_file_type('pdf'):
+                    self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"
+                                        " not including in list.")
 
         self.logger.debug(content)
         return content

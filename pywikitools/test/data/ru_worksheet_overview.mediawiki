@@ -4,9 +4,10 @@
 ! Worksheet
 ! Translation
 ! Progress
-! PDF
+! colspan="2" | PDF
 ! ODT
 ! Version
+! [[Russian#Available_training_resources_in_Russian|Listed?]]
 |- style="background-color:red"
 | [[God's Story (five fingers)]]
 | -
@@ -14,6 +15,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[God's Story (first and last sacrifice)]]
 | [[God's Story (first and last sacrifice)/ru|Рассказ о Боге (Первая и последняя жертва)]]
@@ -21,6 +23,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 2.2
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Baptism]]
 | [[Baptism/ru|Крещение]]
@@ -28,6 +31,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | 2.1 (Original: 2.2)
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Prayer]]
 | [[Prayer/ru|Молитва]]
@@ -35,6 +39,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.1
+| style="text-align:center" | -
 |- style="background-color:red"
 | [[Forgiving Step by Step]]
 | -
@@ -42,6 +47,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
+| style="text-align:center" | -
 |- style="background-color:red"
 | [[Confessing Sins and Repenting]]
 | -
@@ -49,6 +55,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Time with God]]
 | [[Time with God/ru|Время с Богом]]
@@ -56,6 +63,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.2
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Hearing from God]]
 | [[Hearing from God/ru|Слышание Бога]]
@@ -63,6 +71,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.2
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Church]]
 | [[Church/ru|Церковь]]
@@ -70,6 +79,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:green" | [[File:Церковь.odt]]
 | style="background-color:green" | 2.0
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[Healing]]
 | [[Healing/ru|Исцеление]]
@@ -78,6 +88,7 @@
 | style="background-color:green" | <div title="Metadata: correct. PDF/1A: no. Metadata only in DocInfo (deprecated). ">✓ ?</div>
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
+| style="text-align:center" | ✓
 |- style="background-color:red"
 | [[Dealing with Money]]
 | -
@@ -85,6 +96,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
+| style="text-align:center" | -
 |- style="background-color:green"
 | [[My Story with God]]
 | [[My Story with God/ru|Моё свидетельство]]
@@ -93,6 +105,7 @@
 | style="background-color:green" | <div title="Metadata: correct. PDF/1A: yes. ">✓</div>
 | style="background-color:green" | [[File:Моё_свидетельство.odt]]
 | style="background-color:green" | 1.1
+| style="text-align:center" | ✓
 |- style="background-color:orange"
 | [[Bible Reading Hints]]
 | [[Bible Reading Hints/ru|Подсказки для чтения Библии]]
@@ -101,6 +114,7 @@
 | style="background-color:orange" | <div title="Metadata: incorrect. PDF/1A: yes. (Warnings: Expected subject to start with 'Prayer' but found '')">⚠</div>
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии.odt]]
 | style="background-color:green" | 2.0
+| style="text-align:center" | ✓
 |- style="background-color:green"
 | [[Bible Reading Hints (Seven Stories full of Hope)]]
 | [[Bible Reading Hints (Seven Stories full of Hope)/ru|Подсказки для чтения Библии (Семь историй, полных надежды)]]
@@ -109,6 +123,7 @@
 | style="background-color:grey | ?
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Семь_историй,_полных_надежды).odt]]
 | style="background-color:green" | 2.0
+| style="text-align:center" | ✓
 |- style="background-color:green"
 | [[Bible Reading Hints (Starting with the Creation)]]
 | [[Bible Reading Hints (Starting with the Creation)/ru|Подсказки для чтения Библии (Начиная с Сотворения)]]
@@ -117,6 +132,7 @@
 | style="background-color:green" | <div title="Metadata: correct. PDF/1A: no. ">✓ ?</div>
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Начиная_с_Сотворения).odt]]
 | style="background-color:green" | 2.0
+| style="text-align:center" | ✓
 |- style="background-color:orange"
 | [[The Three-Thirds Process]]
 | [[The Three-Thirds Process/ru|Трехсторонний процесс]]
@@ -124,6 +140,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
+| style="text-align:center" | -
 |- style="background-color:red"
 | [[Training Meeting Outline]]
 | -
@@ -131,6 +148,7 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
+| style="text-align:center" | -
 |- style="background-color:orange"
 | [[A Daily Prayer]]
 | [[A Daily Prayer/ru|Ежедневная молитва]]
@@ -138,4 +156,5 @@
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
+| style="text-align:center" | -
 |}

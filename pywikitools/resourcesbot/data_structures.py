@@ -220,6 +220,14 @@ class WorksheetInfo:
             return self._files[file_type].get_file_name()
         return ""
 
+    def show_in_list(self) -> bool:
+        """Should this worksheet be listed in the language information page?
+
+        A worksheet will be included in the list of available resources if it has a PDF
+        and if the translation is "finished" - see the definition of TranslationProgress.is_unfinished()
+        """
+        return not self.progress.is_unfinished() and self.has_file_type("pdf")
+
     def is_incomplete(self) -> bool:
         """A translation is incomplete if most units are translated but at least one is not translated or fuzzy"""
         return self.progress.is_incomplete()
