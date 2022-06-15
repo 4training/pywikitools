@@ -2,6 +2,7 @@ import json
 from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import patch
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
@@ -14,10 +15,11 @@ class TestWriteReport(unittest.TestCase):
             self.language_info = json.load(f, object_hook=json_decode)
         with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
             self.english_info = json.load(f, object_hook=json_decode)
+        self.fortraininglib = ForTrainingLib("https://www.4training.net")
 
     def test_created_mediawiki(self):
         # Compare mediawiki output with the content in data/ru_worksheet_overview.mediawiki
-        write_report = WriteReport(None)
+        write_report = WriteReport(self.fortraininglib, None)
         with open(join(dirname(abspath(__file__)), "data", "ru_worksheet_overview.mediawiki"), 'r') as f:
             expected_mediawiki = f.read()
             self.assertEqual(write_report.create_worksheet_overview(self.language_info, self.english_info),
@@ -26,7 +28,7 @@ class TestWriteReport(unittest.TestCase):
 
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page):
-        write_report = WriteReport(None)
+        write_report = WriteReport(self.fortraininglib, None)
         # When there is no proper language name, save_language_report() should directly exit
         with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
             write_report.save_language_report(LanguageInfo("de", ""), self.english_info)
@@ -47,7 +49,7 @@ class TestWriteReport(unittest.TestCase):
     @patch("pywikitools.resourcesbot.write_report.WriteReport.save_language_report")
     def test_run(self, mock_save):
         # run() should abort with warning if we don't provide English language info
-        write_report = WriteReport(None)
+        write_report = WriteReport(self.fortraininglib, None)
         language_data = {"ru": self.language_info}
         changes = {"ru": ChangeLog()}
         with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
@@ -61,7 +63,7 @@ class TestWriteReport(unittest.TestCase):
         mock_save.assert_not_called()
 
         # save_language_report() should be called once (for Russian) when we have force_rewrite
-        write_report = WriteReport(None, force_rewrite=True)
+        write_report = WriteReport(self.fortraininglib, None, force_rewrite=True)
         write_report.run(language_data, changes)
         mock_save.assert_called_once()
 

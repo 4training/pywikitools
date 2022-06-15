@@ -157,7 +157,7 @@ class WriteList(LanguagePostProcessor):
         self.logger.debug(new_page_content)
 
         # Save page and mark it for translation if necessary
-        if page.text == new_page_content:
+        if page.text.strip() == new_page_content.strip():
             return
         page.text = new_page_content
         page.save("Updated list of available training resources")  # TODO write list of changes here in the save message

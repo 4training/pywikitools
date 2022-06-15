@@ -18,6 +18,22 @@ from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, La
 from pywikitools.resourcesbot.write_report import WriteReport
 
 
+# For short creation of a pywikibot site (new feature of pywikibot 7.3)
+# TODO: use this and get rid of user-config.py
+class ForTrainingFamily(pywikibot.family.Family):  # noqa: D101
+
+    name = '4training'
+    langs = {
+        'en': 'www.4training.net',
+    }
+
+    def scriptpath(self, code):
+        return {'en': '/mediawiki'}[code]
+
+    def protocol(self, code):
+        return {'en': 'https'}[code]
+
+
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
@@ -34,6 +50,9 @@ class ResourcesBot:
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.site: pywikibot.site.APISite = pywikibot.Site()
+#       TODO use this and get rid of user-config.py
+#        family = ForTrainingFamily()
+#        self.site: pywikibot.site.APISite = pywikibot.Site(code='en', fam=family, user="AvailableResourcesBot")
         if not self._config.has_option('mediawiki', 'baseurl') or \
            not self._config.has_option('mediawiki', 'scriptpath'):
             raise RuntimeError("Missing settings for mediawiki connection in config.ini")
@@ -115,7 +134,7 @@ class ResourcesBot:
         write_list = WriteList(self.fortraininglib, self.site,
                                self._config.get("resourcesbot", "username", fallback=""),
                                self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
-        write_report = WriteReport(self.site, self._rewrite_all)
+        write_report = WriteReport(self.fortraininglib, self.site, self._rewrite_all)
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
                                  self._rewrite_all)
@@ -158,7 +177,7 @@ class ResourcesBot:
             warning = "is identical with English original"
         if warning != "":
             # TODO fill that translation unit with "-"
-            if not worksheet.progress.is_unfinished:    # No need write warnings if the translation is unfinished
+            if not worksheet.progress.is_unfinished():    # No need to write warnings if the translation is unfinished
                 self.logger.warning(f"Warning: translation {worksheet.page}/{english_file_info.translation_unit}/"
                                     f"{worksheet.language_code} (for {english_file_info.file_type} file) {warning}")
             return
