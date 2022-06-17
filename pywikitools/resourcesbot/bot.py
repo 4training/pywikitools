@@ -93,7 +93,7 @@ class ResourcesBot:
                     assert isinstance(language_list, list)
                 else:
                     language_list.append(self._limit_to_lang)
-                    language_list.append("en")  # We need the English infos for WriteReport (and maybe more)
+                    language_list.append("en")  # We need the English infos for LanguagePostProcessors
 
                 for lang in language_list:      # Now we read the details for each language
                     self.logger.info(f"Reading details for language {lang} from cache...")
@@ -139,14 +139,16 @@ class ResourcesBot:
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
                                  self._rewrite_all)
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
+        assert "en" in self._result
         for lang in self._result:
-            consistency_check.run(self._result[lang], ChangeLog())
-            export_html.run(self._result[lang], self._changelog[lang])
-            export_repository.run(self._result[lang], self._changelog[lang])
-            write_list.run(self._result[lang], self._changelog[lang])
+            consistency_check.run(self._result[lang], self._result["en"], ChangeLog())
+            export_html.run(self._result[lang], self._result["en"], self._changelog[lang])
+            export_repository.run(self._result[lang], self._result["en"], self._changelog[lang])
+            write_list.run(self._result[lang], self._result["en"], self._changelog[lang])
+            write_report.run(self._result[lang], self._result["en"], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
-        write_report.run(self._result, self._changelog)
+        # TODO run WriteSummary
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """

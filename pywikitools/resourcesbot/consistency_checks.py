@@ -149,7 +149,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         t26.set_translation(t26.get_translation()[3:])
         return self.should_be_equal(t24, t26)
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         self.check_bible_reading_hints_titles(language_info)
         self.check_gods_story_titles(language_info)
         self.check_who_do_i_need_to_forgive(language_info)

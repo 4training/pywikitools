@@ -1,11 +1,11 @@
 from enum import Enum
 import logging
-from typing import Dict, Optional
+from typing import Optional
 import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
-from pywikitools.resourcesbot.post_processing import GlobalPostProcessor
+from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
 
 class Color(Enum):
@@ -18,7 +18,7 @@ class Color(Enum):
         return self.value
 
 
-class WriteReport(GlobalPostProcessor):
+class WriteReport(LanguagePostProcessor):
     """
     Write/update status reports for all languages (for translators and translation coordinators).
 
@@ -26,9 +26,6 @@ class WriteReport(GlobalPostProcessor):
     Which worksheet is translated? Is the translation 100% complete? Is it the same version as the English original?
     Do we have ODT and PDF files for download?
     To help interpreting the results, we use colors (green / orange / red) for each cell.
-
-    We can't implement this as a LanguagePostProcessor because we need the English LanguageInfo object
-    as well to write a report for one language.
     """
     def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite, force_rewrite: bool = False):
         """
@@ -40,21 +37,17 @@ class WriteReport(GlobalPostProcessor):
         self._force_rewrite: bool = force_rewrite
         self.logger = logging.getLogger('pywikitools.resourcesbot.write_report')
 
-    def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         """Entry function"""
-        if "en" not in language_data:
-            self.logger.warning("No English language info found. Don't writing any reports.")
-            return
-        english_info = language_data["en"]
-
-        for lang_code, lang_info in language_data.items():
-            if self._force_rewrite or (lang_code in changes and not changes[lang_code].is_empty()):
-                if lang_code == "en":   # We don't need a report for English as it is the source language
-                    continue
-                if "-" in lang_code and lang_code != "pt-br":   # Don't write reports for language variants
-                    continue                    # (except Brazilian Portuguese) TODO this should go somewhere else
-                # Language report needs to be (re-)written.
-                self.save_language_report(lang_info, english_info)
+        if self._force_rewrite or not change_log.is_empty():
+            if language_info.language_code == "en":   # We don't need a report for English as it is the source language
+                return
+            if "-" in language_info.language_code and language_info.language_code != "pt-br":
+                # Don't write reports for language variants
+                # (except Brazilian Portuguese) TODO this should go somewhere else
+                return
+            # Language report needs to be (re-)written.
+            self.save_language_report(language_info, english_info)
 
     def save_language_report(self, language_info: LanguageInfo, english_info: LanguageInfo):
         """

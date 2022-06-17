@@ -128,21 +128,19 @@ class TestResourcesBot(unittest.TestCase):
         bot = ResourcesBot(self.config, read_from_cache=True)
         bot.run()
 
-        mock_consistency_check.assert_called_once()
-        mock_export_html.assert_called_once()
-        mock_export_repository.assert_called_once()
-        mock_write_list.assert_called_once()
+        # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
+        self.assertEqual(mock_consistency_check.return_value.run.call_count, 2)
+        self.assertEqual(mock_export_html.return_value.run.call_count, 2)
+        self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_list.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_report.return_value.run.call_count, 2)
 
-        # Get the internal variables bot._result and bot._changelog so that we can do some assertions on them
-        bot_result = mock_write_report.return_value.run.call_args.args[0]
-        bot_changelog = mock_write_report.return_value.run.call_args.args[1]
-
-        self.assertIn("en", bot_result)
-        self.assertIn("ru", bot_result)
-        self.assertEqual(len(bot_result), 2)
-        self.assertTrue(bot_changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
-        self.assertTrue(bot_changelog["ru"].is_empty())
-        self.assertEqual(len(bot_changelog), 2)
+        self.assertIn("en", bot._result)
+        self.assertIn("ru", bot._result)
+        self.assertEqual(len(bot._result), 2)
+        self.assertTrue(bot._changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
+        self.assertTrue(bot._changelog["ru"].is_empty())
+        self.assertEqual(len(bot._changelog), 2)
 
 
 if __name__ == '__main__':

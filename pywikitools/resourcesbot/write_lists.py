@@ -123,7 +123,7 @@ class WriteList(LanguagePostProcessor):
             self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
         return list_start, list_end
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog) -> None:
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog) -> None:
         if not self.needs_rewrite(language_info, change_log):
             return
 

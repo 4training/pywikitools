@@ -96,7 +96,7 @@ class ExportHTML(LanguagePostProcessor):
             self.logger.info(f"Successfully downloaded and saved {file_path}")
             return True
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         if self._base_folder == "":
             return
         folder: str = os.path.join(self._base_folder, language_info.language_code)

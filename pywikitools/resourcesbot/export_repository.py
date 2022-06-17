@@ -25,7 +25,7 @@ class ExportRepository(LanguagePostProcessor):
             self.logger.warning("Missing htmlexport path in config.ini. Won't export to repository")
         self._author = Actor("ExportRepository", "samuel@holydevelopers.net")
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         """Pushing all changes in the local repository (created by ExportHTML) to the remote repository
 
         Currently we're ignoring change_log and just check for changes in the git repository
