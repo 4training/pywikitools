@@ -25,20 +25,12 @@ class TranslationProgress:
     def is_unfinished(self) -> bool:
         """
         Definition: a translation is unfinished if more than 4 units are neither translated nor fuzzy
-        Unfinished translations are not shown on language information pages
+        TODO: Remove this?
+        Now we don't look at this criteria anymore to decide whether a translation should be shown on
+        language information pages or not (see show_in_list() instead)
+        This now only influences logging behavior
         """
         if (self.total - self.fuzzy - self.translated) > 4:
-            return True
-        return False
-
-    def is_incomplete(self) -> bool:
-        """
-        A translation is incomplete if it is not unfinished (!) but still there is at least
-        one translation unit which is neither translated nor fuzzy
-        """
-        if self.is_unfinished():    # We don't consider unfinished translations as incomplete!
-            return False
-        if self.translated + self.fuzzy < self.total:
             return True
         return False
 
@@ -220,24 +212,30 @@ class WorksheetInfo:
             return self._files[file_type].get_file_name()
         return ""
 
-    def show_in_list(self) -> bool:
+    def show_in_list(self, english_info) -> bool:
         """Should this worksheet be listed in the language information page?
 
         A worksheet will be included in the list of available resources if it has a PDF
-        and if the translation is "finished" - see the definition of TranslationProgress.is_unfinished()
+        and if it has the same major version as the English original
+        Examples:
+            English original: version 2.2; translation: 2.0 -> yes
+            English original: version 2.0; translation: 1.3b -> no
+
+        Args:
+            english_info (WorksheetInfo): Information on the English original worksheet
         """
-        return not self.progress.is_unfinished() and self.has_file_type("pdf")
+        assert isinstance(english_info, WorksheetInfo)
+        return self.has_file_type("pdf") and self.has_same_version(english_info, check_only_major_version=True)
 
-    def is_incomplete(self) -> bool:
-        """A translation is incomplete if most units are translated but at least one is not translated or fuzzy"""
-        return self.progress.is_incomplete()
-
-    def has_same_version(self, english_info) -> bool:
+    def has_same_version(self, english_info, *, check_only_major_version: bool = False) -> bool:
         """
         Compare our version string with the version string of the English original: is it the same?
         Native numerals will be converted to standard numerals.
         One additional character in our version will be ignored (e.g. "1.2b" is the same as "1.2")
-        @param english_info: WorksheetInfo
+
+        Args:
+            english_info (WorksheetInfo): Information on the English original worksheet
+            check_only_major_version: ignore minor version part -> 1.3 and 1.1 counts as the same version
         """
         if self.version == "":
             return False
@@ -247,6 +245,9 @@ class WorksheetInfo:
         if our_version[-1:].isalpha():
             our_version = our_version[:-1]
         if our_version == english_info.version:
+            return True
+        if check_only_major_version and (english_info.version[0] == our_version[0]):
+            # TODO this assumes that the first character is the major version (major version < 10)
             return True
         return False
 
@@ -337,9 +338,6 @@ class LanguageInfo:
     def list_worksheets_with_missing_pdf(self) -> List[str]:
         """ Returns a list of worksheets which are translated but are missing the PDF"""
         return [worksheet for worksheet in self.worksheets if not self.worksheets[worksheet].has_file_type('pdf')]
-
-    def list_incomplete_translations(self) -> List[WorksheetInfo]:
-        return [info for _, info in self.worksheets.items() if info.is_incomplete()]
 
     def count_finished_translations(self) -> int:
         count: int = 0

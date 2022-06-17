@@ -249,8 +249,6 @@ class ResourcesBot:
                 continue
             if lang == "en":    # We saved information on the English originals already, don't do that again
                 continue
-            if progress.is_incomplete():
-                self.logger.warning(f"Incomplete translation {page}/{lang} - {progress}")
 
             translated_title = self.fortraininglib.get_translated_title(page, lang)
             if translated_title is None:  # apparently this translation doesn't exist

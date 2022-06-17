@@ -177,7 +177,7 @@ class WriteReport(LanguagePostProcessor):
         content += version_content
 
         # column 8: Is this worksheet listed in the language overview page?
-        if lang_worksheet is not None and lang_worksheet.show_in_list():
+        if lang_worksheet is not None and lang_worksheet.show_in_list(en_worksheet):
             content += "| style=\"text-align:center\" | ✓\n"
         else:
             content += "| style=\"text-align:center\" | -\n"

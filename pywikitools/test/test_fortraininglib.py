@@ -85,7 +85,6 @@ class TestFortrainingLib(unittest.TestCase):
         for language, progress in result_with_incomplete.items():
             if language not in result:
                 self.assertTrue(progress.is_unfinished())
-                self.assertFalse(progress.is_incomplete())
 
         # Check correct error handling for non-existing page
         self.assertEqual(len(self.lib.list_page_translations("NotExisting", "de")), 0)

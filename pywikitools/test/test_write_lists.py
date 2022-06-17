@@ -17,6 +17,11 @@ class TestWriteList(unittest.TestCase):
             self.write_list = WriteList(ForTrainingLib("https://www.4training.net"), None, "", "")
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
+        # Create a pseudo English LanguageInfo - enough for our testing purposes (version is always the same)
+        self.english_info = LanguageInfo("en", "English")
+        for worksheet, info in self.language_info.worksheets.items():
+            self.english_info.add_worksheet_info(worksheet, info)
+
         with open(join(dirname(abspath(__file__)), "data", "Russian_resources_list.mediawiki"), 'r') as f:
             self.expected_output: str = f.read()
 
@@ -59,8 +64,8 @@ class TestWriteList(unittest.TestCase):
     def test_create_mediawiki(self):
         """Test creation of the list of available resources for a language"""
         # Compare with expected result
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.assertEqual(self.write_list.create_mediawiki(self.language_info), self.expected_output)
+        self.assertEqual(self.write_list.create_mediawiki(self.language_info, self.english_info),
+                         self.expected_output)
 
     def test_find_resources_list(self):
         page_content1 = "Some text\n== <translate>Available training resources in Turkish (secular)</translate> ==\n"
@@ -87,15 +92,14 @@ class TestWriteList(unittest.TestCase):
     def test_run_edge_cases(self, mock_page):
         # run() should return directly if there are no changes
         changes = ChangeLog()
-        english_info = LanguageInfo("en", "English")
-        self.write_list.run(self.language_info, english_info, changes)
+        self.write_list.run(self.language_info, self.english_info, changes)
         mock_page.assert_not_called()
 
         # run() should warn and directly return if the language name is missing in LanguageInfo
         problematic_language_info = LanguageInfo("de", "")
         changes.add_change("Prayer", ChangeType.NEW_WORKSHEET)   # we need a relevant change
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list.run(problematic_language_info, english_info, changes)
+            self.write_list.run(problematic_language_info, self.english_info, changes)
         mock_page.return_value.exists.assert_not_called()
 
         # run() should warn and return if there is no language information page
@@ -103,7 +107,7 @@ class TestWriteList(unittest.TestCase):
         not_existing_language_info = LanguageInfo("none", "NotExisting")
         mock_page.return_value.exists.return_value = False
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list.run(not_existing_language_info, english_info, changes)
+            self.write_list.run(not_existing_language_info, self.english_info, changes)
         mock_page.return_value.exists.assert_called_once()
         mock_page.return_value.isRedirectPage.assert_not_called()
 
@@ -112,13 +116,13 @@ class TestWriteList(unittest.TestCase):
         mock_page.return_value.isRedirectPage.return_value = True
         mock_page.return_value.getRedirectTarget.return_value.exists.return_value = False
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list.run(not_existing_language_info, english_info, changes)
+            self.write_list.run(not_existing_language_info, self.english_info, changes)
         mock_page.return_value.text.assert_not_called()
 
         # run() should warn and return if we can't find section for available resources in that language
         mock_page.return_value.text = "== <translate>Available training resources in German</translate> ==\n* List"
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list.run(self.language_info, english_info, changes)
+            self.write_list.run(self.language_info, self.english_info, changes)
         mock_page.return_value.save.assert_not_called()
 
     @patch("pywikibot.Page")
@@ -132,8 +136,7 @@ class TestWriteList(unittest.TestCase):
         page_content1 = "Some text\n== <translate>Available training resources in Russian</translate> ==\n"
         resources_list = "* List\n* List"
         mock_page.return_value.text = page_content1 + resources_list
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list.run(self.language_info, LanguageInfo("en", "English"), changes)
+        self.write_list.run(self.language_info, self.english_info, changes)
         mock_page.return_value.save.assert_called_once()
         self.assertEqual(mock_page.return_value.text, page_content1 + self.expected_output)
 

@@ -69,7 +69,7 @@ class WriteList(LanguagePostProcessor):
             self.logger.warning(f"Couldn't find / in {file_name}")
         return f" [[File:{file_info.file_type.lower()}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
 
-    def create_mediawiki(self, language_info: LanguageInfo) -> str:
+    def create_mediawiki(self, language_info: LanguageInfo, english_info: LanguageInfo) -> str:
         """
         Create the mediawiki string for the list of available training resources
 
@@ -81,17 +81,15 @@ class WriteList(LanguagePostProcessor):
         """
         content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
-            if worksheet_info.show_in_list():
+            if worksheet_info.show_in_list(english_info.worksheets[worksheet]):
                 content += f"* [[{worksheet}/{language_info.language_code}|"
                 content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
                 content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
                 content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
                 content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
                 content += "\n"
-            else:
-                if not worksheet_info.progress.is_unfinished() and not worksheet_info.has_file_type('pdf'):
-                    self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"
-                                        " not including in list.")
+                if worksheet_info.progress.translated < worksheet_info.progress.total:
+                    self.logger.warning(f"Worksheet {worksheet}/{language_info.language_code} is not fully translated!")
 
         self.logger.debug(content)
         return content
@@ -150,7 +148,8 @@ class WriteList(LanguagePostProcessor):
             self.logger.info(page.text)
             return
         self.logger.debug(f"Found existing list of available training resources @{list_start}-{list_end}. Replacing...")
-        new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info) + page.text[list_end+1:]
+        new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info, english_info)
+        new_page_content += page.text[list_end+1:]
         self.logger.debug(new_page_content)
 
         # Save page and mark it for translation if necessary
