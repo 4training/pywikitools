@@ -104,13 +104,15 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
     def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
-                            mock_write_list, mock_write_report, mock_pywikibot_page, mock_pywikibot_site):
+                            mock_write_list, mock_write_report, mock_write_summary,
+                            mock_pywikibot_page, mock_pywikibot_site):
         def json_test_loader(site, page: str):
             """Load meaningful test data for languages.json, en.json and ru.json"""
             result = Mock()
@@ -134,6 +136,7 @@ class TestResourcesBot(unittest.TestCase):
         self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
         self.assertEqual(mock_write_list.return_value.run.call_count, 2)
         self.assertEqual(mock_write_report.return_value.run.call_count, 2)
+        mock_write_summary.return_value.run.assert_called_once()
 
         self.assertIn("en", bot._result)
         self.assertIn("ru", bot._result)

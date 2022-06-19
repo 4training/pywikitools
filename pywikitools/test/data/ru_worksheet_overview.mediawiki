@@ -27,10 +27,10 @@
 |- style="background-color:orange"
 | [[Baptism]]
 | [[Baptism/ru|Крещение]]
-| style="text-align:right;background-color:orange" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Baptism&action=page&filter=translated&language=ru 100%]
+| style="text-align:right;background-color:green" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Baptism&action=page&filter=translated&language=ru 100%]
 | colspan="2" style="background-color:red; text-align:center" | -
 | style="background-color:red; text-align:center" | -
-| style="background-color:red" | 2.1 (Original: 2.2)
+| style="background-color:green" | 2.1
 | style="text-align:center" | -
 |- style="background-color:orange"
 | [[Prayer]]
@@ -157,4 +157,85 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
 | style="text-align:center" | -
+|- style="background-color:red"
+| [[Overcoming Fear and Anger]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Overcoming_Fear_and_Anger&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Getting Rid of Colored Lenses]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Getting_Rid_of_Colored_Lenses&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Family and our Relationship with God]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Family_and_our_Relationship_with_God&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Overcoming Negative Inheritance]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Overcoming_Negative_Inheritance&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Forgiving Step by Step: Training Notes]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Forgiving_Step_by_Step:_Training_Notes&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Leading Others Through Forgiveness]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Leading_Others_Through_Forgiveness&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[The Role of a Helper in Prayer]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-The_Role_of_a_Helper_in_Prayer&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[Leading a Prayer Time]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Leading_a_Prayer_Time&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:red"
+| [[How to Continue After a Prayer Time]]
+| -
+| style="text-align:right" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-How_to_Continue_After_a_Prayer_Time&action=page&filter=!translated&language=ru 0%]
+| colspan="2" style="background-color:red; text-align:center" | -
+| style="background-color:red; text-align:center" | -
+| style="background-color:red" | -
+| style="text-align:center" | -
+|- style="background-color:orange"
+| [[Four Kinds of Disciples]]
+| [[Four Kinds of Disciples/ru|Четыре вида учеников]]
+| style="text-align:right;background-color:green" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Four_Kinds_of_Disciples&action=page&filter=translated&language=ru 100%]
+| style="background-color:orange" | [[File:Четыре_вида_учеников.pdf]]
+| style="background-color:orange" | <div title="Metadata: incorrect. PDF/1A: no. Metadata only in DocInfo (deprecated). (Warnings: Expected title to start with 'Четыре вида учеников' but found 'Training meeting outline')">⚠</div>
+| style="background-color:green" | [[File:Четыре_вида_учеников.odt]]
+| style="background-color:green" | 1.1
+| style="text-align:center" | ✓
 |}

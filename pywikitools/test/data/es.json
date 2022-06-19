@@ -1,0 +1,518 @@
+{
+    "language_code": "es",
+    "english_name": "Spanish",
+    "worksheets": [
+      {
+        "page": "God's_Story_(five_fingers)",
+        "language_code": "es",
+        "title": "La Historia de Dios (cinco dedos)",
+        "version": "2.1",
+        "progress": {
+          "translated": 33,
+          "fuzzy": 0,
+          "total": 33
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/f/f5/La_Historia_de_Dios_(cinco_dedos).pdf",
+            "timestamp": "2020-09-13T13:42:29+00:00",
+            "metadata": {
+              "version": "2.1",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/0/04/La_Historia_de_Dios_(cinco_dedos).odt",
+            "timestamp": "2020-09-13T13:42:48+00:00"
+          }
+        ]
+      },
+      {
+        "page": "God's_Story_(first_and_last_sacrifice)",
+        "language_code": "es",
+        "title": "La historia de Dios (el primer y último sacrificio)",
+        "version": "2.1",
+        "progress": {
+          "translated": 31,
+          "fuzzy": 1,
+          "total": 32
+        }
+      },
+      {
+        "page": "Baptism",
+        "language_code": "es",
+        "title": "Bautismo",
+        "version": "2.1",
+        "progress": {
+          "translated": 31,
+          "fuzzy": 0,
+          "total": 31
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/0/02/Bautismo.pdf",
+            "timestamp": "2019-09-17T14:18:47+00:00",
+            "metadata": {
+              "version": "2.1",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/e/ef/Bautismo.odt",
+            "timestamp": "2019-09-17T14:18:08+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Prayer",
+        "language_code": "es",
+        "title": "Oración",
+        "version": "1.1",
+        "progress": {
+          "translated": 59,
+          "fuzzy": 0,
+          "total": 59
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/7/76/Oración.pdf",
+            "timestamp": "2019-10-13T10:26:59+00:00",
+            "metadata": {
+              "version": "1.1",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/1/14/Oración.odt",
+            "timestamp": "2019-10-13T10:26:37+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Forgiving_Step_by_Step",
+        "language_code": "es",
+        "title": "Perdonando paso a paso",
+        "version": "1.2",
+        "progress": {
+          "translated": 44,
+          "fuzzy": 0,
+          "total": 44
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/1/18/Perdonando_paso_a_paso.pdf",
+            "timestamp": "2019-09-22T11:35:57+00:00",
+            "metadata": {
+              "version": "1.2",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/c/cb/Perdonando_paso_a_paso.odt",
+            "timestamp": "2019-09-22T11:36:28+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Confessing_Sins_and_Repenting",
+        "language_code": "es",
+        "title": "Confesión de Pecados y Arrepentimiento",
+        "version": "1.1",
+        "progress": {
+          "translated": 40,
+          "fuzzy": 0,
+          "total": 40
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/3/38/Confesión_de_Pecados_y_Arrepentimiento.pdf",
+            "timestamp": "2020-10-31T13:02:33+00:00",
+            "metadata": {
+              "version": "1.1",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/7/7a/Confesión_de_Pecados_y_Arrepentimiento.odt",
+            "timestamp": "2020-10-31T13:02:18+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Time_with_God",
+        "language_code": "es",
+        "title": "Tiempo con Dios",
+        "version": "1.2",
+        "progress": {
+          "translated": 39,
+          "fuzzy": 0,
+          "total": 39
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/a/a4/Tiempo_con_Dios.pdf",
+            "timestamp": "2020-10-31T08:35:23+00:00",
+            "metadata": {
+              "version": "1.2",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/d/d8/Tiempo_con_Dios.odt",
+            "timestamp": "2020-10-31T08:35:40+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Hearing_from_God",
+        "language_code": "es",
+        "title": "Escuchando a Dios",
+        "version": "1.2",
+        "progress": {
+          "translated": 59,
+          "fuzzy": 0,
+          "total": 59
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/b/bb/Escuchando_a_Dios.pdf",
+            "timestamp": "2021-01-20T10:56:33+00:00",
+            "metadata": {
+              "version": "1.2",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/f/ff/Escuchando_a_Dios.odt",
+            "timestamp": "2021-01-20T10:56:05+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Church",
+        "language_code": "es",
+        "title": "Iglesia",
+        "version": "2.0",
+        "progress": {
+          "translated": 44,
+          "fuzzy": 0,
+          "total": 44
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/f/f6/Iglesia.pdf",
+            "timestamp": "2020-10-10T15:28:28+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/3/3b/Iglesia.odt",
+            "timestamp": "2020-10-10T15:27:05+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Healing",
+        "language_code": "es",
+        "title": "Sanidad",
+        "version": "1.0",
+        "progress": {
+          "translated": 35,
+          "fuzzy": 0,
+          "total": 35
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/0/09/Sanidad.pdf",
+            "timestamp": "2021-02-11T18:03:48+00:00",
+            "metadata": {
+              "version": "1.0",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/4/44/Sanidad.odt",
+            "timestamp": "2021-02-11T18:03:34+00:00"
+          }
+        ]
+      },
+      {
+        "page": "My_Story_with_God",
+        "language_code": "es",
+        "title": "Mi historia con Dios",
+        "version": "1.1",
+        "progress": {
+          "translated": 31,
+          "fuzzy": 0,
+          "total": 31
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/7/71/Mi_historia_con_Dios.pdf",
+            "timestamp": "2020-10-31T19:50:51+00:00",
+            "metadata": {
+              "version": "1.1",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/1/1e/Mi_historia_con_Dios.odt",
+            "timestamp": "2020-10-31T19:03:20+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Bible_Reading_Hints",
+        "language_code": "es",
+        "title": "Consejos para leer la Biblia",
+        "version": "2.0",
+        "progress": {
+          "translated": 8,
+          "fuzzy": 0,
+          "total": 8
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/e/e4/Consejos_para_leer_la_Biblia.pdf",
+            "timestamp": "2021-04-17T15:43:26+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/5/5a/Consejos_para_leer_la_Biblia.odt",
+            "timestamp": "2021-04-17T15:43:14+00:00"
+          },
+          {
+            "file_type": "printPdf",
+            "url": "https://www.4training.net/mediawiki/images/6/65/Consejos_para_leer_la_Biblia_para_imprimir.pdf",
+            "timestamp": "2021-04-17T15:44:10+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Bible_Reading_Hints_(Seven_Stories_full_of_Hope)",
+        "language_code": "es",
+        "title": "Consejos para leer la Biblia (7 acontecimientos llenos de esperanza)",
+        "version": "2.0",
+        "progress": {
+          "translated": 20,
+          "fuzzy": 0,
+          "total": 20
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/b/bc/Consejos_para_leer_la_Biblia_(7_acontecimientos_llenos_de_esperanza).pdf",
+            "timestamp": "2021-04-17T15:43:57+00:00",
+            "metadata": {
+              "version": "2.0",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/9/9b/Consejos_para_leer_la_Biblia_(7_acontecimientos_llenos_de_esperanza).odt",
+            "timestamp": "2021-04-17T15:43:39+00:00"
+          },
+          {
+            "file_type": "printPdf",
+            "url": "https://www.4training.net/mediawiki/images/e/e4/Consejos_para_leer_la_Biblia_(7_acontecimientos_llenos_de_esperanza)_para_imprimir.pdf",
+            "timestamp": "2021-04-17T15:43:02+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Bible_Reading_Hints_(Starting_with_the_Creation)",
+        "language_code": "es",
+        "title": "Consejos para leer la Biblia (Comenzando con la Creación)",
+        "version": "2.0",
+        "progress": {
+          "translated": 5,
+          "fuzzy": 0,
+          "total": 5
+        }
+      },
+      {
+        "page": "The_Three-Thirds_Process",
+        "language_code": "es",
+        "title": "El Proceso De Los Tres-Tercios",
+        "version": "1.0",
+        "progress": {
+          "translated": 13,
+          "fuzzy": 1,
+          "total": 14
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/b/b5/El_Proceso_De_Los_Tres-Tercios.pdf",
+            "timestamp": "2015-07-23T17:40:37+00:00",
+            "metadata": {
+              "version": "1.0",
+              "correct": false,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": "Expected subject to start with 'The Three-Thirds Process' but found 'Three-Thirds Process Spanish español'\n"
+            }
+          },
+          {
+            "file_type": "odg",
+            "url": "https://www.4training.net/mediawiki/images/9/94/El_Proceso_De_Los_Tres-Tercios.odg",
+            "timestamp": "2015-07-23T17:40:37+00:00"
+          }
+        ]
+      },
+      {
+        "page": "A_Daily_Prayer",
+        "language_code": "es",
+        "title": "Una Oración Diaria",
+        "version": "1.0",
+        "progress": {
+          "translated": 26,
+          "fuzzy": 0,
+          "total": 26
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/8/89/Una_Oración_Diaria.pdf",
+            "timestamp": "2019-10-12T07:49:55+00:00",
+            "metadata": {
+              "version": "1.0",
+              "correct": true,
+              "pdf1a": false,
+              "only_docinfo": true,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/b/b7/Una_Oración_Diaria.odt",
+            "timestamp": "2019-10-12T07:49:29+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Overcoming_Fear_and_Anger",
+        "language_code": "es",
+        "title": "Venciendo el Miedo y la Ira",
+        "version": "1.0",
+        "progress": {
+          "translated": 47,
+          "fuzzy": 0,
+          "total": 47
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/3/36/Venciendo_el_Miedo_y_la_Ira.pdf",
+            "timestamp": "2021-09-26T21:57:35+00:00",
+            "metadata": {
+              "version": "1.0",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/3/3f/Venciendo_el_Miedo_y_la_Ira.odt",
+            "timestamp": "2021-09-26T21:57:22+00:00"
+          }
+        ]
+      },
+      {
+        "page": "Four_Kinds_of_Disciples",
+        "language_code": "es",
+        "title": "Cuatro Tipos de Discípulos",
+        "version": "1.1",
+        "progress": {
+          "translated": 22,
+          "fuzzy": 0,
+          "total": 22
+        },
+        "files": [
+          {
+            "file_type": "pdf",
+            "url": "https://www.4training.net/mediawiki/images/a/ad/Cuatro_Tipos_de_Discípulos.pdf",
+            "timestamp": "2021-05-23T22:25:26+00:00",
+            "metadata": {
+              "version": "1.1",
+              "correct": true,
+              "pdf1a": true,
+              "only_docinfo": false,
+              "warnings": ""
+            }
+          },
+          {
+            "file_type": "odt",
+            "url": "https://www.4training.net/mediawiki/images/0/08/Cuatro_Tipos_de_Discípulos.odt",
+            "timestamp": "2021-05-23T22:25:39+00:00"
+          }
+        ]
+      }
+    ]
+  }

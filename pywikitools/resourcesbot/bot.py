@@ -16,6 +16,7 @@ from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
+from pywikitools.resourcesbot.write_summary import WriteSummary
 
 
 # For short creation of a pywikibot site (new feature of pywikibot 7.3)
@@ -148,7 +149,8 @@ class ResourcesBot:
             write_report.run(self._result[lang], self._result["en"], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
-        # TODO run WriteSummary
+        write_summary = WriteSummary(self.site, self._rewrite_all)
+        write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """

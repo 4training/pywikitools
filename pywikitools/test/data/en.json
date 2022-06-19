@@ -18,7 +18,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/a/af/Gods_Story_(five_fingers).pdf",
           "timestamp": "2020-07-19T12:38:59+00:00",
-          "translation_unit": 1
+          "translation_unit": 1,
+          "metadata": {
+            "version": "2.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -44,7 +51,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/b/bf/Gods_Story_(first_and_last_sacrifice).pdf",
           "timestamp": "2020-07-19T13:35:50+00:00",
-          "translation_unit": 12
+          "translation_unit": 12,
+          "metadata": {
+            "version": "2.2",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -58,7 +72,7 @@
       "page": "Baptism",
       "language_code": "en",
       "title": "Baptism",
-      "version": "2.2",
+      "version": "2.1",
       "progress": {
         "translated": 31,
         "fuzzy": 0,
@@ -70,7 +84,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/8/8b/Baptism.pdf",
           "timestamp": "2020-07-10T09:45:18+00:00",
-          "translation_unit": 11
+          "translation_unit": 11,
+          "metadata": {
+            "version": "2.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -96,7 +117,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/d/d2/Prayer.pdf",
           "timestamp": "2020-07-15T10:18:44+00:00",
-          "translation_unit": 4
+          "translation_unit": 4,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -122,7 +150,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/4/4d/Forgiving_Step_by_Step.pdf",
           "timestamp": "2020-07-15T10:33:45+00:00",
-          "translation_unit": 39
+          "translation_unit": 39,
+          "metadata": {
+            "version": "1.3",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -138,9 +173,9 @@
       "title": "Confessing Sins and Repenting",
       "version": "1.1",
       "progress": {
-        "translated": 38,
+        "translated": 40,
         "fuzzy": 0,
-        "total": 38
+        "total": 40
       },
       "version_unit": 37,
       "files": [
@@ -148,7 +183,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/1/1a/Confessing_Sins_and_Repenting.pdf",
           "timestamp": "2020-07-15T18:44:13+00:00",
-          "translation_unit": 34
+          "translation_unit": 34,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -174,7 +216,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/5/5f/Time_with_God.pdf",
           "timestamp": "2020-07-15T19:14:44+00:00",
-          "translation_unit": 18
+          "translation_unit": 18,
+          "metadata": {
+            "version": "1.2",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -200,7 +249,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/3/30/Hearing_from_God.pdf",
           "timestamp": "2020-07-15T21:38:12+00:00",
-          "translation_unit": 52
+          "translation_unit": 52,
+          "metadata": {
+            "version": "1.2",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -226,7 +282,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/4/44/Church.pdf",
           "timestamp": "2020-07-15T22:18:25+00:00",
-          "translation_unit": 34
+          "translation_unit": 34,
+          "metadata": {
+            "version": "2.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -252,7 +315,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/5/53/Healing.pdf",
           "timestamp": "2020-07-16T11:30:41+00:00",
-          "translation_unit": 32
+          "translation_unit": 32,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -278,7 +348,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/a/aa/Dealing_with_Money.pdf",
           "timestamp": "2021-11-25T12:10:57+00:00",
-          "translation_unit": 36
+          "translation_unit": 36,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -304,7 +381,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/8/8e/My_Story_with_God.pdf",
           "timestamp": "2020-07-17T09:39:13+00:00",
-          "translation_unit": 28
+          "translation_unit": 28,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
@@ -330,13 +414,26 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/d/d9/Bible_Reading_Hints.pdf",
           "timestamp": "2021-04-02T15:03:37+00:00",
-          "translation_unit": 4
+          "translation_unit": 4,
+          "metadata": {
+            "version": "2.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
           "url": "https://www.4training.net/mediawiki/images/8/87/Bible_Reading_Hints.odt",
           "timestamp": "2021-04-02T15:03:20+00:00",
           "translation_unit": 5
+        },
+        {
+          "file_type": "printPdf",
+          "url": "https://www.4training.net/mediawiki/images/e/ed/Bible_Reading_Hints_print.pdf",
+          "timestamp": "2021-04-02T15:42:32+00:00",
+          "translation_unit": 8
         }
       ]
     },
@@ -356,13 +453,26 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/9/90/Bible_Reading_Hints_(Seven_Stories_full_of_Hope).pdf",
           "timestamp": "2021-04-02T15:01:56+00:00",
-          "translation_unit": 2
+          "translation_unit": 2,
+          "metadata": {
+            "version": "2.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
           "url": "https://www.4training.net/mediawiki/images/8/8c/Bible_Reading_Hints_(Seven_Stories_full_of_Hope).odt",
           "timestamp": "2021-04-02T15:01:35+00:00",
           "translation_unit": 3
+        },
+        {
+          "file_type": "printPdf",
+          "url": "https://www.4training.net/mediawiki/images/f/f6/Bible_Reading_Hints_(Seven_Stories_full_of_Hope)_print.pdf",
+          "timestamp": "2021-04-02T16:09:05+00:00",
+          "translation_unit": 6
         }
       ]
     },
@@ -382,13 +492,26 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/6/6d/Bible_Reading_Hints_(Starting_with_the_Creation).pdf",
           "timestamp": "2021-04-27T13:21:24+00:00",
-          "translation_unit": 1
+          "translation_unit": 1,
+          "metadata": {
+            "version": "2.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
           "url": "https://www.4training.net/mediawiki/images/0/03/Bible_Reading_Hints_(Starting_with_the_Creation).odt",
           "timestamp": "2021-04-27T13:21:06+00:00",
           "translation_unit": 2
+        },
+        {
+          "file_type": "printPdf",
+          "url": "https://www.4training.net/mediawiki/images/d/d0/Bible_Reading_Hints_(Starting_with_the_Creation)_print.pdf",
+          "timestamp": "2021-04-27T13:21:45+00:00",
+          "translation_unit": 5
         }
       ]
     },
@@ -408,7 +531,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/9/99/The_Three-Thirds_Process.pdf",
           "timestamp": "2020-08-18T15:46:16+00:00",
-          "translation_unit": 9
+          "translation_unit": 9,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odg",
@@ -434,7 +564,14 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/4/4d/Training_Meeting_Outline.pdf",
           "timestamp": "2020-12-17T22:38:24+00:00",
-          "translation_unit": 39
+          "translation_unit": 39,
+          "metadata": {
+            "version": "1.0",
+            "correct": false,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": "Expected title to start with 'Training Meeting Outline' but found 'Training meeting outline'\n"
+          }
         },
         {
           "file_type": "odt",
@@ -460,12 +597,349 @@
           "file_type": "pdf",
           "url": "https://www.4training.net/mediawiki/images/4/42/A_Daily_Prayer.pdf",
           "timestamp": "2021-01-08T12:00:36+00:00",
-          "translation_unit": 19
+          "translation_unit": 19,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
         },
         {
           "file_type": "odt",
           "url": "https://www.4training.net/mediawiki/images/6/61/A_Daily_Prayer.odt",
           "timestamp": "2021-01-08T11:57:45+00:00",
+          "translation_unit": 20
+        }
+      ]
+    },
+    {
+      "page": "Overcoming_Fear_and_Anger",
+      "language_code": "en",
+      "title": "Overcoming Fear and Anger",
+      "version": "1.0",
+      "progress": {
+        "translated": 47,
+        "fuzzy": 0,
+        "total": 47
+      },
+      "version_unit": 46,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/a/a9/Overcoming_Fear_and_Anger.pdf",
+          "timestamp": "2020-12-17T23:31:16+00:00",
+          "translation_unit": 43,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/1/1f/Overcoming_Fear_and_Anger.odt",
+          "timestamp": "2020-12-17T23:31:41+00:00",
+          "translation_unit": 44
+        }
+      ]
+    },
+    {
+      "page": "Getting_Rid_of_Colored_Lenses",
+      "language_code": "en",
+      "title": "Getting Rid of Colored Lenses",
+      "version": "1.0",
+      "progress": {
+        "translated": 31,
+        "fuzzy": 0,
+        "total": 31
+      },
+      "version_unit": 31,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/7/7b/Getting_Rid_of_Colored_Lenses.pdf",
+          "timestamp": "2020-12-18T00:09:42+00:00",
+          "translation_unit": 28,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/7/79/Getting_Rid_of_Colored_Lenses.odt",
+          "timestamp": "2020-12-18T00:13:16+00:00",
+          "translation_unit": 29
+        }
+      ]
+    },
+    {
+      "page": "Family_and_our_Relationship_with_God",
+      "language_code": "en",
+      "title": "Family and our Relationship with God",
+      "version": "1.0",
+      "progress": {
+        "translated": 55,
+        "fuzzy": 0,
+        "total": 55
+      },
+      "version_unit": 54,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/6/66/Family_and_our_Relationship_with_God.pdf",
+          "timestamp": "2020-10-23T08:55:51+00:00",
+          "translation_unit": 52,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/f/f7/Family_and_our_Relationship_with_God.odt",
+          "timestamp": "2020-10-23T08:54:53+00:00",
+          "translation_unit": 53
+        }
+      ]
+    },
+    {
+      "page": "Overcoming_Negative_Inheritance",
+      "language_code": "en",
+      "title": "Overcoming Negative Inheritance",
+      "version": "1.1",
+      "progress": {
+        "translated": 26,
+        "fuzzy": 0,
+        "total": 26
+      },
+      "version_unit": 35,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/c/ca/Overcoming_Negative_Inheritance.pdf",
+          "timestamp": "2021-05-19T14:03:49+00:00",
+          "translation_unit": 32,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/7/75/Overcoming_Negative_Inheritance.odt",
+          "timestamp": "2021-05-19T14:03:27+00:00",
+          "translation_unit": 33
+        }
+      ]
+    },
+    {
+      "page": "Forgiving_Step_by_Step:_Training_Notes",
+      "language_code": "en",
+      "title": "Forgiving Step by Step: Training Notes",
+      "version": "1.0",
+      "progress": {
+        "translated": 65,
+        "fuzzy": 0,
+        "total": 65
+      },
+      "version_unit": 65,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/7/74/Forgiving_Step_by_Step_Training_Notes.pdf",
+          "timestamp": "2021-05-29T19:27:32+00:00",
+          "translation_unit": 62,
+          "metadata": {
+            "version": "1.0b",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/1/1c/Forgiving_Step_by_Step_Training_Notes.odt",
+          "timestamp": "2021-05-29T19:28:04+00:00",
+          "translation_unit": 63
+        }
+      ]
+    },
+    {
+      "page": "Leading_Others_Through_Forgiveness",
+      "language_code": "en",
+      "title": "Leading Others Through Forgiveness",
+      "version": "1.1",
+      "progress": {
+        "translated": 63,
+        "fuzzy": 0,
+        "total": 63
+      },
+      "version_unit": 61,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/5/51/Leading_Others_Through_Forgiveness.pdf",
+          "timestamp": "2020-07-10T09:01:39+00:00",
+          "translation_unit": 58,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/4/49/Leading_Others_Through_Forgiveness.odt",
+          "timestamp": "2021-05-29T16:00:29+00:00",
+          "translation_unit": 59
+        }
+      ]
+    },
+    {
+      "page": "The_Role_of_a_Helper_in_Prayer",
+      "language_code": "en",
+      "title": "The Role of a Helper in Prayer",
+      "version": "1.0",
+      "progress": {
+        "translated": 50,
+        "fuzzy": 0,
+        "total": 50
+      },
+      "version_unit": 45,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/7/72/The_Role_of_a_Helper_in_Prayer.pdf",
+          "timestamp": "2021-01-08T12:39:30+00:00",
+          "translation_unit": 43,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/2/25/The_Role_of_a_Helper_in_Prayer.odt",
+          "timestamp": "2021-01-08T12:38:19+00:00",
+          "translation_unit": 44
+        }
+      ]
+    },
+    {
+      "page": "Leading_a_Prayer_Time",
+      "language_code": "en",
+      "title": "Leading a Prayer Time",
+      "version": "1.0",
+      "progress": {
+        "translated": 37,
+        "fuzzy": 0,
+        "total": 37
+      },
+      "version_unit": 34,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/0/02/Leading_a_Prayer_Time.pdf",
+          "timestamp": "2021-03-25T13:45:32+00:00",
+          "translation_unit": 32,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/1/1f/Leading_a_Prayer_Time.odt",
+          "timestamp": "2021-03-25T13:44:34+00:00",
+          "translation_unit": 33
+        }
+      ]
+    },
+    {
+      "page": "How_to_Continue_After_a_Prayer_Time",
+      "language_code": "en",
+      "title": "How to Continue After a Prayer Time",
+      "version": "1.0",
+      "progress": {
+        "translated": 24,
+        "fuzzy": 0,
+        "total": 24
+      },
+      "version_unit": 23,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/9/91/How_to_Continue_After_a_Prayer_Time.pdf",
+          "timestamp": "2021-03-25T13:51:19+00:00",
+          "translation_unit": 21,
+          "metadata": {
+            "version": "1.0",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/5/5c/How_to_Continue_After_a_Prayer_Time.odt",
+          "timestamp": "2021-03-25T13:51:32+00:00",
+          "translation_unit": 22
+        }
+      ]
+    },
+    {
+      "page": "Four_Kinds_of_Disciples",
+      "language_code": "en",
+      "title": "Four Kinds of Disciples",
+      "version": "1.1",
+      "progress": {
+        "translated": 22,
+        "fuzzy": 0,
+        "total": 22
+      },
+      "version_unit": 21,
+      "files": [
+        {
+          "file_type": "pdf",
+          "url": "https://www.4training.net/mediawiki/images/3/35/Four_Kinds_of_Disciples.pdf",
+          "timestamp": "2021-05-23T21:15:30+00:00",
+          "translation_unit": 19,
+          "metadata": {
+            "version": "1.1",
+            "correct": true,
+            "pdf1a": true,
+            "only_docinfo": false,
+            "warnings": ""
+          }
+        },
+        {
+          "file_type": "odt",
+          "url": "https://www.4training.net/mediawiki/images/8/87/Four_Kinds_of_Disciples.odt",
+          "timestamp": "2021-05-23T21:14:35+00:00",
           "translation_unit": 20
         }
       ]
