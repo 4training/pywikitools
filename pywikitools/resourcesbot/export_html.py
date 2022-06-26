@@ -49,7 +49,7 @@ class ExportHTML(LanguagePostProcessor):
         else:
             self.logger.warning("Missing htmlexport path in config.ini. Won't export HTML files.")
 
-    def has_relevant_change(self, worksheet: str, change_log: ChangeLog):
+    def has_relevant_change(self, worksheet: str, change_log: ChangeLog) -> bool:
         """
         Is there a relevant change for worksheet?
         TODO: Define what exactly we consider relevant (for re-generating that worksheet's HTML)

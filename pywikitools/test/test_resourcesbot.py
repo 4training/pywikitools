@@ -107,11 +107,12 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
     def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
-                            mock_write_list, mock_write_report, mock_write_summary,
+                            mock_write_sidebar_messages, mock_write_list, mock_write_report, mock_write_summary,
                             mock_pywikibot_page, mock_pywikibot_site):
         def json_test_loader(site, page: str):
             """Load meaningful test data for languages.json, en.json and ru.json"""
@@ -134,6 +135,7 @@ class TestResourcesBot(unittest.TestCase):
         self.assertEqual(mock_consistency_check.return_value.run.call_count, 2)
         self.assertEqual(mock_export_html.return_value.run.call_count, 2)
         self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_sidebar_messages.return_value.run.call_count, 2)
         self.assertEqual(mock_write_list.return_value.run.call_count, 2)
         self.assertEqual(mock_write_report.return_value.run.call_count, 2)
         mock_write_summary.return_value.run.assert_called_once()
@@ -144,6 +146,8 @@ class TestResourcesBot(unittest.TestCase):
         self.assertTrue(bot._changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
         self.assertTrue(bot._changelog["ru"].is_empty())
         self.assertEqual(len(bot._changelog), 2)
+
+    # TODO: test_run_with_limit_lang
 
 
 if __name__ == '__main__':

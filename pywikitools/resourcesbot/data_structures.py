@@ -271,6 +271,7 @@ class LanguageInfo:
     def __init__(self, language_code: str, english_name: str):
         self.language_code: Final[str] = language_code
         self.english_name: Final[str] = english_name    # if there was an error before this could be ""
+        # Dictionary with identifier always being identical to WorksheetInfo.page
         self.worksheets: Dict[str, WorksheetInfo] = {}
 
     def add_worksheet_info(self, name: str, worksheet_info: WorksheetInfo):

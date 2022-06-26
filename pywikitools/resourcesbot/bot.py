@@ -16,6 +16,7 @@ from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
+from pywikitools.resourcesbot.write_sidebar_messages import WriteSidebarMessages
 from pywikitools.resourcesbot.write_summary import WriteSummary
 
 
@@ -136,6 +137,7 @@ class ResourcesBot:
                                self._config.get("resourcesbot", "username", fallback=""),
                                self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
         write_report = WriteReport(self.fortraininglib, self.site, self._rewrite_all)
+        write_sidebar_messages = WriteSidebarMessages(self.fortraininglib, self.site, self._rewrite_all)
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
                                  self._rewrite_all)
@@ -147,10 +149,12 @@ class ResourcesBot:
             export_repository.run(self._result[lang], self._result["en"], self._changelog[lang])
             write_list.run(self._result[lang], self._result["en"], self._changelog[lang])
             write_report.run(self._result[lang], self._result["en"], self._changelog[lang])
+            write_sidebar_messages.run(self._result[lang], self._result["en"], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
-        write_summary = WriteSummary(self.site, self._rewrite_all)
-        write_summary.run(self._result, self._changelog)
+        if not self._limit_to_lang:
+            write_summary = WriteSummary(self.site, self._rewrite_all)
+            write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """
