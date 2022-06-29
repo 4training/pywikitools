@@ -42,10 +42,12 @@ class CorrectBot:
         self._simulate: bool = simulate
         self._correction_diff: str = ""
         self._suggestion_diff: str = ""
+        self._warnings: str = ""
         self._correction_stats: Optional[str] = None
         self._suggestion_stats: Optional[str] = None
         self._correction_counter: int = 0
         self._suggestion_counter: int = 0
+        self._warning_counter: int = 0
 
     def _load_corrector(self, language_code: str) -> Callable:
         """Load the corrector class for the specified language and return it.
@@ -105,6 +107,7 @@ class CorrectBot:
         self._suggestion_stats = None
         self._correction_counter = 0
         self._suggestion_counter = 0
+        self._warning_counter = 0
         correction_stats: Counter = Counter()
         suggestion_stats: Counter = Counter()
 
@@ -120,6 +123,8 @@ class CorrectBot:
             results.append(result)
             if result.warnings != "":
                 self.logger.warning(result.warnings)
+                self._warning_counter += 1
+                self._warnings += f"{translation_unit.get_name()}: {result.warnings}\n"
 
             if (correction_diff := result.corrections.get_translation_diff()) != "":
                 self._correction_diff += f"{translation_unit.get_name()}: {correction_diff}\n"
@@ -154,6 +159,12 @@ class CorrectBot:
             stats += ":\n" + self._suggestion_stats
         return stats
 
+    def get_warnings(self) -> str:
+        warnings: str = f"{self._warning_counter} warnings"
+        if self._warning_counter > 0:
+            warnings += ":\n" + self._warnings
+        return warnings
+
     def get_correction_counter(self) -> int:
         """How many corrections did we do (in the last run)?"""
         return self._correction_counter
@@ -161,6 +172,10 @@ class CorrectBot:
     def get_suggestion_counter(self) -> int:
         """How many suggestions did we receive (in the last run)?"""
         return self._suggestion_counter
+
+    def get_warning_counter(self) -> int:
+        """How many warnings did we get (in the last run)?"""
+        return self._warning_counter
 
     def get_correction_diff(self) -> str:
         """Print a diff of the corrections (made in the last run)"""
@@ -186,7 +201,8 @@ class CorrectBot:
     def save_report(self, page: str, language_code: str, results: List[CorrectionResult]):
         # We'll save the report in our custom CorrectBot namespace
         page_name: str = f"CorrectBot:{page}/{language_code}"
-        summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions."
+        summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions, "
+        summary += f"{self.get_warning_counter()} warnings."
 
         report: str = f"__NOTOC__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
         report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|report history]])\n"
@@ -212,6 +228,16 @@ class CorrectBot:
                     report += f"=== [[{result.suggestions.get_name()}]] ===\n"
                     report += "{{StringDiff|" + result.suggestions.get_original_translation()
                     report += "|" + result.suggestions.get_translation() + "}}\n"
+
+        if self.get_warning_counter() > 0:
+            report += "\n== Warnings ==\n"
+            for result in results:
+                if result.warnings != "":
+                    report += f"=== [[{result.corrections.get_name()}]] ===\n"
+                    report += f"<b>Warning:</b> <i><nowiki>{result.warnings}</nowiki></i>\n"
+                    report += "{| class=\"wikitable\"\n|-\n! Original\n! Translation\n|- style=\"vertical-align:top\"\n"
+                    report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
+                    report += "|}\n"
 
         report_page = pywikibot.Page(self.site, page_name)
         if report_page.text != report:
@@ -249,6 +275,7 @@ class CorrectBot:
         """
         Correct the translation of a page.
         """
+        page = page.replace(' ', '_')   # spaces may lead to problems in some places: "Time with God" -> "Time_with_God"
         results = self.check_page(page, language_code)
         if results is None:
             print(f"Error while trying to correct {page}")
@@ -266,6 +293,7 @@ class CorrectBot:
         print(self.get_suggestion_stats())
         if self._suggestion_counter > 0:
             print(self.get_suggestion_diff())
+        print(self.get_warnings())
 
 
 def parse_arguments() -> argparse.Namespace:

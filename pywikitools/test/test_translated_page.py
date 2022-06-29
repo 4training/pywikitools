@@ -30,8 +30,7 @@ cleanse us through Jesus Christ. Forgiving myself means taking His offer and app
 ;“Forgiving” God
 :Sometimes we have negative thoughts about God or are even mad at Him. God doesn’t make mistakes,
 so in that sense we can’t forgive Him. But it is important that we let go of our frustrations and
-negative feelings towards Him.
-"""
+negative feelings towards Him."""
 
 TEST_UNIT_WITH_DEFINITION_DE_ERROR = """;Mir selbst vergeben
 :Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen.
@@ -40,8 +39,7 @@ Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden
 Gott „vergeben“
 :Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn.
 Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig,
-dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
-"""
+dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen."""
 
 TEST_UNIT_WITH_HEADLINE = """== Dealing with Money ==
 Money is a tool. With the same banknote I can bring blessing or harm.
