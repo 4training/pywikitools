@@ -39,11 +39,11 @@ class ForTrainingFamily(pywikibot.family.Family):  # noqa: D101
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite_all: bool = False,
+    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite_type: str = 'rewrite-all',
                  read_from_cache: bool = False):
         """
         @param limit_to_lang: limit processing to one language (string with a language code)
-        @param rewrite_all: Rewrite all language information less, regardless if we find changes or not
+        @param rewrite_type: Set rewrite type. Default is rewrite all language information regardless of changes
         @param read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
         """
         # read-only list of download file types
@@ -69,13 +69,13 @@ class ResourcesBot:
 
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
-        self._rewrite_all: bool = rewrite_all
+        self._rewrite_type: str = rewrite_type
         if self._limit_to_lang is not None:
             self.logger.info(f"Parameter lang is set, limiting processing to language {limit_to_lang}")
         if self._read_from_cache:
             self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
-        if self._rewrite_all:
-            self.logger.info('Parameter --rewrite-all is set, rewriting all language information pages')
+        if self._rewrite_type:
+            self.logger.info(f'Parameter {rewrite_type} is set')
 
         # Stores details on all languages: language code -> information about all worksheets in that language
         self._result: Dict[str, LanguageInfo] = {}
@@ -135,12 +135,14 @@ class ResourcesBot:
         # Run all LanguagePostProcessors
         write_list = WriteList(self.fortraininglib, self.site,
                                self._config.get("resourcesbot", "username", fallback=""),
-                               self._config.get("resourcesbot", "password", fallback=""), self._rewrite_all)
-        write_report = WriteReport(self.fortraininglib, self.site, self._rewrite_all)
-        write_sidebar_messages = WriteSidebarMessages(self.fortraininglib, self.site, self._rewrite_all)
+                               self._config.get("resourcesbot", "password", fallback=""),
+                               True if self._rewrite_type == 'all' else False)
+        write_report = WriteReport(self.fortraininglib, self.site, True if self._rewrite_type == 'list' else False)
+        write_sidebar_messages = WriteSidebarMessages(self.fortraininglib, self.site,
+                                                      True if self._rewrite_type == 'sidebar' else False)
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
-                                 self._rewrite_all)
+                                 True if self._rewrite_type == 'html' else False)
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         assert "en" in self._result
         for lang in self._result:
@@ -153,7 +155,7 @@ class ResourcesBot:
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site, self._rewrite_all)
+            write_summary = WriteSummary(self.site, self._rewrite_type)
             write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
@@ -299,7 +301,7 @@ class ResourcesBot:
         lang = language_info.language_code
         encoded_json = DataStructureEncoder().encode(language_info)
         old_language_info: LanguageInfo = LanguageInfo(lang, language_info.english_name)
-        rewrite_json: bool = self._rewrite_all
+        rewrite_json: bool = self._rewrite_type
 
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
         page = pywikibot.Page(self.site, f"4training:{lang}.json")
