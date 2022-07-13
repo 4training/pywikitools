@@ -20,6 +20,7 @@ from pywikitools.correctbot.correctors.fr import FrenchCorrector
 from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, RTLCorrector, \
                                                         UniversalCorrector
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
+from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR
 
 # Package and module names
 PKG_CORRECTORS = "pywikitools.correctbot.correctors"
@@ -481,6 +482,9 @@ class TestCorrectBot(unittest.TestCase):
             original = "ignored" if "<br/>" not in faulty else "ignored<br/>ignored"
             translation_units.append(TranslationUnit(f"Test/{counter}", "fr", original, faulty))
             counter += 1
+        # Add one translation unit that will produce warnings because of wrong structure
+        translation_units.append(TranslationUnit("Test/warnings", "fr",
+                                 TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR))
         return TranslatedPage("Test", "fr", translation_units)
 
     def test_check_page(self):
@@ -494,10 +498,14 @@ class TestCorrectBot(unittest.TestCase):
 
         # let's correct a page with some French translation units for testing
         mock_lib.get_translation_units.return_value = self.prepare_translated_page()
-        results = self.correctbot.check_page("Test", "fr")
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            results = self.correctbot.check_page("Test", "fr")
         self.assertIsNotNone(results)
-        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results), 5)
         for result in results:
+            if "warnings" in result.corrections.get_name():
+                self.assertNotEqual(result.warnings, "")
+                continue
             faulty = result.corrections.get_original_translation()
             self.assertEqual(FRENCH_CORRECTIONS[faulty], result.suggestions.get_translation())
 
@@ -509,7 +517,8 @@ class TestCorrectBot(unittest.TestCase):
         mock_lib.get_translation_units.return_value = self.prepare_translated_page()
         mock_lib.count_jobs.return_value = 0
         self.correctbot.fortraininglib = mock_lib
-        results = self.correctbot.check_page("Test", "fr")
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            results = self.correctbot.check_page("Test", "fr")
         self.correctbot.save_report("Test", "fr", results)
         with open(join(dirname(abspath(__file__)), "data", "correctbot_report.mediawiki"), 'r') as f:
             self.assertEqual(mock_page.return_value.text, f.read())

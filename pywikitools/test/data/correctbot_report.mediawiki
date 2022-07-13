@@ -1,5 +1,5 @@
 __NOTOC__
-Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
+Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions, 1 warnings.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
 
 == Changes ==
 5 corrections:
@@ -23,3 +23,30 @@ Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions.</b>
 <i>Look at the following suggestions. If you find good ones, please correct them manually in [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Test&action=page&filter=&language=fr the translation view]</i>
 === [[Translations:Test/4/fr]] ===
 {{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas. En effet,Dieu|Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu}}
+
+== Warnings ==
+=== [[Translations:Test/warnings/fr]] ===
+<b>Warning:</b> <i><nowiki>Formatting issues in Translations:Test/warnings/fr. Please check that all special characters like * = # ; : <b> <i> are correct.</nowiki></i>
+{| class="wikitable"
+|-
+! Original
+! Translation
+|- style="vertical-align:top"
+|
+;Forgiving myself
+:Sometimes we’re angry at ourselves or blame ourselves for something. God offers a way to forgive us and
+cleanse us through Jesus Christ. Forgiving myself means taking His offer and applying it to myself.
+;“Forgiving” God
+:Sometimes we have negative thoughts about God or are even mad at Him. God doesn’t make mistakes,
+so in that sense we can’t forgive Him. But it is important that we let go of our frustrations and
+negative feelings towards Him.
+|
+;Mir selbst vergeben
+:Es kann sein, dass wir wütend auf uns selbst sind und uns etwas vorwerfen.
+Gott bietet uns einen Weg an, wie er uns durch Jesus Christus vergeben und reinigen möchte.
+Mir selbst vergeben bedeutet, sein Angebot anzunehmen und es auf mich anzuwenden.
+Gott „vergeben“
+:Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn.
+Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig,
+dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
+|}
