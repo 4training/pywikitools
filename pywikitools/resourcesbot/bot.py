@@ -3,7 +3,7 @@ import re
 import logging
 import json
 from configparser import ConfigParser
-from typing import List, Optional, Dict, Tuple
+from typing import Final, List, Optional, Dict, Tuple
 import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
@@ -39,15 +39,17 @@ class ForTrainingFamily(pywikibot.family.Family):  # noqa: D101
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite_type: str = 'rewrite-all',
+    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite: Optional[str] = None,
                  read_from_cache: bool = False):
         """
-        @param limit_to_lang: limit processing to one language (string with a language code)
-        @param rewrite_type: Set rewrite type. Default is rewrite all language information regardless of changes
-        @param read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
+        Args:
+            limit_to_lang: limit processing to one language (string with a language code)
+            rewrite: force rewriting of selected component (even if there are no changes)
+                Possible values e.g. "json", "list", "report" - or "all" to rewrite everything
+            read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
         """
         # read-only list of download file types
-        self._file_types = ["pdf", "odt", "odg", "printPdf"]
+        self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
         # Read the configuration from config.ini in the same directory
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
@@ -69,13 +71,13 @@ class ResourcesBot:
 
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
-        self._rewrite_type: str = rewrite_type
+        self._rewrite: str = rewrite if rewrite is not None else ""     # "" instead of None makes life a bit easier
         if self._limit_to_lang is not None:
             self.logger.info(f"Parameter lang is set, limiting processing to language {limit_to_lang}")
         if self._read_from_cache:
             self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
-        if self._rewrite_type:
-            self.logger.info(f'Parameter {rewrite_type} is set')
+        if self._rewrite != "":
+            self.logger.info(f"Parameter rewrite is set to {rewrite}")
 
         # Stores details on all languages: language code -> information about all worksheets in that language
         self._result: Dict[str, LanguageInfo] = {}
@@ -136,13 +138,14 @@ class ResourcesBot:
         write_list = WriteList(self.fortraininglib, self.site,
                                self._config.get("resourcesbot", "username", fallback=""),
                                self._config.get("resourcesbot", "password", fallback=""),
-                               True if self._rewrite_type == 'all' else False)
-        write_report = WriteReport(self.fortraininglib, self.site, True if self._rewrite_type == 'list' else False)
-        write_sidebar_messages = WriteSidebarMessages(self.fortraininglib, self.site,
-                                                      True if self._rewrite_type == 'sidebar' else False)
+                               force_rewrite=(self._rewrite == "all") or (self._rewrite == "list"))
+        write_report = WriteReport(self.fortraininglib, self.site,
+                                   force_rewrite=(self._rewrite == "all") or (self._rewrite == "report"))
+        write_sidebar = WriteSidebarMessages(self.fortraininglib, self.site,
+                                             force_rewrite=(self._rewrite == "all") or (self._rewrite == "sidebar"))
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
-                                 True if self._rewrite_type == 'html' else False)
+                                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "html"))
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         assert "en" in self._result
         for lang in self._result:
@@ -151,11 +154,12 @@ class ResourcesBot:
             export_repository.run(self._result[lang], self._result["en"], self._changelog[lang])
             write_list.run(self._result[lang], self._result["en"], self._changelog[lang])
             write_report.run(self._result[lang], self._result["en"], self._changelog[lang])
-            write_sidebar_messages.run(self._result[lang], self._result["en"], self._changelog[lang])
+            write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang])
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site, self._rewrite_type)
+            write_summary = WriteSummary(self.site,
+                                         force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"))
             write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
@@ -301,7 +305,7 @@ class ResourcesBot:
         lang = language_info.language_code
         encoded_json = DataStructureEncoder().encode(language_info)
         old_language_info: LanguageInfo = LanguageInfo(lang, language_info.english_name)
-        rewrite_json: bool = self._rewrite_type
+        rewrite_json: bool = (self._rewrite == "all") or (self._rewrite == "json")
 
         # Reading data structure from our mediawiki, stored in e.g. https://www.4training.net/4training:de.json
         page = pywikibot.Page(self.site, f"4training:{lang}.json")
