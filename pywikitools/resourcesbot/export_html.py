@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import requests
-from typing import Dict, Set
+from typing import Dict, Final, Set
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
@@ -31,15 +31,16 @@ class ExportHTML(LanguagePostProcessor):
     Export all finished worksheets of this language as HTML into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
-    def __init__(self, fortraininglib: ForTrainingLib, folder: str, force_rewrite: bool = False):
+    def __init__(self, fortraininglib: ForTrainingLib, folder: str, *, force_rewrite: bool = False):
         """
-        @param folder: base directory for export; subdirectories will be created for each language
-        @param force_rewrite: rewrite even if there were no (relevant) changes
+        Args:
+            folder: base directory for export; subdirectories will be created for each language
+            force_rewrite: rewrite even if there were no (relevant) changes
         """
         self._base_folder: str = folder
-        self._force_rewrite: bool = force_rewrite
-        self.fortraininglib = fortraininglib
-        self.logger = logging.getLogger('pywikitools.resourcesbot.export_html')
+        self._force_rewrite: Final[bool] = force_rewrite
+        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_html')
         if self._base_folder != "":
             try:
                 os.makedirs(folder, exist_ok=True)

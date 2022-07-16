@@ -1,6 +1,6 @@
 from enum import Enum
 import logging
-from typing import Optional
+from typing import Final, Optional
 import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
@@ -27,15 +27,16 @@ class WriteReport(LanguagePostProcessor):
     Do we have ODT and PDF files for download?
     To help interpreting the results, we use colors (green / orange / red) for each cell.
     """
-    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite, force_rewrite: bool = False):
+    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite, *, force_rewrite: bool = False):
         """
-        @param site: our pywikibot object to be able to write to the mediawiki system
-        @param force_rewrite: rewrite even if there were no (relevant) changes
+        Args:
+            site: our pywikibot object to be able to write to the mediawiki system
+            force_rewrite: rewrite even if there were no (relevant) changes
         """
-        self.fortraininglib: ForTrainingLib = fortraininglib
-        self._site: pywikibot.site.APISite = site
-        self._force_rewrite: bool = force_rewrite
-        self.logger = logging.getLogger('pywikitools.resourcesbot.write_report')
+        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
+        self._site: Final[pywikibot.site.APISite] = site
+        self._force_rewrite: Final[bool] = force_rewrite
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_report')
 
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         """Entry function"""

@@ -20,15 +20,16 @@ class WriteSidebarMessages(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
-    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite,
+    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite, *,
                  force_rewrite: bool = False):
         """
-        @param force_rewrite rewrite even if there were no (relevant) changes
+        Args:
+            force_rewrite rewrite even if there were no (relevant) changes
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: logging.Logger = logging.getLogger('pywikitools.resourcesbot.write_sidebar_messages')
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_sidebar_messages')
 
     def save_worksheet_title(self, worksheet: WorksheetInfo):
         """Save system message with the title of the given worksheet."""

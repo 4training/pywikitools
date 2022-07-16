@@ -18,18 +18,19 @@ class WriteList(LanguagePostProcessor):
     This class can be re-used to call run() several times
     """
     def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite,
-                 user_name: str, password: str, force_rewrite: bool = False):
+                 user_name: str, password: str, *, force_rewrite: bool = False):
         """
-        @param user_name and password necessary to mark page for translation in case of changes
-               In case they're empty we won't try to mark pages for translation
-        @param force_rewrite rewrite even if there were no (relevant) changes
+        Arguments user_name and password are necessary to mark page for translation in case of changes.
+        In case they're empty we won't try to mark pages for translation
+        Args:
+            force_rewrite rewrite even if there were no (relevant) changes
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
         self._user_name: Final[str] = user_name
         self._password: Final[str] = password
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: logging.Logger = logging.getLogger('pywikitools.resourcesbot.write_lists')
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_lists')
         if user_name == "" or password == "":
             self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
