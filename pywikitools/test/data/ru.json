@@ -262,7 +262,7 @@
               "correct": false,
               "pdf1a": false,
               "only_docinfo": true,
-              "warnings": "Expected title to start with 'Четыре вида учеников' but found 'Training meeting outline'"
+              "warnings": "Version inconsistency: PDF says 2.0, worksheet says 1.1"
             }
           },
           {

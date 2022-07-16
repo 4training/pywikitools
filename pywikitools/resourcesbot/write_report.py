@@ -153,6 +153,11 @@ class WriteReport(LanguagePostProcessor):
             pdf_color = Color.GREEN if version_color == Color.GREEN else Color.ORANGE
             if file_info.metadata is not None and not file_info.metadata.correct:
                 pdf_color = Color.ORANGE
+                if file_info.metadata.version != lang_worksheet.version:
+                    # TODO: Is this the right place to log this warning?
+                    self.logger.warning(f"{lang_worksheet.page}/{lang_worksheet.language_code} has version "
+                                        f"{lang_worksheet.version} but PDF has version {file_info.metadata.version}!")
+                    pdf_color = Color.RED
             content += f'| style="background-color:{pdf_color}" '
             content += f"| [[File:{lang_worksheet.get_file_type_name('pdf')}]]\n"
 

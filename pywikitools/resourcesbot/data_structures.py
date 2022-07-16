@@ -65,7 +65,7 @@ class PdfMetadataSummary:
         """Write a human-readable string"""
         result = f'Metadata: {"correct" if self.correct else "incorrect"}. '
         if include_version:
-            result += "Version: {self.version}. "
+            result += f"Version: {self.version}. "
         result += f'PDF/1A: {"yes" if self.pdf1a else "no"}. '
         if self.only_docinfo:
             result += "Metadata only in DocInfo (deprecated). "

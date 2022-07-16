@@ -233,8 +233,8 @@
 | [[Four Kinds of Disciples]]
 | [[Four Kinds of Disciples/ru|Четыре вида учеников]]
 | style="text-align:right;background-color:green" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Four_Kinds_of_Disciples&action=page&filter=translated&language=ru 100%]
-| style="background-color:orange" | [[File:Четыре_вида_учеников.pdf]]
-| style="background-color:orange" | <div title="Metadata: incorrect. PDF/1A: no. Metadata only in DocInfo (deprecated). (Warnings: Expected title to start with 'Четыре вида учеников' but found 'Training meeting outline')">⚠</div>
+| style="background-color:red" | [[File:Четыре_вида_учеников.pdf]]
+| style="background-color:red" | <div title="Metadata: incorrect. PDF/1A: no. Metadata only in DocInfo (deprecated). (Warnings: Version inconsistency: PDF says 2.0, worksheet says 1.1)">⚠</div>
 | style="background-color:green" | [[File:Четыре_вида_учеников.odt]]
 | style="background-color:green" | 1.1
 | style="text-align:center" | ✓

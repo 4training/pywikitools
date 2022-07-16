@@ -22,9 +22,10 @@ class TestWriteReport(unittest.TestCase):
         write_report = WriteReport(self.fortraininglib, None)
         with open(join(dirname(abspath(__file__)), "data", "ru_worksheet_overview.mediawiki"), 'r') as f:
             expected_mediawiki = f.read()
-            self.assertEqual(write_report.create_worksheet_overview(self.language_info, self.english_info),
-                             expected_mediawiki)
-            self.assertIn(expected_mediawiki, write_report.create_mediawiki(self.language_info, self.english_info))
+            with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+                self.assertEqual(write_report.create_worksheet_overview(self.language_info, self.english_info),
+                                 expected_mediawiki)
+                self.assertIn(expected_mediawiki, write_report.create_mediawiki(self.language_info, self.english_info))
 
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page):
@@ -43,7 +44,8 @@ class TestWriteReport(unittest.TestCase):
         # Language report should get updated if there are changes
         mock_page.return_value.exists.return_value = True
         mock_page.return_value.text = "different"
-        write_report.save_language_report(self.language_info, self.english_info)
+        with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+            write_report.save_language_report(self.language_info, self.english_info)
         mock_page.return_value.save.assert_called_with("Updated language report")
 
     @patch("pywikitools.resourcesbot.write_report.WriteReport.save_language_report")
