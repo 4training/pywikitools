@@ -138,10 +138,14 @@ class WriteReport(LanguagePostProcessor):
             progress_color = Color.RED
         elif progress == 100 and version_color == Color.GREEN:
             progress_color = Color.GREEN
+        elif lang_worksheet.show_in_list(en_worksheet) and progress < 100:
+            # This produces a warning in the line for this language in WriteSummary, so make it red
+            progress_color = Color.RED
         else:
             progress_color = Color.ORANGE
 
-        color_css = f";background-color:{progress_color}" if progress_color != Color.RED else ""
+        # in case the worksheet doesn't exist, the whole line will be red
+        color_css = f";background-color:{progress_color}" if lang_worksheet is not None else ""
         content += f'| style="text-align:right{color_css}" '
         # Add link to translation view, showing either untranslated units (progress < 100%) or translated units
         content += f"| [{self.fortraininglib.index_url}?title=Special:Translate&group=page-{en_worksheet.page}"

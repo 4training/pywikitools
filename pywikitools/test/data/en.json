@@ -764,7 +764,7 @@
           "timestamp": "2021-05-29T19:27:32+00:00",
           "translation_unit": 62,
           "metadata": {
-            "version": "1.0b",
+            "version": "1.0",
             "correct": true,
             "pdf1a": true,
             "only_docinfo": false,

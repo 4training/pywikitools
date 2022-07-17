@@ -27,7 +27,7 @@ class WriteSummary(GlobalPostProcessor):
         self._site: Final[pywikibot.site.APISite] = site
         self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_summary')
-        self.total_stats: Final[Counter] = Counter()   # Summing up statistics for all languages
+        self.total_stats: Counter = Counter()   # Summing up statistics for all languages
 
     def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
         """Entry function"""
@@ -63,33 +63,12 @@ class WriteSummary(GlobalPostProcessor):
                 self.logger.info("Updated summary report")
 
     def create_mediawiki(self, language_data: Dict[str, LanguageInfo]) -> str:
-        """Build mediawiki code for the complete summary page"""
+        """Build mediawiki code for the complete summary page
+
+        Additional explanations are transcluded from https://www.4training.net/Template:SummaryExplanations
+        """
         content = self.create_language_overview(language_data)
-        content += """== Explanations ==
-=== Listed ===
-Included in the list of available training resources.
-Must have a PDF for it and the major version of the translated worksheet must be the same as the English original.
-
-If the version of the English original and of the translation are the same, the worksheet is counted as "up-to-date".
-Otherwise, it's counted as outdated (Example: English original has version 2.2, translation has version 2.1)
-
-A warning (⚠) is shown for a worksheet that is listed and up-to-date, but at least one translation unit
-being not translated yet. That may happen because there is really a part of the translation missing or because
-there was a change to the English original.
-Often these are minor changes where no change of the translation is necessary. In that case you just need to
-"confirm the translation" of this unit to resolve the warning.
-
-To find out the source of the warning, go to the language-specific report and look for a worksheet that is listed
-but has a translation progress &lt; 100%. Click on the progress and you'll see any untranslated translation unit.
-
-=== Unlisted ===
-The worksheets counted here are all not included in the list of available training resources.
-
-Those in the column "up-to-date" seem to be completely translated already, just the step
-of creating and uploading a PDF file is missing.
-
-== More ==
-See also the mediawiki [https://www.4training.net/Special:LanguageStats language statistics]"""
+        content += r"{{SummaryExplanations}}"
         return content
 
     def create_language_overview(self, language_data: Dict[str, LanguageInfo]) -> str:
@@ -134,7 +113,12 @@ See also the mediawiki [https://www.4training.net/Special:LanguageStats language
             if worksheet.show_in_list(english_info.worksheets[page]):
                 if worksheet.has_same_version(english_info.worksheets[page]):
                     language_stats["listed_uptodate"] += 1
-                    if worksheet.progress.translated < worksheet.progress.total:
+                    pdf_info = worksheet.get_file_type_info("pdf")
+                    assert pdf_info is not None     # PDF must exist because worksheet.show_in_list() was True
+                    # We warn if either translation progress is < 100% or
+                    # if worksheet version is different from PDF version
+                    if worksheet.progress.translated < worksheet.progress.total or \
+                       (pdf_info.metadata is None) or (pdf_info.metadata.version != worksheet.version):
                         language_stats["listed_uptodate_warning"] += 1
                 else:
                     language_stats["listed_outdated"] += 1
