@@ -214,13 +214,11 @@ class WorksheetInfo:
 
     def show_in_list(self, english_info) -> bool:
         """Should this worksheet be listed in the language information page?
-
         A worksheet will be included in the list of available resources if it has a PDF
         and if it has the same major version as the English original
         Examples:
             English original: version 2.2; translation: 2.0 -> yes
             English original: version 2.0; translation: 1.3b -> no
-
         Args:
             english_info (WorksheetInfo): Information on the English original worksheet
         """
@@ -232,7 +230,6 @@ class WorksheetInfo:
         Compare our version string with the version string of the English original: is it the same?
         Native numerals will be converted to standard numerals.
         One additional character in our version will be ignored (e.g. "1.2b" is the same as "1.2")
-
         Args:
             english_info (WorksheetInfo): Information on the English original worksheet
             check_only_major_version: ignore minor version part -> 1.3 and 1.1 counts as the same version
@@ -294,7 +291,6 @@ class LanguageInfo:
     def compare(self, old) -> ChangeLog:
         """
         Compare ourselves to another (older) LanguageInfo object: have there been changes / updates?
-
         In case of NEW_WORKSHEET, no NEW_PDF / NEW_ODT will be emitted (even if files got added)
         In case of DELETED_WORKSHEET, no DELETED_PDF / DELETED_ODT will be emitted (even if files existed before)
         @return data structure with all changes
