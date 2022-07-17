@@ -7,6 +7,7 @@ TODO: Find ways to run meaningful tests that don't take too long...
 from configparser import ConfigParser
 from datetime import datetime
 from os.path import abspath, dirname, join
+from typing import Dict
 import unittest
 from unittest.mock import patch, Mock
 
@@ -102,47 +103,99 @@ class TestResourcesBot(unittest.TestCase):
         self.assertEqual(version, "")
         self.assertEqual(version_unit, 0)
 
+    @staticmethod
+    def json_test_loader(site, page: str):
+        """Load meaningful test data for languages.json, en.json and ru.json"""
+        result = Mock()
+        if page == "4training:languages.json":
+            result.text = '["en", "ru"]'
+        elif page == "4training:en.json":
+            with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
+                result.text = f.read()
+        elif page == "4training:ru.json":
+            with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
+                result.text = f.read()
+        return result
+
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
     @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
     def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
-                            mock_write_list, mock_write_report, mock_pywikibot_page, mock_pywikibot_site):
-        def json_test_loader(site, page: str):
-            """Load meaningful test data for languages.json, en.json and ru.json"""
-            result = Mock()
-            if page == "4training:languages.json":
-                result.text = '["en", "ru"]'
-            elif page == "4training:en.json":
-                with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
-                    result.text = f.read()
-            elif page == "4training:ru.json":
-                with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
-                    result.text = f.read()
-            return result
-        mock_pywikibot_page.side_effect = json_test_loader
+                            mock_write_sidebar_messages, mock_write_list, mock_write_report, mock_write_summary,
+                            mock_pywikibot_page, mock_pywikibot_site):
+        mock_pywikibot_page.side_effect = self.json_test_loader
         mock_pywikibot_site.return_value.logged_in.return_value = True
         bot = ResourcesBot(self.config, read_from_cache=True)
         bot.run()
 
-        mock_consistency_check.assert_called_once()
-        mock_export_html.assert_called_once()
-        mock_export_repository.assert_called_once()
-        mock_write_list.assert_called_once()
+        # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
+        self.assertEqual(mock_consistency_check.return_value.run.call_count, 2)
+        self.assertEqual(mock_export_html.return_value.run.call_count, 2)
+        self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_sidebar_messages.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_list.return_value.run.call_count, 2)
+        self.assertEqual(mock_write_report.return_value.run.call_count, 2)
+        mock_write_summary.return_value.run.assert_called_once()
 
-        # Get the internal variables bot._result and bot._changelog so that we can do some assertions on them
-        bot_result = mock_write_report.return_value.run.call_args.args[0]
-        bot_changelog = mock_write_report.return_value.run.call_args.args[1]
+        self.assertIn("en", bot._result)
+        self.assertIn("ru", bot._result)
+        self.assertEqual(len(bot._result), 2)
+        self.assertTrue(bot._changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
+        self.assertTrue(bot._changelog["ru"].is_empty())
+        self.assertEqual(len(bot._changelog), 2)
 
-        self.assertIn("en", bot_result)
-        self.assertIn("ru", bot_result)
-        self.assertEqual(len(bot_result), 2)
-        self.assertTrue(bot_changelog["en"].is_empty())     # ChangeLogs must be empty because we read data from cache
-        self.assertTrue(bot_changelog["ru"].is_empty())
-        self.assertEqual(len(bot_changelog), 2)
+    @patch("pywikibot.Site", autospec=True)
+    @patch("pywikibot.Page", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
+    def test_rewrite_options(self, mock_consistency_check, mock_export_html, mock_export_repository,
+                             mock_write_sidebar_messages, mock_write_list, mock_write_report, mock_write_summary,
+                             mock_pywikibot_page, mock_pywikibot_site):
+        mock_pywikibot_page.side_effect = self.json_test_loader
+        mock_pywikibot_site.return_value.logged_in.return_value = True
+        # Expected results: rewrite option -> post-processor that should get initialized with force_rewrite=True
+        rewrite_check: Dict[str, Mock] = {
+            "summary": mock_write_summary,
+            "list": mock_write_list,
+            "report": mock_write_report,
+            "html": mock_export_html,
+            "sidebar": mock_write_sidebar_messages
+        }
+        for rewrite_option, mocked_component in rewrite_check.items():
+            # Component selected with rewrite option should have force_rewrite=True, the others not
+            bot = ResourcesBot(self.config, read_from_cache=True, rewrite=rewrite_option)
+            bot.run()
+            self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
+            for other_mock in rewrite_check.values():
+                if other_mock != mocked_component:
+                    self.assertFalse(other_mock.call_args.kwargs.get("force_rewrite"))
+
+        # "all" components should get called with force_rewrite=True
+        bot = ResourcesBot(self.config, read_from_cache=True, rewrite="all")
+        bot.run()
+        for mocked_component in rewrite_check.values():
+            self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
+
+        # No rewrite specified, so no component should get called with force_rewrite
+        bot = ResourcesBot(self.config, read_from_cache=True, rewrite=None)
+        bot.run()
+        for mocked_component in rewrite_check.values():
+            self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))
+
+        # TODO: Check correctness of rewrite="json" as well
+
+    # TODO: test_run_with_limit_lang
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Final
 from git import Actor, Repo
 from git.exc import GitError
 
@@ -15,17 +16,18 @@ class ExportRepository(LanguagePostProcessor):
     """
     def __init__(self, base_folder: str):
         """
-        @param folder: export base directory (repositories will be in subdirectories for each language)
-        @param repo: the address of the remote repository we're filling TODO
-        Currently we assume that origin is correctly set up in the folder and we just need to push
+        Args:
+            folder: export base directory (repositories will be in subdirectories for each language)
+            repo: the address of the remote repository we're filling TODO
+                Currently we assume that origin is correctly set up in the folder and we just need to push
         """
-        self._base_folder: str = base_folder
-        self.logger = logging.getLogger('pywikitools.resourcesbot.export_repository')
+        self._base_folder: Final[str] = base_folder
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_repository')
         if self._base_folder == "":
             self.logger.warning("Missing htmlexport path in config.ini. Won't export to repository")
-        self._author = Actor("ExportRepository", "samuel@holydevelopers.net")
+        self._author: Final[Actor] = Actor("ExportRepository", "samuel@holydevelopers.net")
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         """Pushing all changes in the local repository (created by ExportHTML) to the remote repository
 
         Currently we're ignoring change_log and just check for changes in the git repository

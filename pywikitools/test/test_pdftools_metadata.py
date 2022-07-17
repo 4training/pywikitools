@@ -45,10 +45,22 @@ class TestPdfMetadata(unittest.TestCase):
             "/Title": self.info_money.title,
             # It would be nice if there two functions in our code give_me_subject() and give_me_keywords()
             "/Subject": f'{self.info_money.page.replace("_", " ")} German Deutsch',
-            "/Keywords": "Copyright-free. More text. Version 1.2"
+            "/Keywords": "Copyright-free. More text. Version 1.0"
         }
         result = check_metadata(fortraininglib, "", self.info_money)
         self.assertTrue(result.correct)
+        self.assertTrue(result.only_docinfo)
+
+        # DocInfo properties are technically correct but version is different than worksheet version
+        # Same, but DocInfo properties are now correct
+        mock_pikepdf.open.return_value.docinfo = {
+            "/Title": self.info_money.title,
+            # It would be nice if there two functions in our code give_me_subject() and give_me_keywords()
+            "/Subject": f'{self.info_money.page.replace("_", " ")} German Deutsch',
+            "/Keywords": "Copyright-free. More text. Version 0.9"
+        }
+        result = check_metadata(fortraininglib, "", self.info_money)
+        self.assertFalse(result.correct)
         self.assertTrue(result.only_docinfo)
 
         # A PDF document that has correct properties stored as XMP and is PDF/1A
@@ -57,7 +69,7 @@ class TestPdfMetadata(unittest.TestCase):
         properties = {
             "dc:title": self.info_money.title,
             "dc:description": f'{self.info_money.page.replace("_", " ")} German Deutsch',
-            "pdf:Keywords": "Copyright-free. More text. Version 1.2"
+            "pdf:Keywords": "Copyright-free. More text. Version 1.0"
         }
         # This is all a bit tricky because our mocked object needs to support
         # both access by index: mock_meta["dc:title"] and access of a member: mock_meta.pdfa_status
@@ -65,7 +77,7 @@ class TestPdfMetadata(unittest.TestCase):
         mock_meta.__contains__.side_effect = properties.__contains__
         mock_pikepdf.open.return_value.open_metadata.return_value = mock_meta
         result = check_metadata(fortraininglib, "", self.info_money)
-        self.assertEqual(result.version, "1.2")
+        self.assertEqual(result.version, "1.0")
         self.assertTrue(result.correct)
         self.assertTrue(result.pdf1a)
         self.assertFalse(result.only_docinfo)

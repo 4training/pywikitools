@@ -245,8 +245,6 @@ class TranslationUnit:
             else:
                 warning_message = f"Formatting issues in {self.get_name()}. "
                 warning_message += "Please check that all special characters like * = # ; : <b> <i> are correct."
-            warning_message += f"\nOriginal: \n{self._definition}"
-            warning_message += f"\nTranslation: \n{self._translation}"
             return (False, warning_message)
 
         return (True, "")

@@ -18,18 +18,19 @@ class WriteList(LanguagePostProcessor):
     This class can be re-used to call run() several times
     """
     def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite,
-                 user_name: str, password: str, force_rewrite: bool = False):
+                 user_name: str, password: str, *, force_rewrite: bool = False):
         """
-        @param user_name and password necessary to mark page for translation in case of changes
-               In case they're empty we won't try to mark pages for translation
-        @param force_rewrite rewrite even if there were no (relevant) changes
+        Arguments user_name and password are necessary to mark page for translation in case of changes.
+        In case they're empty we won't try to mark pages for translation
+        Args:
+            force_rewrite rewrite even if there were no (relevant) changes
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
         self._user_name: Final[str] = user_name
         self._password: Final[str] = password
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: logging.Logger = logging.getLogger('pywikitools.resourcesbot.write_lists')
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_lists')
         if user_name == "" or password == "":
             self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
@@ -69,7 +70,7 @@ class WriteList(LanguagePostProcessor):
             self.logger.warning(f"Couldn't find / in {file_name}")
         return f" [[File:{file_info.file_type.lower()}icon_small.png|" + r"link={{filepath:" + file_name + r"}}]]"
 
-    def create_mediawiki(self, language_info: LanguageInfo) -> str:
+    def create_mediawiki(self, language_info: LanguageInfo, english_info: LanguageInfo) -> str:
         """
         Create the mediawiki string for the list of available training resources
 
@@ -81,20 +82,15 @@ class WriteList(LanguagePostProcessor):
         """
         content: str = ''
         for worksheet, worksheet_info in language_info.worksheets.items():
-            if worksheet_info.progress.is_unfinished():
-                continue
-            if not worksheet_info.has_file_type('pdf'):
-                # Only show worksheets where we have a PDF file in the list
-                self.logger.warning(f"Language {language_info.language_code}: worksheet {worksheet} has no PDF,"
-                                    " not including in list.")
-                continue
-
-            content += f"* [[{worksheet}/{language_info.language_code}|"
-            content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
-            content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
-            content += "\n"
+            if worksheet_info.show_in_list(english_info.worksheets[worksheet]):
+                content += f"* [[{worksheet}/{language_info.language_code}|"
+                content += "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("printPdf"))
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("odt"))
+                content += "\n"
+                if worksheet_info.progress.translated < worksheet_info.progress.total:
+                    self.logger.warning(f"Worksheet {worksheet}/{language_info.language_code} is not fully translated!")
 
         self.logger.debug(content)
         return content
@@ -126,7 +122,7 @@ class WriteList(LanguagePostProcessor):
             self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
         return list_start, list_end
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog) -> None:
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog) -> None:
         if not self.needs_rewrite(language_info, change_log):
             return
 
@@ -153,11 +149,12 @@ class WriteList(LanguagePostProcessor):
             self.logger.info(page.text)
             return
         self.logger.debug(f"Found existing list of available training resources @{list_start}-{list_end}. Replacing...")
-        new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info) + page.text[list_end+1:]
+        new_page_content = page.text[0:list_start] + self.create_mediawiki(language_info, english_info)
+        new_page_content += page.text[list_end+1:]
         self.logger.debug(new_page_content)
 
         # Save page and mark it for translation if necessary
-        if page.text == new_page_content:
+        if page.text.strip() == new_page_content.strip():
             return
         page.text = new_page_content
         page.save("Updated list of available training resources")  # TODO write list of changes here in the save message

@@ -9,6 +9,7 @@ TODO: Find a good place for our standards in a dedicated module and avoid duplic
       they're also in TranslateODT._set_properties()
 """
 import re
+from typing import List
 import pikepdf
 from pywikitools.fortraininglib import ForTrainingLib
 
@@ -29,7 +30,7 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
     version = ""
     metadata_correct = True
     only_docinfo = False
-    warnings = ""
+    warnings: List[str] = []
     title = ""
     subject = ""
     keywords = ""
@@ -62,14 +63,14 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
         expected_title = expected_title[:pos]
     if not title.startswith(expected_title):
         metadata_correct = False
-        warnings += f"Expected title to start with '{expected_title}' but found '{title}'\n"
+        warnings.append(f"Expected title to start with '{expected_title}' but found '{title}'")
 
     # Check subject metadata (except for the English originals)
     if info.language_code != "en":
         expected_subject = info.page.replace("_", " ")
         if not subject.startswith(expected_subject):
             metadata_correct = False
-            warnings += f"Expected subject to start with '{expected_subject}' but found '{subject}'\n"
+            warnings.append(f"Expected subject to start with '{expected_subject}' but found '{subject}'")
         english_language_name = str(fortraininglib.get_language_name(info.language_code, 'en'))
         autonym = str(fortraininglib.get_language_name(info.language_code))
         expected_subject_end = f"{english_language_name} {autonym}"
@@ -82,14 +83,17 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
             expected_subject_end = "Persian Farsi فارسی"
         if not subject.endswith(expected_subject_end):
             metadata_correct = False
-            warnings += f"Expected subject to end with '{expected_subject_end}' names but found '{subject}'\n"
+            warnings.append(f"Expected subject to end with '{expected_subject_end}' but found '{subject}'")
 
     # Check keywords (should contain Template:CC0Notice with version information)
     handler = re.search(r"\d\.\d[a-zA-Z]?", keywords)
     if handler:
         version = handler.group(0)
+        if version != info.version:
+            metadata_correct = False
+            warnings.append(f"Version inconsistency: PDF says {version}, worksheet says {info.version}")
     else:
         metadata_correct = False
-        warnings += f"Couldn't extract version from keyword string '{keywords}'"
+        warnings.append(f"Couldn't extract version from keyword string '{keywords}'")
 
-    return PdfMetadataSummary(version, metadata_correct, meta.pdfa_status == "1A", only_docinfo, warnings)
+    return PdfMetadataSummary(version, metadata_correct, meta.pdfa_status == "1A", only_docinfo, "\n".join(warnings))

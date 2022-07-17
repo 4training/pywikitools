@@ -13,10 +13,13 @@ from pywikitools.resourcesbot.data_structures import LanguageInfo
 
 
 class LanguagePostProcessor(ABC):
-    """Base class for all functionality doing useful stuff with the data on one language"""
+    """Base class for all functionality doing useful stuff with the data on one language.
+
+    We include information on English as well because several post-processors need it as reference
+    """
 
     @abstractmethod
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         """Entry point"""
         pass
 

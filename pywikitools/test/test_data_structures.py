@@ -37,14 +37,12 @@ TEST_VERSION: str = "1.2"
 
 class TestTranslationProgress(unittest.TestCase):
     def test_everything(self):
-        is_incomplete = [False, False, True]
         is_unfinished = [False, True, False]
         for counter, progress_dict in enumerate([TEST_PROGRESS, TEST_PROGRESS2, TEST_PROGRESS3]):
             progress = TranslationProgress(**progress_dict)
             self.assertEqual(progress.fuzzy, progress_dict["fuzzy"])
             self.assertEqual(progress.total, progress_dict["total"])
             self.assertEqual(progress.translated, progress_dict["translated"])
-            self.assertEqual(is_incomplete[counter], progress.is_incomplete())
             self.assertEqual(is_unfinished[counter], progress.is_unfinished())
             self.assertIn(str(progress.fuzzy), str(progress))
             self.assertIn(str(progress.translated), str(progress))
@@ -160,18 +158,13 @@ class TestWorksheetInfo(unittest.TestCase):
         for file_type in expected_file_types:
             self.assertTrue(self.worksheet_info.has_file_type(file_type))
 
-    def test_is_incomplete(self):
-        self.assertFalse(self.worksheet_info.is_incomplete())
-
-        # An incomplete translation (= almost finished)
-        incomplete_progress = TranslationProgress(**TEST_PROGRESS3)
-        incomplete_worksheet = WorksheetInfo(TEST_EN_NAME, "ro", "random", incomplete_progress, TEST_VERSION)
-        self.assertTrue(incomplete_worksheet.is_incomplete())
-
-        # An unfinished translation: does not even count as incomplete and will be ignored by resourcesbot
-        unfinished_progress = TranslationProgress(**TEST_PROGRESS2)
-        unfinished_worksheet = WorksheetInfo(TEST_EN_NAME, "ru", "random", unfinished_progress, TEST_VERSION)
-        self.assertFalse(unfinished_worksheet.is_incomplete())
+    def test_show_in_list(self):
+        english_info = WorksheetInfo(TEST_EN_NAME, "en", TEST_EN_NAME, self.progress, TEST_VERSION)
+        self.assertFalse(self.worksheet_info.show_in_list(english_info))
+        self.test_add_file_info()
+        self.assertTrue(self.worksheet_info.show_in_list(english_info))
+        self.worksheet_info.version = "0.9"
+        self.assertFalse(self.worksheet_info.show_in_list(english_info))
 
     def test_serialization(self):
         # encode a WorksheetInfo object to JSON and decode it again: Make sure the result is the same
@@ -207,12 +200,18 @@ class TestWorksheetInfo(unittest.TestCase):
         self.assertTrue(self.worksheet_info.has_same_version(english_info))
         self.worksheet_info.version = "1.2b"
         self.assertTrue(self.worksheet_info.has_same_version(english_info))
+        self.assertTrue(self.worksheet_info.has_same_version(english_info, check_only_major_version=True))
         self.worksheet_info.version = "1.3a"
         self.assertFalse(self.worksheet_info.has_same_version(english_info))
+        self.assertTrue(self.worksheet_info.has_same_version(english_info, check_only_major_version=True))
+        self.worksheet_info.version = "0.9a"
+        self.assertFalse(self.worksheet_info.has_same_version(english_info, check_only_major_version=True))
+
         tamil_info = WorksheetInfo(TEST_EN_NAME, "ta", "கர்த்தரிடமிருந்து கேட்பது", self.progress, "௧.௨")
         self.assertTrue(tamil_info.has_same_version(english_info))
         tamil_info.version = "௧.௦"
         self.assertFalse(tamil_info.has_same_version(english_info))
+        self.assertTrue(tamil_info.has_same_version(english_info, check_only_major_version=True))
         kannada_info = WorksheetInfo(TEST_EN_NAME, "kn", "ದೇವರಿಂದ ಕೇಳುವುದು", self.progress, "೧.೨")
         self.assertTrue(kannada_info.has_same_version(english_info))
         kannada_info.version = "೧.೦"
@@ -221,6 +220,9 @@ class TestWorksheetInfo(unittest.TestCase):
         self.assertTrue(hindi_info.has_same_version(english_info))
         hindi_info.version = "१.०"
         self.assertFalse(hindi_info.has_same_version(english_info))
+        self.assertTrue(hindi_info.has_same_version(english_info, check_only_major_version=True))
+        hindi_info.version = "०.९"
+        self.assertFalse(hindi_info.has_same_version(english_info, check_only_major_version=True))
 
 
 class TestLanguageInfo(unittest.TestCase):

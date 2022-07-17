@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import requests
-from typing import Dict, Set
+from typing import Dict, Final, Set
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
@@ -31,15 +31,16 @@ class ExportHTML(LanguagePostProcessor):
     Export all finished worksheets of this language as HTML into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
-    def __init__(self, fortraininglib: ForTrainingLib, folder: str, force_rewrite: bool = False):
+    def __init__(self, fortraininglib: ForTrainingLib, folder: str, *, force_rewrite: bool = False):
         """
-        @param folder: base directory for export; subdirectories will be created for each language
-        @param force_rewrite: rewrite even if there were no (relevant) changes
+        Args:
+            folder: base directory for export; subdirectories will be created for each language
+            force_rewrite: rewrite even if there were no (relevant) changes
         """
         self._base_folder: str = folder
-        self._force_rewrite: bool = force_rewrite
-        self.fortraininglib = fortraininglib
-        self.logger = logging.getLogger('pywikitools.resourcesbot.export_html')
+        self._force_rewrite: Final[bool] = force_rewrite
+        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
+        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_html')
         if self._base_folder != "":
             try:
                 os.makedirs(folder, exist_ok=True)
@@ -49,7 +50,7 @@ class ExportHTML(LanguagePostProcessor):
         else:
             self.logger.warning("Missing htmlexport path in config.ini. Won't export HTML files.")
 
-    def has_relevant_change(self, worksheet: str, change_log: ChangeLog):
+    def has_relevant_change(self, worksheet: str, change_log: ChangeLog) -> bool:
         """
         Is there a relevant change for worksheet?
         TODO: Define what exactly we consider relevant (for re-generating that worksheet's HTML)
@@ -96,7 +97,7 @@ class ExportHTML(LanguagePostProcessor):
             self.logger.info(f"Successfully downloaded and saved {file_path}")
             return True
 
-    def run(self, language_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
         if self._base_folder == "":
             return
         folder: str = os.path.join(self._base_folder, language_info.language_code)
@@ -125,8 +126,8 @@ class ExportHTML(LanguagePostProcessor):
 
         # Download all worksheets and save the transformed HTML
         for worksheet, info in language_info.worksheets.items():
-            # As elsewhere, we ignore unfinished worksheets and worksheets without PDF
-            if info.progress.is_unfinished() or not info.has_file_type("pdf"):
+            # As elsewhere, we ignore outdated / unfinished translations
+            if not info.show_in_list(english_info.worksheets[worksheet]):
                 continue
             if self._force_rewrite or self.has_relevant_change(worksheet, change_log):
                 content = self.fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")

@@ -77,15 +77,14 @@ class TestFortrainingLib(unittest.TestCase):
         with self.assertLogs('pywikitools.lib', level='INFO'):
             result = self.lib.list_page_translations('Prayer')
         with self.assertLogs('pywikitools.lib', level='INFO'):
-            result_with_incomplete = self.lib.list_page_translations('Prayer', include_unfinished=True)
+            result_with_unfinished = self.lib.list_page_translations('Prayer', include_unfinished=True)
         self.assertTrue(len(result) >= 5)
-        self.assertTrue(len(result) <= len(result_with_incomplete))
+        self.assertTrue(len(result) <= len(result_with_unfinished))
         for language, progress in result.items():
             self.assertFalse(progress.is_unfinished())
-        for language, progress in result_with_incomplete.items():
+        for language, progress in result_with_unfinished.items():
             if language not in result:
                 self.assertTrue(progress.is_unfinished())
-                self.assertFalse(progress.is_incomplete())
 
         # Check correct error handling for non-existing page
         self.assertEqual(len(self.lib.list_page_translations("NotExisting", "de")), 0)
