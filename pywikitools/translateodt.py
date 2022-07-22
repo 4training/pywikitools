@@ -277,6 +277,8 @@ class TranslateODT:
             for j in range(len(units)):
                 if i == j:
                     continue
+                if not units[j].is_translation_well_structured()[0]:
+                    continue
                 # Do the actual sorting
                 if (units[i] < units[j]) and (i < j):
                     self.logger.info(f"{units[i].get_definition()} is part of {units[j].get_definition()}. "
@@ -285,10 +287,6 @@ class TranslateODT:
                     units[i] = units[j]
                     units[j] = temp_unit
 
-                # More consistency checks
-                if not units[j].is_translation_well_structured()[0]:
-                    self.logger.warning(f"{units[j].get_name()} is not well structured.")
-                    continue
                 for i_snippet_orig, i_snippet_trans in units[i]:
                     if i_snippet_orig.content == i_snippet_trans.content:
                         # translation == original: will be ignored anyway
