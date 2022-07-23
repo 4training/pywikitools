@@ -57,7 +57,7 @@ class WriteSummary(GlobalPostProcessor):
             page.text = report
             page.save("Created summary report")
         else:
-            if page.text != report:
+            if page.text.strip() != report.strip():
                 page.text = report
                 page.save("Updated summary report")    # TODO write human-readable changes here in the save message
                 self.logger.info("Updated summary report")
@@ -73,7 +73,7 @@ class WriteSummary(GlobalPostProcessor):
 
     def create_language_overview(self, language_data: Dict[str, LanguageInfo]) -> str:
         """Create mediawiki code to display the whole language overview table"""
-        content = """__NOTOC__== Languages ==
+        content = """__NOTOC____NOEDITSECTION__== Languages ==
 {| class="wikitable sortable" style="width:100%; text-align:right"
 |-
 ! colspan="2" | &nbsp;

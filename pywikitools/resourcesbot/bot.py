@@ -325,7 +325,7 @@ class ResourcesBot:
             except AssertionError:
                 self.logger.warning(f"Error while trying to load {lang}.json")
 
-            if encoded_json != page.text:
+            if encoded_json.strip() != page.text.strip():
                 rewrite_json = True
 
         # compare and find out if new worksheets have been added

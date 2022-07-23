@@ -1,4 +1,4 @@
-__NOTOC__== Languages ==
+__NOTOC____NOEDITSECTION__== Languages ==
 {| class="wikitable sortable" style="width:100%; text-align:right"
 |-
 ! colspan="2" | &nbsp;

@@ -87,7 +87,6 @@ class CorrectBot:
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
             return None
-
         return corrector.correct(unit)
 
     def check_page(self, page: str, language_code: str) -> Optional[List[CorrectionResult]]:
@@ -95,7 +94,9 @@ class CorrectBot:
         Check one specific page and store the results in this class
 
         This does not write anything back to the server. Changes can be read with
-        get_stats(), get_correction_counter() and get_diff()
+        get_correction_counter(), get_suggestion_counter() and get_warning_counter();
+        get_correction_stats(), get_suggestion_stats() and get_warnings();
+        get_correction_diff() and get_suggestion_diff()
 
         Returns:
             CorrectionResult for each processed translation unit
@@ -185,26 +186,40 @@ class CorrectBot:
         """Print a diff of the suggestions (made in the last run)"""
         return self._suggestion_diff
 
-    def save_to_mediawiki(self, results: List[CorrectionResult]):
+    def save_to_mediawiki(self, results: List[CorrectionResult]) -> bool:
         """
         Write changes back to mediawiki
 
         You should disable pywikibot throttling to avoid CorrectBot runs to take quite long:
         `put_throttle = 0` in user-config.py
+
+        Returns:
+            bool: Did we save any changes to the mediawiki system?
         """
+        saved_changes = False
         for result in results:
             if result.corrections.has_translation_changes():
                 mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
                 mediawiki_page.text = result.corrections.get_translation()
                 mediawiki_page.save(minor=True)
+                saved_changes = True
+        return saved_changes
 
-    def save_report(self, page: str, language_code: str, results: List[CorrectionResult]):
-        # We'll save the report in our custom CorrectBot namespace
+    def save_report(self, page: str, language_code: str, results: List[CorrectionResult]) -> bool:
+        """Save report with the correction results to the mediawiki system
+
+        We save the report in our custom CorrectBot namespace, for example to CorrectBot:Prayer/de
+
+        Returns:
+            Did we save a report? False means there is already exactly the same report in the system,
+            so there is nothing new to report.
+
+        """
         page_name: str = f"CorrectBot:{page}/{language_code}"
         summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions, "
         summary += f"{self.get_warning_counter()} warnings."
 
-        report: str = f"__NOTOC__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
+        report: str = f"__NOTOC____NOEDITSECTION__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
         report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|report history]])\n"
         if self.fortraininglib.count_jobs() > 0:
             self.logger.warning("MediaWiki job queue is not empty!")
@@ -240,10 +255,11 @@ class CorrectBot:
                     report += "|}\n"
 
         report_page = pywikibot.Page(self.site, page_name)
-        if report_page.text != report:
+        if report_page.text.strip() != report.strip():
             report_page.text = report
             report_page.save(summary)
-        return report
+            return True
+        return False
 
     def empty_job_queue(self) -> bool:
         """
@@ -280,12 +296,22 @@ class CorrectBot:
         if results is None:
             print(f"Error while trying to correct {page}")
             return
-        if self._simulate:
-            print("We're running with --simulate. No changes are written back to the mediawiki system")
-        else:
-            self.save_to_mediawiki(results)
+        saved_changes = False
+        saved_report = False
+        if not self._simulate:
+            saved_changes = self.save_to_mediawiki(results)
             self.empty_job_queue()
-            self.save_report(page, language_code, results)
+            saved_report = self.save_report(page, language_code, results)
+
+        # Print summary of what we did
+        if not saved_report:
+            print("NOTHING SAVED.")
+            if self._simulate:
+                print("We're running with --simulate. No changes are written back to the mediawiki system.")
+            elif not saved_changes:
+                print("Nothing new. The existing CorrectBot report in the mediawiki system is still correct.")
+            else:
+                print("WARNING: Inconsistency! Please inform an administrator. Saved changes but not report.")
 
         print(self.get_correction_stats())
         if self._correction_counter > 0:
