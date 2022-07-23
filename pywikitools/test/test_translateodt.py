@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from os.path import abspath, dirname, join
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
@@ -171,6 +171,37 @@ class TestTranslateODT(unittest.TestCase):
         self.assertEqual(len(result.multiple), 2)
         self.assertEqual(result.multiple["Template:BibleReadingHints/6"], 5)
         self.assertEqual(result.multiple["Bible_Reading_Hints/7"], 2)
+
+    @patch("pywikitools.translateodt.ForTrainingLib", autospec=True)
+    @patch("pywikitools.translateodt.CorrectBot", autospec=True)
+    def test_translate_worksheet_aborts(self, mock_correctbot, mock_fortraininglib):
+        # Testing that translate_worksheet() aborts correctly if some prerequisites are not met
+        translateodt = DummyTranslateODT()
+
+        # CorrectBot would correct something or give warnings
+        mock_correctbot.return_value.get_correction_counter.return_value = 2
+        with self.assertLogs('pywikitools.translateodt', level='ERROR'):
+            self.assertIsNone(translateodt.translate_worksheet("Prayer", "de"))
+        mock_correctbot.return_value.get_correction_counter.return_value = 0
+        mock_correctbot.return_value.get_warning_counter.return_value = 1
+        with self.assertLogs('pywikitools.translateodt', level='ERROR'):
+            self.assertIsNone(translateodt.translate_worksheet("Prayer", "de"))
+
+        mock_correctbot.return_value.get_warning_counter.return_value = 0
+
+        # Can't get translation units of worksheet
+        mock_fortraininglib.return_value.get_translation_units.return_value = None
+        with self.assertLogs('pywikitools.translateodt', level='ERROR'):
+            self.assertIsNone(translateodt.translate_worksheet("Prayer", "de"))
+
+        # Worksheet isn't translated yet
+        mock_translated_page = Mock()
+        mock_translated_page.is_untranslated.return_value = True
+        mock_fortraininglib.return_value.get_translation_units.return_value = mock_translated_page
+        with self.assertLogs('pywikitools.translateodt', level='ERROR'):
+            self.assertIsNone(translateodt.translate_worksheet("Prayer", "de"))
+
+        # TODO test all the main functionality of translate_worksheet()
 
 
 if __name__ == '__main__':

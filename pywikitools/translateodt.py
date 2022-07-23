@@ -28,6 +28,7 @@ import re
 from configparser import ConfigParser
 from typing import Dict, Final, List, Optional, Set
 import requests
+from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
@@ -83,6 +84,8 @@ class TranslateODT:
                                                 'headless': False}})
         self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
         self.config.read_dict(config)
+
+        self.correctbot = CorrectBot(self.config, simulate=True)
 
         self.logger = logging.getLogger('pywikitools.translateodt')
         self.keep_english_file: bool = keep_english_file
@@ -335,11 +338,18 @@ class TranslateODT:
 
     def translate_worksheet(self, worksheet: str, language_code: str) -> Optional[str]:
         """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT
-        @param worksheet name of the worksheet (e.g. "Forgiving_Step_by_Step")
-        @param language_code what language we should translate to (e.g. "de")
-        @return file name of the created ODT file (or None in case of error)
+
+        Args:
+            worksheet: name of the worksheet (e.g. "Forgiving_Step_by_Step")
+            language_code: what language we should translate to (e.g. "de")
+        Returns:
+            file name of the created ODT file (or None in case of error)
         """
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
+        self.correctbot.check_page(worksheet, language_code)
+        if self.correctbot.get_correction_counter() > 0 or self.correctbot.get_warning_counter() > 0:
+            self.logger.error("Please run CorrectBot first and then try again.")
+            return None
         translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(worksheet, language_code)
         if translated_page is None:
             self.logger.error(f"Couldn't get translation units of {worksheet}.")
