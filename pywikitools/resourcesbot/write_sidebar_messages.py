@@ -48,22 +48,22 @@ class WriteSidebarMessages(LanguagePostProcessor):
             page.save("Updated translated worksheet title")
 
     @staticmethod
-    def has_relevant_change(worksheet: str, change_log: ChangeLog) -> bool:
+    def has_relevant_change(worksheet: str, changes: ChangeLog) -> bool:
         """
         Is there a relevant change for our worksheet?
         Relevant is a change indicating that the translated title might have changed (new / updated worksheet)
         """
-        for change_item in change_log:
+        for change_item in changes:
             if change_item.worksheet == worksheet:
                 if change_item.change_type == ChangeType.NEW_WORKSHEET or \
                    change_item.change_type == ChangeType.UPDATED_WORKSHEET:
                     return True
         return False
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog) -> None:
+    def run(self, language_info: LanguageInfo, _english_info, changes: ChangeLog, _english_changes) -> None:
         """Our entry function"""
         for worksheet in language_info.worksheets.values():
             if worksheet.title == "":
                 continue
-            if self._force_rewrite or self.has_relevant_change(worksheet.page, change_log):
+            if self._force_rewrite or self.has_relevant_change(worksheet.page, changes):
                 self.save_worksheet_title(worksheet)

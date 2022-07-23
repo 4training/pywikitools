@@ -48,24 +48,24 @@ class TestWriteSidebarMessages(unittest.TestCase):
     @patch("pywikitools.resourcesbot.write_sidebar_messages.WriteSidebarMessages.save_worksheet_title")
     def test_run(self, mock_save):
         # save_worksheet_title() shouldn't get called when there are no changes
-        self.write_sidebar_messages.run(self.language_info, None, ChangeLog())
+        self.write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog())
         mock_save.assert_not_called()
 
         # save_worksheet_title() should get called when there is a change
         changes = ChangeLog()
         changes.add_change("Hearing_from_God", ChangeType.UPDATED_WORKSHEET)
-        self.write_sidebar_messages.run(self.language_info, None, changes)
+        self.write_sidebar_messages.run(self.language_info, None, changes, ChangeLog())
         mock_save.assert_called_once()
 
         # save_worksheet_title() shouldn't get called when there change is irrelevant
         irrelevant_changes = ChangeLog()
         irrelevant_changes.add_change("Hearing_from_God", ChangeType.NEW_PDF)
-        self.write_sidebar_messages.run(self.language_info, None, irrelevant_changes)
+        self.write_sidebar_messages.run(self.language_info, None, irrelevant_changes, ChangeLog())
         mock_save.assert_called_once()
 
         # save_worksheet_title() should be called when we have force_rewrite (even if there are no changes)
         write_sidebar_messages = WriteSidebarMessages(None, None, force_rewrite=True)
-        write_sidebar_messages.run(self.language_info, None, ChangeLog())
+        write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog())
         self.assertEqual(mock_save.call_count, 2)
 
 

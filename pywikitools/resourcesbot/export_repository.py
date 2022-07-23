@@ -4,7 +4,6 @@ from typing import Final
 from git import Actor, Repo
 from git.exc import GitError
 
-from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
@@ -27,10 +26,10 @@ class ExportRepository(LanguagePostProcessor):
             self.logger.warning("Missing htmlexport path in config.ini. Won't export to repository")
         self._author: Final[Actor] = Actor("ExportRepository", "samuel@holydevelopers.net")
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
         """Pushing all changes in the local repository (created by ExportHTML) to the remote repository
 
-        Currently we're ignoring change_log and just check for changes in the git repository
+        Currently we're ignoring the changes parameter and just check for changes in the git repository
         """
         # Make sure we have a valid repository
         if self._base_folder == "":

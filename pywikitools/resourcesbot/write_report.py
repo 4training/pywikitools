@@ -38,9 +38,10 @@ class WriteReport(LanguagePostProcessor):
         self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_report')
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
+            changes: ChangeLog, english_changes: ChangeLog):
         """Entry function"""
-        if self._force_rewrite or not change_log.is_empty():
+        if self._force_rewrite or not changes.is_empty() or not english_changes.is_empty():
             if language_info.language_code == "en":   # We don't need a report for English as it is the source language
                 return
             if "-" in language_info.language_code and language_info.language_code != "pt-br":

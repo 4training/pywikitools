@@ -50,12 +50,12 @@ class ExportHTML(LanguagePostProcessor):
         else:
             self.logger.warning("Missing htmlexport path in config.ini. Won't export HTML files.")
 
-    def has_relevant_change(self, worksheet: str, change_log: ChangeLog) -> bool:
+    def has_relevant_change(self, worksheet: str, changes: ChangeLog) -> bool:
         """
         Is there a relevant change for worksheet?
         TODO: Define what exactly we consider relevant (for re-generating that worksheet's HTML)
         """
-        for change_item in change_log:
+        for change_item in changes:
             if change_item.worksheet == worksheet:
                 # TODO check change_item.change_type
                 return True
@@ -97,7 +97,7 @@ class ExportHTML(LanguagePostProcessor):
             self.logger.info(f"Successfully downloaded and saved {file_path}")
             return True
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, changes: ChangeLog, _english_changes):
         if self._base_folder == "":
             return
         folder: str = os.path.join(self._base_folder, language_info.language_code)
@@ -129,7 +129,7 @@ class ExportHTML(LanguagePostProcessor):
             # As elsewhere, we ignore outdated / unfinished translations
             if not info.show_in_list(english_info.worksheets[worksheet]):
                 continue
-            if self._force_rewrite or self.has_relevant_change(worksheet, change_log):
+            if self._force_rewrite or self.has_relevant_change(worksheet, changes):
                 content = self.fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")
                 if content is None:
                     self.logger.warning(f"Couldn't get content of {worksheet}/{language_info.language_code}. Skipping")

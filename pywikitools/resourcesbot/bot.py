@@ -148,13 +148,14 @@ class ResourcesBot:
                                  force_rewrite=(self._rewrite == "all") or (self._rewrite == "html"))
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         assert "en" in self._result
+        assert "en" in self._changelog
         for lang in self._result:
-            consistency_check.run(self._result[lang], self._result["en"], ChangeLog())
-            export_html.run(self._result[lang], self._result["en"], self._changelog[lang])
-            export_repository.run(self._result[lang], self._result["en"], self._changelog[lang])
-            write_list.run(self._result[lang], self._result["en"], self._changelog[lang])
-            write_report.run(self._result[lang], self._result["en"], self._changelog[lang])
-            write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang])
+            consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
+            export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+            export_repository.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+            write_list.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+            write_report.run(self._result[lang], self._result["en"], self._changelog[lang], self._changelog["en"])
+            write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:

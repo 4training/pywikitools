@@ -3,7 +3,7 @@ from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import patch
 from pywikitools.fortraininglib import ForTrainingLib
-from pywikitools.resourcesbot.changes import ChangeLog
+from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
@@ -52,13 +52,24 @@ class TestWriteReport(unittest.TestCase):
     def test_run(self, mock_save):
         write_report = WriteReport(self.fortraininglib, None)
         # save_language_report() shouldn't get called when there are no changes
-        write_report.run(self.language_info, self.english_info, ChangeLog())
+        write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
         mock_save.assert_not_called()
+
+        change_log = ChangeLog()
+        change_log.add_change("Prayer", ChangeType.UPDATED_WORKSHEET)
+
+        # save_language_report() should get called when there are changes
+        write_report.run(self.language_info, self.english_info, change_log, ChangeLog())
+        mock_save.assert_called_once()
+
+        # save_language_report() should get called when there are changes in the English originals
+        write_report.run(self.language_info, self.english_info, ChangeLog(), change_log)
+        self.assertEqual(mock_save.call_count, 2)
 
         # save_language_report() should be called once (for Russian) when we have force_rewrite
         write_report = WriteReport(self.fortraininglib, None, force_rewrite=True)
-        write_report.run(self.language_info, self.english_info, ChangeLog())
-        mock_save.assert_called_once()
+        write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
+        self.assertEqual(mock_save.call_count, 3)
 
 
 if __name__ == '__main__':

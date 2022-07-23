@@ -34,11 +34,11 @@ class WriteList(LanguagePostProcessor):
         if user_name == "" or password == "":
             self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
-    def needs_rewrite(self, language_info: LanguageInfo, change_log: ChangeLog) -> bool:
+    def needs_rewrite(self, language_info: LanguageInfo, changes: ChangeLog) -> bool:
         """Determine whether the list of available training resources needs to be rewritten."""
         lang = language_info.language_code
         needs_rewrite = self._force_rewrite
-        for change_item in change_log:
+        for change_item in changes:
             if change_item.change_type in [ChangeType.UPDATED_PDF, ChangeType.NEW_PDF, ChangeType.DELETED_PDF,
                                            ChangeType.NEW_WORKSHEET, ChangeType.DELETED_WORKSHEET]:
                 needs_rewrite = True
@@ -122,8 +122,9 @@ class WriteList(LanguagePostProcessor):
             self.logger.debug(f"Matching line: start={m.start()}, end={m.end()}, {m.group(0)}")
         return list_start, list_end
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog) -> None:
-        if not self.needs_rewrite(language_info, change_log):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
+            changes: ChangeLog, _english_changes) -> None:
+        if not self.needs_rewrite(language_info, changes):
             return
 
         # Saving this to the language information page, e.g. https://www.4training.net/German

@@ -19,7 +19,8 @@ class LanguagePostProcessor(ABC):
     """
 
     @abstractmethod
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, change_log: ChangeLog):
+    def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
+            changes: ChangeLog, english_changes: ChangeLog):
         """Entry point"""
         pass
 
