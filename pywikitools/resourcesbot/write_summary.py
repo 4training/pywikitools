@@ -73,7 +73,7 @@ class WriteSummary(GlobalPostProcessor):
 
     def create_language_overview(self, language_data: Dict[str, LanguageInfo]) -> str:
         """Create mediawiki code to display the whole language overview table"""
-        content = """== Languages ==
+        content = """__NOTOC__== Languages ==
 {| class="wikitable sortable" style="width:100%; text-align:right"
 |-
 ! colspan="2" | &nbsp;
@@ -82,11 +82,12 @@ class WriteSummary(GlobalPostProcessor):
 |-
 ! Language !! Code !! Up-to-date !! Outdated !! Up-to-date (= PDF missing) !! Unfinished / very outdated
 """
-        content += self.create_language_line(language_data["en"], language_data["en"])
+        content += self.create_language_line(language_data["en"], language_data["en"], "sorttop")
         self.total_stats = Counter()        # Reset our total statistics (don't count English in)
 
-        for language_code, language_info in language_data.items():
-            if language_code == "en":   # We already had details for English in the first line
+        # Sort alphabetically by language name to ensure a stable ordering in the table
+        for language_info in sorted(language_data.values(), key=lambda language_info: language_info.english_name):
+            if language_info.language_code == "en":   # We already had details for English in the first line
                 continue
             content += self.create_language_line(language_info, language_data["en"])
 
