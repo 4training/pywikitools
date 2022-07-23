@@ -386,6 +386,8 @@ class TestFrenchCorrector(unittest.TestCase):
             self.assertEqual(correct(corrector, faulty), corrected)
         # Bible references (punctuation between digits) should not be touched
         self.assertEqual(correct(corrector, "Romains 12:2"), "Romains 12:2")
+        # Make sure mediawiki : and ; formatting (at beginning of lines) remain unchanged
+        self.assertEqual(correct(corrector, ";L'écriture\n:Il"), ";L'écriture\n:Il")
 
     def test_false_friends_replacement(self):
         corrector = FrenchCorrector()
@@ -412,8 +414,10 @@ class TestArabicCorrector(CorrectorTestCase):
     def test_correct_punctuation(self):
         self.assertEqual(correct(self.corrector, ","), "،")
         self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
-        self.assertEqual(correct(self.corrector, ";"),  "؛")
+        self.assertEqual(correct(self.corrector, "منهم;حتى"), "منهم؛ حتى")
         self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
+        # Make sure mediawiki : and ; formatting (at beginning of lines) remain unchanged
+        self.assertEqual(correct(self.corrector, ";التدوين و الكتابة\n:من"), ";التدوين و الكتابة\n:من")
 
     def test_correct_spaces(self):
         self.assertEqual(correct(self.corrector, "يدعي  و يصلي"), "يدعي و يصلي")

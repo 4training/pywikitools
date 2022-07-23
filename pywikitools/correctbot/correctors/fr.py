@@ -22,7 +22,11 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
 
     def correct_spaces_before_punctuation(self, text: str) -> str:
         """Ensure we have non-breaking spaces before : ; ! ?
-        This is a specialty of French grammar, different to most languages
+
+        This is a specialty of French grammar, different to most languages.
+
+        We don't match if :;!? is at the very beginning or after a line break
+        as we don't want to destroy the mediawiki formatting symbols ; and : at the beginning of lines
         """
         # Insert missing space if there is none before punctuation
         text = re.sub(r"([^\W\d])([:;!?])", "\\1\u00A0\\2", text)
