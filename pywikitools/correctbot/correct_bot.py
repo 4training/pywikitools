@@ -188,22 +188,22 @@ class CorrectBot:
 
     def save_to_mediawiki(self, results: List[CorrectionResult]) -> bool:
         """
-        Write changes back to mediawiki
+        Write corrections back to mediawiki
 
         You should disable pywikibot throttling to avoid CorrectBot runs to take quite long:
         `put_throttle = 0` in user-config.py
 
         Returns:
-            bool: Did we save any changes to the mediawiki system?
+            bool: Did we save any corrections to the mediawiki system?
         """
-        saved_changes = False
+        saved_corrections = False
         for result in results:
             if result.corrections.has_translation_changes():
                 mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
                 mediawiki_page.text = result.corrections.get_translation()
                 mediawiki_page.save(minor=True)
-                saved_changes = True
-        return saved_changes
+                saved_corrections = True
+        return saved_corrections
 
     def save_report(self, page: str, language_code: str, results: List[CorrectionResult]) -> bool:
         """Save report with the correction results to the mediawiki system
@@ -216,16 +216,16 @@ class CorrectBot:
 
         """
         page_name: str = f"CorrectBot:{page}/{language_code}"
-        summary: str = f"{self.get_correction_counter()} changes, {self.get_suggestion_counter()} suggestions, "
-        summary += f"{self.get_warning_counter()} warnings."
+        summary: str = f"{self.get_correction_counter()} corrections, {self.get_suggestion_counter()} suggestions, "
+        summary += f"{self.get_warning_counter()} warnings"
 
         report: str = f"__NOTOC____NOEDITSECTION__\nResults for this CorrectBot run of [[{page}/{language_code}]]: "
         report += f"<b>{summary}</b> (for older reports see [[Special:PageHistory/{page_name}|report history]])\n"
         if self.fortraininglib.count_jobs() > 0:
             self.logger.warning("MediaWiki job queue is not empty!")
-            report += "  <i>Warning: MediaWiki job queue is not empty, some changes may not be visible yet.</i>\n"
+            report += "  <i>Warning: MediaWiki job queue is not empty, some corrections may not be visible yet.</i>\n"
         if self.get_correction_counter() > 0:
-            report += f"\n== Changes ==\n{self.get_correction_stats()}\n<i>You can also look at the "
+            report += f"\n== Corrections ==\n{self.get_correction_stats()}\n<i>You can also look at the "
             report += f"[[Special:PageHistory/{page}/{language_code}|version history of {page}/{language_code}]]"
             report += " and compare revisions.</i>\n"
             for result in results:
@@ -296,10 +296,10 @@ class CorrectBot:
         if results is None:
             print(f"Error while trying to correct {page}")
             return
-        saved_changes = False
+        saved_corrections = False
         saved_report = False
         if not self._simulate:
-            saved_changes = self.save_to_mediawiki(results)
+            saved_corrections = self.save_to_mediawiki(results)
             self.empty_job_queue()
             saved_report = self.save_report(page, language_code, results)
 
@@ -307,11 +307,11 @@ class CorrectBot:
         if not saved_report:
             print("NOTHING SAVED.")
             if self._simulate:
-                print("We're running with --simulate. No changes are written back to the mediawiki system.")
-            elif not saved_changes:
+                print("We're running with --simulate. No corrections are written back to the mediawiki system.")
+            elif not saved_corrections:
                 print("Nothing new. The existing CorrectBot report in the mediawiki system is still correct.")
             else:
-                print("WARNING: Inconsistency! Please inform an administrator. Saved changes but not report.")
+                print("WARNING: Inconsistency! Please inform an administrator. Saved corrections but not report.")
 
         print(self.get_correction_stats())
         if self._correction_counter > 0:

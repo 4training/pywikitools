@@ -1,7 +1,7 @@
 __NOTOC____NOEDITSECTION__
-Results for this CorrectBot run of [[Test/fr]]: <b>5 changes, 1 suggestions, 1 warnings.</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
+Results for this CorrectBot run of [[Test/fr]]: <b>5 corrections, 1 suggestions, 1 warnings</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
 
-== Changes ==
+== Corrections ==
 5 corrections:
 * Erase redundant spaces before commas and dots (2x)
 * Ensure we have non-breaking spaces before : ; ! ? (3x)
