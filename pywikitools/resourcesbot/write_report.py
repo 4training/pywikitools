@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+import re
 from typing import Final, Optional
 import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
@@ -51,6 +52,44 @@ class WriteReport(LanguagePostProcessor):
             # Language report needs to be (re-)written.
             self.save_language_report(language_info, english_info)
 
+    def create_correctbot_mediawiki(self, worksheet: str, language_code: str) -> str:
+        """Check Correctbot report status for one worksheet
+
+        Returns:
+            mediawiki string to fill one cell (for one worksheet in the CorrectBot column)
+        """
+        page = f"{worksheet}/{language_code}"
+        worksheet_page = pywikibot.Page(self._site, page)
+        if not worksheet_page.exists():
+            self.logger.warning(f"Couldn't access page {page}")
+            return f'| style="background-color:{Color.RED}" | ERROR\n'
+
+        correctbot_page = pywikibot.Page(self._site, f"CorrectBot:{page}")
+        if not correctbot_page.exists():
+            return f'| style="background-color:{Color.RED}" | Missing\n'
+
+        # Analyze the result of the last CorrectBot run (from edit summary)
+        correctbot_summary = correctbot_page.latest_revision["comment"]
+        match = re.match(r"^(\d+) corrections, (\d+) suggestions, (\d+) warnings$", correctbot_summary)
+        if not match:
+            # Somehow the edit summary is not as we expect it
+            self.logger.warning(f"Couldn't parse edit summary '{correctbot_summary}' in page CorrectBot:{page}")
+            return f'| style="background-color:{Color.RED}" | Invalid. Please run CorrectBot again.\n'
+
+        if int(match.group(3)) > 0:
+            # CorrectBot gave warnings - something is definitely not okay
+            return f'| style="background-color:{Color.RED}" | [[CorrectBot:{page}|{match.group(3)} warnings]]\n'
+
+        report_link = f'[[CorrectBot:{page}|{match.group(1)} corrections, {match.group(2)} suggestions]]'
+        if correctbot_page.editTime() > worksheet_page.editTime():
+            # Perfect: CorrectBot report is newer than latest change on the worksheet page
+            return f'| style="background-color:{Color.GREEN}" | {report_link}\n'
+
+        # we don't know if still everything is okay or whether there were problems introduced since the
+        # last time CorrectBot ran, so we suggest to re-run CorrectBot
+        return f'| style="background-color:{Color.ORANGE}" | ' \
+               f'<span title="Possibly outdated: please run CorrectBot again">⚠</span> {report_link}\n'
+
     def save_language_report(self, language_info: LanguageInfo, english_info: LanguageInfo):
         """
         Saving a language report (URL e.g.: https://www.4training.net/4training:German)
@@ -68,14 +107,15 @@ class WriteReport(LanguagePostProcessor):
             page.text = report
             page.save("Created language report")
         else:
-            if page.text != report:
+            if page.text.strip() != report.strip():
                 page.text = report
                 page.save("Updated language report")    # TODO write human-readable changes here in the save message
                 self.logger.info(f"Updated language report for {language_info.english_name}")
 
     def create_mediawiki(self, language_info: LanguageInfo, english_info: LanguageInfo) -> str:
         """Build mediawiki code for the complete report page"""
-        content: str = self.create_worksheet_overview(language_info, english_info)
+        content: str = "__NOEDITSECTION__"
+        content += self.create_worksheet_overview(language_info, english_info)
         content += "Check also the mediawiki [https://www.4training.net/Special:LanguageStats"
         content += f"?language={language_info.language_code}&x=D Language Statistics for {language_info.english_name}]"
         return content
@@ -93,7 +133,7 @@ class WriteReport(LanguagePostProcessor):
         content += '{| class="wikitable" style="width:100%"\n'
         content += "|-\n! Worksheet\n! Translation\n! Progress\n! colspan=\"2\" | PDF\n! ODT\n! Version\n"
         content += f"! [[{language_info.english_name}#Available_training_resources_in_{language_info.english_name}|"
-        content += "Listed?]]\n"
+        content += "Listed?]]\n! CorrectBot\n"
         for page, en_worksheet in english_info.worksheets.items():
             lang_worksheet = language_info.worksheets[page] if page in language_info.worksheets else None
             content += self.create_worksheet_line(language_info.language_code, en_worksheet, lang_worksheet)
@@ -192,6 +232,12 @@ class WriteReport(LanguagePostProcessor):
             content += "| style=\"text-align:center\" | ✓\n"
         else:
             content += "| style=\"text-align:center\" | -\n"
+
+        # column 9: CorrectBot status (do we have an up-to-date report?)
+        if lang_worksheet is not None:
+            content += self.create_correctbot_mediawiki(lang_worksheet.page, lang_worksheet.language_code)
+        else:
+            content += "| -\n"
 
         # Determine the line color (for the first two cells)
         line_color = Color.RED

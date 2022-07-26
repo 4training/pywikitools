@@ -8,6 +8,7 @@
 ! ODT
 ! Version
 ! [[Russian#Available_training_resources_in_Russian|Listed?]]
+! CorrectBot
 |- style="background-color:red"
 | [[God's Story (five fingers)]]
 | -
@@ -16,6 +17,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:orange"
 | [[God's Story (first and last sacrifice)]]
 | [[God's Story (first and last sacrifice)/ru|Рассказ о Боге (Первая и последняя жертва)]]
@@ -24,6 +26,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 2.2
 | style="text-align:center" | -
+| style="background-color:green" | [[CorrectBot:God's_Story_(first_and_last_sacrifice)/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[Baptism]]
 | [[Baptism/ru|Крещение]]
@@ -32,6 +35,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 2.1
 | style="text-align:center" | -
+| style="background-color:green" | [[CorrectBot:Baptism/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[Prayer]]
 | [[Prayer/ru|Молитва]]
@@ -40,6 +44,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.1
 | style="text-align:center" | -
+| style="background-color:red" | Missing
 |- style="background-color:red"
 | [[Forgiving Step by Step]]
 | -
@@ -48,6 +53,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Confessing Sins and Repenting]]
 | -
@@ -56,6 +62,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:orange"
 | [[Time with God]]
 | [[Time with God/ru|Время с Богом]]
@@ -64,6 +71,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.2
 | style="text-align:center" | -
+| style="background-color:orange" | <span title="Possibly outdated: please run CorrectBot again">⚠</span> [[CorrectBot:Time_with_God/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[Hearing from God]]
 | [[Hearing from God/ru|Слышание Бога]]
@@ -72,6 +80,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.2
 | style="text-align:center" | -
+| style="background-color:red" | [[CorrectBot:Hearing_from_God/ru|2 warnings]]
 |- style="background-color:orange"
 | [[Church]]
 | [[Church/ru|Церковь]]
@@ -80,6 +89,7 @@
 | style="background-color:green" | [[File:Церковь.odt]]
 | style="background-color:green" | 2.0
 | style="text-align:center" | -
+| style="background-color:green" | [[CorrectBot:Church/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[Healing]]
 | [[Healing/ru|Исцеление]]
@@ -89,6 +99,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
 | style="text-align:center" | ✓
+| style="background-color:red" | ERROR
 |- style="background-color:red"
 | [[Dealing with Money]]
 | -
@@ -97,6 +108,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:green"
 | [[My Story with God]]
 | [[My Story with God/ru|Моё свидетельство]]
@@ -106,6 +118,7 @@
 | style="background-color:green" | [[File:Моё_свидетельство.odt]]
 | style="background-color:green" | 1.1
 | style="text-align:center" | ✓
+| style="background-color:green" | [[CorrectBot:My_Story_with_God/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[Bible Reading Hints]]
 | [[Bible Reading Hints/ru|Подсказки для чтения Библии]]
@@ -115,6 +128,7 @@
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии.odt]]
 | style="background-color:green" | 2.0
 | style="text-align:center" | ✓
+| style="background-color:red" | Invalid. Please run CorrectBot again.
 |- style="background-color:green"
 | [[Bible Reading Hints (Seven Stories full of Hope)]]
 | [[Bible Reading Hints (Seven Stories full of Hope)/ru|Подсказки для чтения Библии (Семь историй, полных надежды)]]
@@ -124,6 +138,7 @@
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Семь_историй,_полных_надежды).odt]]
 | style="background-color:green" | 2.0
 | style="text-align:center" | ✓
+| style="background-color:green" | [[CorrectBot:Bible_Reading_Hints_(Seven_Stories_full_of_Hope)/ru|2 corrections, 1 suggestions]]
 |- style="background-color:green"
 | [[Bible Reading Hints (Starting with the Creation)]]
 | [[Bible Reading Hints (Starting with the Creation)/ru|Подсказки для чтения Библии (Начиная с Сотворения)]]
@@ -133,6 +148,7 @@
 | style="background-color:green" | [[File:Подсказки_для_чтения_Библии_(Начиная_с_Сотворения).odt]]
 | style="background-color:green" | 2.0
 | style="text-align:center" | ✓
+| style="background-color:green" | [[CorrectBot:Bible_Reading_Hints_(Starting_with_the_Creation)/ru|2 corrections, 1 suggestions]]
 |- style="background-color:orange"
 | [[The Three-Thirds Process]]
 | [[The Three-Thirds Process/ru|Трехсторонний процесс]]
@@ -141,6 +157,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
 | style="text-align:center" | -
+| style="background-color:green" | [[CorrectBot:The_Three-Thirds_Process/ru|2 corrections, 1 suggestions]]
 |- style="background-color:red"
 | [[Training Meeting Outline]]
 | -
@@ -149,6 +166,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:orange"
 | [[A Daily Prayer]]
 | [[A Daily Prayer/ru|Ежедневная молитва]]
@@ -157,6 +175,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:green" | 1.0
 | style="text-align:center" | -
+| style="background-color:green" | [[CorrectBot:A_Daily_Prayer/ru|2 corrections, 1 suggestions]]
 |- style="background-color:red"
 | [[Overcoming Fear and Anger]]
 | -
@@ -165,6 +184,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Getting Rid of Colored Lenses]]
 | -
@@ -173,6 +193,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Family and our Relationship with God]]
 | -
@@ -181,6 +202,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Overcoming Negative Inheritance]]
 | -
@@ -189,6 +211,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Forgiving Step by Step: Training Notes]]
 | -
@@ -197,6 +220,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Leading Others Through Forgiveness]]
 | -
@@ -205,6 +229,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[The Role of a Helper in Prayer]]
 | -
@@ -213,6 +238,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[Leading a Prayer Time]]
 | -
@@ -221,6 +247,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:red"
 | [[How to Continue After a Prayer Time]]
 | -
@@ -229,6 +256,7 @@
 | style="background-color:red; text-align:center" | -
 | style="background-color:red" | -
 | style="text-align:center" | -
+| -
 |- style="background-color:orange"
 | [[Four Kinds of Disciples]]
 | [[Four Kinds of Disciples/ru|Четыре вида учеников]]
@@ -238,4 +266,5 @@
 | style="background-color:green" | [[File:Четыре_вида_учеников.odt]]
 | style="background-color:green" | 1.1
 | style="text-align:center" | ✓
+| style="background-color:green" | [[CorrectBot:Four_Kinds_of_Disciples/ru|2 corrections, 1 suggestions]]
 |}
