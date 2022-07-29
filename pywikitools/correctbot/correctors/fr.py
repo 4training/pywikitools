@@ -38,8 +38,8 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
         """Ensure correct French quotation marks: « Foo »
         (with non-breaking whitespaces \u00a0 before/after the guillemets!)
         """
-        logger = logging.getLogger('pywikitools.correctbot.fr')
-        if re.match('[„“”]', text):
+        logger = logging.getLogger(__name__)
+        if re.search('[„“”]', text):
             logger.warning("Found at least one special quotation mark (one of „“”). Please correct manually.")
 
         splitted_text: List[str] = re.split('"', text)

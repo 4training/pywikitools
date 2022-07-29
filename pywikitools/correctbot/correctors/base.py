@@ -32,6 +32,9 @@ each base class gets called
 import copy
 import functools
 from inspect import signature
+import logging
+from logging.handlers import QueueHandler
+from queue import SimpleQueue
 from typing import Callable, DefaultDict, Dict, Final, Generator, List
 from collections import defaultdict
 
@@ -104,6 +107,13 @@ class CorrectorBase:
         """
         is_unit_well_structured, warning = unit.is_translation_well_structured()
 
+        # Catch any warning coming from the Corrector class in a simple queue
+        corrector_logger = logging.getLogger("pywikitools.correctbot.correctors")
+        corrector_logger.propagate = False
+        log_queue: SimpleQueue = SimpleQueue()
+        log_handler = QueueHandler(log_queue)
+        corrector_logger.addHandler(log_handler)
+
         # Sort: which functions correct directly and which give only suggestions?
         correction_functions: List[Callable] = []
         suggestion_functions: List[Callable] = []
@@ -130,6 +140,12 @@ class CorrectorBase:
                                   hasattr(suggestion_function, "use_snippets") and is_unit_well_structured):
                 suggestion_stats[suggestion_function.__name__] += 1
 
+        # Save warnings from the Corrector class in our CorrectionResult
+        while not log_queue.empty():
+            record: logging.LogRecord = log_queue.get()
+            if warning != "":
+                warning += "\n"
+            warning += record.message
         return CorrectionResult(corrections, suggestions, correction_stats, suggestion_stats, warning)
 
     def _correct_unit(self, corrector_function: Callable, unit: TranslationUnit, correct_snippets: bool) -> bool:

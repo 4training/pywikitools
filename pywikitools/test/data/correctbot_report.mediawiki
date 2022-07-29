@@ -1,5 +1,5 @@
 __NOTOC____NOEDITSECTION__
-Results for this CorrectBot run of [[Test/fr]]: <b>5 corrections, 1 suggestions, 1 warnings</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
+Results for this CorrectBot run of [[Test/fr]]: <b>5 corrections, 1 suggestions, 4 warnings</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
 
 == Corrections ==
 5 corrections:
@@ -7,13 +7,13 @@ Results for this CorrectBot run of [[Test/fr]]: <b>5 corrections, 1 suggestions,
 * Ensure we have non-breaking spaces before : ; ! ? (3x)
 
 <i>You can also look at the [[Special:PageHistory/Test/fr|version history of Test/fr]] and compare revisions.</i>
-=== [[Translations:Test/1/fr]] ===
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/1/fr&action=edit Translations:Test/1/fr] ===
 {{StringDiff|Mais moi , je vous dis: Si|Mais moi, je vous dis : Si}}
-=== [[Translations:Test/2/fr]] ===
-{{StringDiff|Si quelqu’un dit à son frère: “Imbécile!”|Si quelqu’un dit à son frère : “Imbécile !”}}
-=== [[Translations:Test/3/fr]] ===
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/2/fr&action=edit Translations:Test/2/fr] ===
+{{StringDiff|Si quelqu’un dit à son frère: Imbécile!|Si quelqu’un dit à son frère : Imbécile !}}
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/3/fr&action=edit Translations:Test/3/fr] ===
 {{StringDiff|Comment prier?<br/>Comment jeûner?|Comment prier ?<br/>Comment jeûner ?}}
-=== [[Translations:Test/4/fr]] ===
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/4/fr&action=edit Translations:Test/4/fr] ===
 {{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu|Ne jugez pas les autres,et Dieu ne vous jugera pas. En effet,Dieu}}
 
 == Suggestions ==
@@ -21,12 +21,13 @@ Results for this CorrectBot run of [[Test/fr]]: <b>5 corrections, 1 suggestions,
 * Insert missing spaces between punctuation and characters (1x)
 
 <i>Look at the following suggestions. If you find good ones, please correct them manually in [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Test&action=page&filter=&language=fr the translation view]</i>
-=== [[Translations:Test/4/fr]] ===
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/4/fr&action=edit Translations:Test/4/fr] ===
 {{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas. En effet,Dieu|Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu}}
 
 == Warnings ==
-=== [[Translations:Test/warnings/fr]] ===
-<b>Warning:</b> <i><nowiki>Formatting issues in Translations:Test/warnings/fr. Please check that all special characters like * = # ; : <b> <i> are correct.</nowiki></i>
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/warnings1/fr&action=edit Translations:Test/warnings1/fr] ===
+<b><pre><nowiki>Formatting issues in Translations:Test/warnings1/fr. Please check that all special characters like * = # ; : <b> <i> are correct.
+Found at least one special quotation mark (one of „“”). Please correct manually.</nowiki></pre></b>
 {| class="wikitable"
 |-
 ! Original
@@ -49,4 +50,17 @@ Gott „vergeben“
 :Manchmal haben wir negative Gedanken über Gott oder sind zornig auf ihn.
 Gott macht keine Fehler und in dem Sinn können wir ihm nicht vergeben. Aber es ist wichtig,
 dass wir Enttäuschungen über ihn loslassen und uns von allen negativen Gefühlen ihm gegenüber trennen.
+|}
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/warnings2/fr&action=edit Translations:Test/warnings2/fr] ===
+<b><pre><nowiki>Found at least one special quotation mark (one of „“”). Please correct manually.
+Found uneven amount of quotation marks (")! Please correct manually.</nowiki></pre></b>
+{| class="wikitable"
+|-
+! Original
+! Translation
+|- style="vertical-align:top"
+|
+this is a "quote"
+|
+Ceci est une „citation"
 |}

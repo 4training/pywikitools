@@ -124,7 +124,7 @@ class CorrectBot:
             results.append(result)
             if result.warnings != "":
                 self.logger.warning(result.warnings)
-                self._warning_counter += 1
+                self._warning_counter += result.warnings.count("\n") + 1
                 self._warnings += f"{translation_unit.get_name()}: {result.warnings}\n"
 
             if (correction_diff := result.corrections.get_translation_diff()) != "":
@@ -230,7 +230,8 @@ class CorrectBot:
             report += " and compare revisions.</i>\n"
             for result in results:
                 if result.corrections.has_translation_changes():
-                    report += f"=== [[{result.corrections.get_name()}]] ===\n"
+                    report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
+                    report += f" {result.corrections.get_name()}] ===\n"
                     report += "{{StringDiff|" + result.corrections.get_original_translation()
                     report += "|" + result.corrections.get_translation() + "}}\n"
         if self.get_suggestion_counter() > 0:
@@ -240,7 +241,8 @@ class CorrectBot:
             report += " the translation view]</i>\n"
             for result in results:
                 if result.suggestions.has_translation_changes():
-                    report += f"=== [[{result.suggestions.get_name()}]] ===\n"
+                    report += f"=== [{self.fortraininglib.index_url}?title={result.suggestions.get_name()}&action=edit"
+                    report += f" {result.suggestions.get_name()}] ===\n"
                     report += "{{StringDiff|" + result.suggestions.get_original_translation()
                     report += "|" + result.suggestions.get_translation() + "}}\n"
 
@@ -248,8 +250,9 @@ class CorrectBot:
             report += "\n== Warnings ==\n"
             for result in results:
                 if result.warnings != "":
-                    report += f"=== [[{result.corrections.get_name()}]] ===\n"
-                    report += f"<b>Warning:</b> <i><nowiki>{result.warnings}</nowiki></i>\n"
+                    report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
+                    report += f" {result.corrections.get_name()}] ===\n"
+                    report += f"<b><pre><nowiki>{result.warnings}</nowiki></pre></b>\n"
                     report += "{| class=\"wikitable\"\n|-\n! Original\n! Translation\n|- style=\"vertical-align:top\"\n"
                     report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
                     report += "|}\n"

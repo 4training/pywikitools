@@ -327,7 +327,7 @@ class TestGermanCorrector(CorrectorTestCase):
             self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
             self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
 
-        with self.assertLogs('pywikitools.correctbot.de', level='WARNING'):
+        with self.assertLogs('pywikitools.correctbot.correctors.de', level='WARNING'):
             self.assertEqual(correct(corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"')
 
         valid_strings: List[str] = [    # Some more complex examples
@@ -364,8 +364,8 @@ class TestEnglishCorrector(unittest.TestCase):
 FRENCH_CORRECTIONS: Dict[str, str] = {
     "Mais moi , je vous dis: Si":
     "Mais moi, je vous dis\u00a0: Si",
-    "Si quelqu’un dit à son frère: “Imbécile!”":
-    "Si quelqu’un dit à son frère\u00a0: “Imbécile\u00a0!”",
+    "Si quelqu’un dit à son frère: Imbécile!":
+    "Si quelqu’un dit à son frère\u00a0: Imbécile\u00a0!",
     "Comment prier?<br/>Comment jeûner?":
     "Comment prier\u00a0?<br/>Comment jeûner\u00a0?",
     "Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu":
@@ -400,8 +400,8 @@ class TestFrenchCorrector(unittest.TestCase):
             self.assertEqual(correct(corrector, wrong), "«\u00a0Test\u00a0»")
         # Make sure several corrections in one longer string also work correctly
         self.assertEqual(correct(corrector, " Connect ".join(wrongs)), " Connect ".join(["«\u00a0Test\u00a0»"] * 3))
-        with self.assertLogs('pywikitools.correctbot.fr', level="WARNING"):
-            self.assertEqual(correct(corrector, "“Test”"), "“Test”")
+        with self.assertLogs('pywikitools.correctbot.correctors.fr', level="WARNING"):
+            self.assertEqual(correct(corrector, "Test a “test”"), "Test a “test”")
 
 
 class TestArabicCorrector(CorrectorTestCase):
@@ -487,8 +487,11 @@ class TestCorrectBot(unittest.TestCase):
             translation_units.append(TranslationUnit(f"Test/{counter}", "fr", original, faulty))
             counter += 1
         # Add one translation unit that will produce warnings because of wrong structure
-        translation_units.append(TranslationUnit("Test/warnings", "fr",
+        translation_units.append(TranslationUnit("Test/warnings1", "fr",
                                  TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR))
+        # This unit will produce two warnings in correct_quotation_marks()
+        translation_units.append(TranslationUnit("Test/warnings2", "fr",
+                                 'this is a "quote"', 'Ceci est une „citation"'))
         return TranslatedPage("Test", "fr", translation_units)
 
     def test_check_page(self):
@@ -505,17 +508,23 @@ class TestCorrectBot(unittest.TestCase):
         with self.assertLogs("pywikitools.correctbot", level="WARNING"):
             results = self.correctbot.check_page("Test", "fr")
         self.assertIsNotNone(results)
-        self.assertEqual(len(results), 5)
+        self.assertEqual(len(results), 6)
         for result in results:
             if "warnings" in result.corrections.get_name():
                 self.assertNotEqual(result.warnings, "")
+                if "Test/warnings2" in result.corrections.get_name():
+                    # There should be two warnings (separated by a line break)
+                    self.assertIn("\n", result.warnings)
                 continue
             faulty = result.corrections.get_original_translation()
             self.assertEqual(FRENCH_CORRECTIONS[faulty], result.suggestions.get_translation())
 
     @patch("pywikibot.Page")
     def test_save_report(self, mock_page):
-        """Check that output of CorrectBot.save_report() is the same as expected in data/correctbot_report.mediawiki"""
+        """Check that output of CorrectBot.save_report() is the same as expected in data/correctbot_report.mediawiki
+
+        The test page we use is constructed in self.prepare_translated_page()
+        """
         mock_lib = Mock()
         mock_lib.index_url = "https://www.4training.net/mediawiki/index.php"
         mock_lib.get_translation_units.return_value = self.prepare_translated_page()

@@ -103,7 +103,7 @@ class UniversalCorrector():
         # Replacing ''''' (bold and italic)
         splitted_text: List[str] = re.split("'''''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''''': we don't do anything
-            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of bold italic formatting (''''') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing ''''' with <b><i> and </i></b> (alternating)
@@ -115,7 +115,7 @@ class UniversalCorrector():
         # Replacing ''' (bold)
         splitted_text = re.split("'''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''': we don't do anything
-            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of bold formatting (''') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing ''' with <b> and </b> (alternating)
@@ -127,7 +127,7 @@ class UniversalCorrector():
         # Replacing '' (italic)
         splitted_text = re.split("''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of '': we don't do anything
-            logger = logging.getLogger('pywikitools.correctbot.universal')
+            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of italic formatting ('') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing '' with <i> and </i> (alternating)

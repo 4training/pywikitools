@@ -15,7 +15,7 @@ class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuatio
         """Ensure correct German quotes (example: „korrekt“)"""
         splitted_text: List[str] = re.split('[„“”"]', text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of quotes: we don't do anything
-            logger = logging.getLogger('pywikitools.correctbot.de')
+            logger = logging.getLogger(__name__)
             logger.warning(f'Found uneven amount of quotation marks (")! Please correct manually: {text}')
         else:
             # Put all parts together again, replacing all simple quotation marks with „ and “ (alternating)
