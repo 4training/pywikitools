@@ -302,6 +302,16 @@ class CorrectBot:
         saved_corrections = False
         saved_report = False
         if not self._simulate:
+            # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
+            # "No user is logged in on site 4training:en" -> better check and try to log in if necessary
+            if not self.site.logged_in():
+                self.logger.info("We're not logged in. Trying to log in...")
+                self.site.login()
+                if not self.site.logged_in():
+                    self.site.getuserinfo()
+                    self.logger.warning(f"userinfo: {self.site.userinfo}")
+                    raise RuntimeError("Login with pywikibot failed.")
+
             saved_corrections = self.save_to_mediawiki(results)
             self.empty_job_queue()
             saved_report = self.save_report(page, language_code, results)
