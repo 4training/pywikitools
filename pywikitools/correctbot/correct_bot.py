@@ -277,7 +277,7 @@ class CorrectBot:
         if self._config.has_option('Paths', 'php') and self._config.has_option('correctbot', 'runjobs'):
             args = [self._config['Paths']['php'], self._config['correctbot']['runjobs']]
             try:
-                script = subprocess.Popen(args)
+                script = subprocess.Popen(args, stdout=subprocess.DEVNULL)
                 exit_code = script.wait(timeout=15)
             except subprocess.TimeoutExpired:
                 self.logger.warning("Invoking runJobs.php didn't finished - job queue is maybe still not empty")

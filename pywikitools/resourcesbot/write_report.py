@@ -32,25 +32,26 @@ class WriteReport(LanguagePostProcessor):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
-            force_rewrite: rewrite even if there were no (relevant) changes
+            force_rewrite: is ignored as we need to check CorrectBot reports anyway
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
-        self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_report')
 
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
             changes: ChangeLog, english_changes: ChangeLog):
-        """Entry function"""
-        if self._force_rewrite or not changes.is_empty() or not english_changes.is_empty():
-            if language_info.language_code == "en":   # We don't need a report for English as it is the source language
-                return
-            if "-" in language_info.language_code and language_info.language_code != "pt-br":
-                # Don't write reports for language variants
-                # (except Brazilian Portuguese) TODO this should go somewhere else
-                return
-            # Language report needs to be (re-)written.
-            self.save_language_report(language_info, english_info)
+        """Entry function
+
+        We run everything and don't look whether we have changes because we need to look at all CorrectBot reports
+        and according to them may need to rewrite the report even if changes and english_changes are empty
+        """
+        if language_info.language_code == "en":   # We don't need a report for English as it is the source language
+            return
+        if "-" in language_info.language_code and language_info.language_code != "pt-br":
+            # Don't write reports for language variants
+            # (except Brazilian Portuguese) TODO this should go somewhere else
+            return
+        self.save_language_report(language_info, english_info)
 
     def create_correctbot_mediawiki(self, worksheet: str, language_code: str) -> str:
         """Check Correctbot report status for one worksheet
@@ -92,9 +93,12 @@ class WriteReport(LanguagePostProcessor):
 
     def save_language_report(self, language_info: LanguageInfo, english_info: LanguageInfo):
         """
-        Saving a language report (URL e.g.: https://www.4training.net/4training:German)
-        @param language_info: The language we want to write the report for
-        @param english_info: We need the details of the English original worksheets as well
+        Create language report and save it if it's different from the previous report
+
+        Example: https://www.4training.net/4training:German
+        Args:
+            language_info: The language we want to write the report for
+            english_info: We need the details of the English original worksheets as well
         """
         if language_info.english_name == "":
             self.logger.warning(f"English name of language {language_info.language_code} empty! Skipping WriteReport")

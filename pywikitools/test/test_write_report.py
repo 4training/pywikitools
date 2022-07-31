@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from pywikitools.fortraininglib import ForTrainingLib
-from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
+from pywikitools.resourcesbot.changes import ChangeLog
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
 from pywikitools.resourcesbot.write_report import WriteReport
@@ -85,25 +85,14 @@ class TestWriteReport(unittest.TestCase):
     @patch("pywikitools.resourcesbot.write_report.WriteReport.save_language_report")
     def test_run(self, mock_save):
         write_report = WriteReport(self.fortraininglib, None)
-        # save_language_report() shouldn't get called when there are no changes
-        write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
+        # save_language_report() shouldn't get called when we have a language variant
+        write_report.run(LanguageInfo("de-test", "Deutsch (Test)"), self.english_info, ChangeLog(), ChangeLog())
         mock_save.assert_not_called()
 
-        change_log = ChangeLog()
-        change_log.add_change("Prayer", ChangeType.UPDATED_WORKSHEET)
-
-        # save_language_report() should get called when there are changes
-        write_report.run(self.language_info, self.english_info, change_log, ChangeLog())
-        mock_save.assert_called_once()
-
-        # save_language_report() should get called when there are changes in the English originals
-        write_report.run(self.language_info, self.english_info, ChangeLog(), change_log)
-        self.assertEqual(mock_save.call_count, 2)
-
-        # save_language_report() should be called once (for Russian) when we have force_rewrite
-        write_report = WriteReport(self.fortraininglib, None, force_rewrite=True)
+        # save_language_report() should be called once (for Russian) and force_rewrite should be ignored
+        write_report = WriteReport(self.fortraininglib, None, force_rewrite=False)
         write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
-        self.assertEqual(mock_save.call_count, 3)
+        mock_save.assert_called_once()
 
 
 if __name__ == '__main__':
