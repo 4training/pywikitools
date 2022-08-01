@@ -71,6 +71,14 @@ class TranslateOdtConfig:
         self.multiple: Final[Dict[str, int]] = {}
 
 
+class UsableUniversalCorrector(UniversalCorrector):
+    def _capitalization_exceptions(self) -> List[str]:
+        return []
+
+    def _missing_spaces_exceptions(self) -> List[str]:
+        return []
+
+
 class TranslateODT:
     def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
         """Variable initializations (no connection to LibreOffice here)
@@ -248,7 +256,7 @@ class TranslateODT:
             # remove bold/italic/underline formatting from definition
             t.set_definition(re.sub("\'\'+|</?[biu]>", '', t.get_definition()))
             # replace '' / ''' with <i> / <b> in translation (necessary for LibreOffice.search_and_replace())
-            corrector = UniversalCorrector()
+            corrector = UsableUniversalCorrector()
             t.set_translation(corrector.correct_mediawiki_bold_italic(t.get_translation()))
 
             if t.identifier in config.multiple:
