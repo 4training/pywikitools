@@ -55,3 +55,5 @@ if __name__ == "__main__":
             print(correctbot.get_correction_diff())
             print(correctbot.get_suggestion_stats())
             print(correctbot.get_suggestion_diff())
+        if correctbot.get_warning_counter() > 0:
+            print(correctbot.get_warnings())

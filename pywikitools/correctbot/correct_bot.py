@@ -87,6 +87,13 @@ class CorrectBot:
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
             return None
+        if unit.get_translation() == unit.get_definition():
+            if len(unit.get_definition()) < 15:
+                # Sometimes a translation for a single word maybe exactly the same as the English original
+                return None
+            else:
+                # But for any longer content there's most likely something wrong
+                return CorrectionResult(unit, unit, {}, {}, "Translation is the same as English original.")
         return corrector.correct(unit)
 
     def check_page(self, page: str, language_code: str) -> Optional[List[CorrectionResult]]:
@@ -108,6 +115,7 @@ class CorrectBot:
         self._suggestion_stats = None
         self._correction_counter = 0
         self._suggestion_counter = 0
+        self._warnings = ""
         self._warning_counter = 0
         correction_stats: Counter = Counter()
         suggestion_stats: Counter = Counter()

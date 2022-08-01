@@ -24,3 +24,12 @@ class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuatio
                 text += '„' if counter % 2 == 1 else '“'
                 text += splitted_text[counter]
         return text
+
+    def _capitalization_exceptions(self) -> List[str]:
+        return ["Z.B.", "z.B.", "ggf.", "Ggf."]
+
+    def _missing_spaces_exceptions(self) -> List[str]:
+        return ["1.Mose", "2.Mose", "3.Mose", "4.Mose", "5.Mose", "1.Samuel", "2.Samuel", "1.Könige", "2.Könige",
+                "1.Chronik", "2.Chronik", "1.Korinther", "2.Korinther", "1.Thessalonicher", "2.Thessalonicher",
+                "1.Timotheus", "2.Timotheus", "1.Petrus", "2.Petrus", "3.Petrus", "1.Johannes", "2.Johannes",
+                "z.B.", "Z.B."]

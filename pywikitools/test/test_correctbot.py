@@ -225,7 +225,11 @@ class TestLanguageCorrectors(unittest.TestCase):
 
 class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
     """With this class we can test the rules of UniversalCorrector"""
-    pass
+    def _missing_spaces_exceptions(self) -> List[str]:
+        return ["Test.This", "e.g.", "E.g."]
+
+    def _capitalization_exceptions(self) -> List[str]:
+        return ["e.g.", "E.g."]
 
 
 class TestUniversalCorrector(unittest.TestCase):
@@ -239,6 +243,10 @@ class TestUniversalCorrector(unittest.TestCase):
                                             "This entry contains redundant spaces, before, punctuation.")
         # now let's try if exceptions are correctly respected:
         self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
+        self.assertEqual(correct(corrector, "Test.This remains untouched."), "Test.This remains untouched.")
+        self.assertEqual(correct(corrector, "Do not touch Test.This"), "Do not touch Test.This")
+        self.assertEqual(correct(corrector, "Use e.g. unittest"), "Use e.g. unittest")
+        self.assertEqual(correct(corrector, "E.g. this"), "E.g. this")
         self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
         self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
         self.assertEqual(correct(corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
@@ -348,6 +356,11 @@ class TestGermanCorrector(CorrectorTestCase):
             # Now make sure this problematic version gets corrected back to the correct form
             self.assertEqual(correct(corrector, needs_correction), valid)
 
+    def test_exceptions(self):
+        corrector = GermanCorrector()
+        for exception in ["So z.B. auch", "1.Korinther 14,3", "Siehe 1.Mose 40", "Z.B.", "Ggf. möglich"]:
+            self.assertEqual(correct(corrector, exception), exception)
+
 
 """TODO
 class TestEnglishCorrector(unittest.TestCase):
@@ -414,7 +427,7 @@ class TestArabicCorrector(CorrectorTestCase):
     def test_correct_punctuation(self):
         self.assertEqual(correct(self.corrector, ","), "،")
         self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
-        self.assertEqual(correct(self.corrector, "منهم;حتى"), "منهم؛ حتى")
+        self.assertEqual(correct(self.corrector, "منهم; حتى"), "منهم؛ حتى")
         self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
         # Make sure mediawiki : and ; formatting (at beginning of lines) remain unchanged
         self.assertEqual(correct(self.corrector, ";التدوين و الكتابة\n:من"), ";التدوين و الكتابة\n:من")

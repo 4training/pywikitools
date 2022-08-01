@@ -8,14 +8,15 @@ one of the functions here (otherwise only one of it gets called in the case of m
 
 Each function should have a documentation string which will be used for print_stats()
 """
+from abc import ABC, abstractmethod
 import logging
 import re
-from typing import List
+from typing import List, Match
 
 from pywikitools.correctbot.correctors.base import suggest_only, use_snippets
 
 
-class UniversalCorrector():
+class UniversalCorrector(ABC):
     """Has language-independent correction functions"""
     # TODO: Instead of ellipsis (…), use "..." - write a function for it.
     # Should we have that in this class, e.g. do we want this for all languages?
@@ -24,11 +25,23 @@ class UniversalCorrector():
 #        """TODO for testing only: Replace e with i"""
 #        return text.replace("e", "i")
 
+    @abstractmethod
+    def _capitalization_exceptions(self) -> List[str]:
+        """Define exceptions to the following function correct_wrong_capitalization()
+
+        You need to implement this for every language-specific class (that wants to use UniversalCorrector)
+        Returns:
+            A list of short strings where directly afterwards capitalization shouldn't get corrected
+        """
+        return []
+
     @suggest_only
     @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
         """Fix wrong capitalization at the beginning of a sentence or after a colon.
+
         Only do that if our text ends with a dot to avoid correcting single words / short phrases
+        Don't correct if it's after a string defined in _capitalization_exceptions().
         """
         # Or to say it differently: the letter following a .!?;: will be capitalized
 
@@ -36,11 +49,26 @@ class UniversalCorrector():
         # because there may be languages where this doesn't work
 
         # TODO: Quotation marks are not yet covered - double check if necessary
+        def is_exception(punctuation_pos: int):
+            """Is the punctuation found in text at position punctuation_pos part of an exception?"""
+            nonlocal text
+            for exception in self._capitalization_exceptions():
+                # Example: text = "Use e.g. tests" and exception = "e.g."
+                # Then is_exception(5) and is_exception(7) both return True as both dots are part of an exception
+                for punctuation_match in re.finditer(re.compile(r'[.!?]'), exception):
+                    start_pos = punctuation_pos - punctuation_match.start(0)
+                    end_pos = start_pos + len(exception)
+                    if start_pos >= 0 and len(text) > end_pos and text[start_pos:end_pos] == exception:
+                        return True
+            return False
+
         if len(text) <= 1:
             return text
         find_wrong_capitalization = re.compile(r'[.!?]\s*([a-z])')
         result: str = text
         for match in re.finditer(find_wrong_capitalization, text):
+            if is_exception(match.start(0)):
+                continue
             result = result[:match.end() - 1] + match.group(1).upper() + result[match.end():]
         result = result[0].upper() + result[1:]
         return result
@@ -51,14 +79,43 @@ class UniversalCorrector():
         check_multiple_spaces = re.compile(r'( ){2,}')
         return re.sub(check_multiple_spaces, ' ', text)
 
-    @suggest_only
+    @abstractmethod
+    def _missing_spaces_exceptions(self) -> List[str]:
+        """Define exceptions to the following function correct_missing_spaces()
+
+        You need to implement this for every language-specific class (that wants to use UniversalCorrector)
+        Returns:
+            A list of strings that correct_missing_spaces() won't correct
+        """
+        return []
+
     def correct_missing_spaces(self, text: str) -> str:
-        """Insert missing spaces between punctuation and characters"""
+        """Insert missing spaces between punctuation and characters
+
+        Exceptions are punctuation marks between digits (as in John 3:16) and those
+        defined by a language in _missing_spaces_exceptions()"""
         # not including : and ; because that would give too many false positives from definition lists
         check_missing_spaces = re.compile(r'([.!?,؛،؟])([\w])')
-        # As we need to check for exceptions (surrounded by digits), it's a bit complicated. Otherwise it'd be just
+        # As we need to check for exceptions (surrounded by digits and custom list), it's a bit complicated.
+        # Otherwise it'd be just
         # return re.sub(check_missing_spaces, r'\1 \2', text)
         last_start_pos = 0              # necessary to not run into endless loops
+
+        def does_match_exception(match: Match) -> bool:
+            nonlocal check_missing_spaces, text, last_start_pos
+            for exception in self._missing_spaces_exceptions():
+                exception_match = check_missing_spaces.search(exception)
+                if not exception_match:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Ignoring wrong exception '{exception}' for correct_missing_spaces()")
+                    return False
+                start_pos = match.start(1) - exception_match.start(1)
+                end_pos = start_pos + len(exception)
+                if (start_pos >= 0) and (end_pos <= len(text)) and (text[start_pos:end_pos] == exception):
+                    last_start_pos = end_pos
+                    return True
+            return False
+
         while match := check_missing_spaces.search(text, last_start_pos):
             if match.start(1) == 0:     # it would be strange if our text directly started with a punctuation mark.
                 last_start_pos += 1     # also the following if statement would raise an IndexError
@@ -67,6 +124,8 @@ class UniversalCorrector():
                 # Exception: Don't correct if punctuation mark is directly between characters
                 # (this is most likely used in a Bible reference like John 3:16 and should not be corrected)
                 last_start_pos = match.end(2)
+                continue
+            if does_match_exception(match):
                 continue
             text = text[:match.end(1)] + " " + text[match.start(2):]    # match.expand(r"\1 \2")
             last_start_pos = match.end(2) + 1   # +1 because we inserted a space
@@ -140,7 +199,7 @@ class UniversalCorrector():
     def make_lowercase_extension_in_filename(self, text: str) -> str:
         """Have file ending in lower case"""
         if len(text) <= 4:
-            logging.warning(f"File name too short: {text}")
+            logging.getLogger(__name__).warning(f"File name too short: {text}")
             return text
         return text[:-4] + text[-4:].lower()
 

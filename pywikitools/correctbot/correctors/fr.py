@@ -58,3 +58,9 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
         text = re.sub(' »', '\u00A0»', text)
         text = re.sub(r'([^\s])»', '\\1\u00A0»', text)
         return text
+
+    def _capitalization_exceptions(self) -> List[str]:
+        return []   # TODO
+
+    def _missing_spaces_exceptions(self) -> List[str]:
+        return []   # TODO
