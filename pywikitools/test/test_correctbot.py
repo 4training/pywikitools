@@ -85,10 +85,11 @@ class CorrectorTestCase(unittest.TestCase):
         fortraininglib = ForTrainingLib("https://www.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
+        original_content = fortraininglib.get_translated_unit(page, "en", identifier)
         fortraininglib.session.close()
         self.assertIsNotNone(old_content)
         self.assertIsNotNone(new_content)
-        self.assertEqual(correct(self.corrector, old_content), new_content)
+        self.assertEqual(correct(self.corrector, old_content, original_content), new_content)
 
     def compare_title_revisions(self, page: str, language_code: str, old_revision: int, new_revision):
         """Calls CorrectBase.title_correct()"""
@@ -440,8 +441,7 @@ class TestArabicCorrector(CorrectorTestCase):
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 4, 62201, 62260)
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 16, 62225, 62270)
         self.compare_title_revisions("How to Continue After a Prayer Time", "ar", 62193, 62274)
-#       TODO this would require passing the original text as well so that final dot gets added
-#        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
+        self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
 
 
 class TestCorrectBot(unittest.TestCase):
@@ -493,12 +493,10 @@ class TestCorrectBot(unittest.TestCase):
     def prepare_translated_page(self) -> TranslatedPage:
         """Prepare a TranslatedPage object out of the FRENCH_CORRECTIONS dictionary"""
         translation_units: List[TranslationUnit] = []
-        counter = 1
-        for faulty in FRENCH_CORRECTIONS.keys():
+        for counter, faulty in enumerate(FRENCH_CORRECTIONS.keys(), start=1):
             # The structure of original and translation needs to be the same
             original = "ignored" if "<br/>" not in faulty else "ignored<br/>ignored"
             translation_units.append(TranslationUnit(f"Test/{counter}", "fr", original, faulty))
-            counter += 1
         # Add one translation unit that will produce warnings because of wrong structure
         translation_units.append(TranslationUnit("Test/warnings1", "fr",
                                  TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR))
@@ -555,6 +553,15 @@ class TestCorrectBot(unittest.TestCase):
         with self.assertLogs("pywikitools.correctbot", level="WARNING"):
             self.correctbot.save_report("Test", "fr", results)
         self.assertIn("job queue is not empty", mock_page.return_value.text)
+        mock_lib.count_jobs.return_value = 0
+
+        self.assertNotIn(r"|direction=rtl}}", mock_page.return_value.text)
+        self.assertNotIn("mw-content-rtl", mock_page.return_value.text)
+        # check correct formatting for right-to-left languages
+        mock_lib.get_language_direction.return_value = "rtl"
+        self.correctbot.save_report("Test", "ar", results)
+        self.assertIn(r"|direction=rtl}}", mock_page.return_value.text)
+        self.assertIn('class="wikitable mw-content-rtl"', mock_page.return_value.text)
 
 
 if __name__ == '__main__':

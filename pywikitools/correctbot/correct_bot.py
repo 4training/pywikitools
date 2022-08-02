@@ -241,7 +241,10 @@ class CorrectBot:
                     report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
                     report += f" {result.corrections.get_name()}] ===\n"
                     report += "{{StringDiff|" + result.corrections.get_original_translation()
-                    report += "|" + result.corrections.get_translation() + "}}\n"
+                    report += "|" + result.corrections.get_translation()
+                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                        report += "|direction=rtl"
+                    report += "}}\n"
         if self.get_suggestion_counter() > 0:
             report += f"\n== Suggestions ==\n{self.get_suggestion_stats()}\n<i>Look at the following suggestions. "
             report += f"If you find good ones, please correct them manually in [{self.fortraininglib.index_url}"
@@ -252,8 +255,10 @@ class CorrectBot:
                     report += f"=== [{self.fortraininglib.index_url}?title={result.suggestions.get_name()}&action=edit"
                     report += f" {result.suggestions.get_name()}] ===\n"
                     report += "{{StringDiff|" + result.suggestions.get_original_translation()
-                    report += "|" + result.suggestions.get_translation() + "}}\n"
-
+                    report += "|" + result.suggestions.get_translation()
+                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                        report += "|direction=rtl"
+                    report += "}}\n"
         if self.get_warning_counter() > 0:
             report += "\n== Warnings ==\n"
             for result in results:
@@ -261,7 +266,10 @@ class CorrectBot:
                     report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
                     report += f" {result.corrections.get_name()}] ===\n"
                     report += f"<b><pre><nowiki>{result.warnings}</nowiki></pre></b>\n"
-                    report += "{| class=\"wikitable\"\n|-\n! Original\n! Translation\n|- style=\"vertical-align:top\"\n"
+                    report += '{| class="wikitable'
+                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                        report += " mw-content-rtl"
+                    report += '"\n|-\n! Original\n! Translation\n|- style="vertical-align:top"\n'
                     report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
                     report += "|}\n"
 
