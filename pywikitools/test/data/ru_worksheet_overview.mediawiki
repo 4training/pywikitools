@@ -155,7 +155,7 @@
 | [[The Three-Thirds Process/ru|Трехсторонний процесс]]
 | style="text-align:right;background-color:green" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-The_Three-Thirds_Process&action=page&filter=translated&language=ru 100%]
 | colspan="2" style="background-color:red; text-align:center" | -
-| style="background-color:red; text-align:center" | -
+| style="background-color:green" | [[File:Трехсторонний_процесс.odg]]
 | style="background-color:green" | 1.0
 | style="background-color:green" | [[CorrectBot:The_Three-Thirds_Process/ru|2 corrections, 1 suggestions]]
 |- style="background-color:red"

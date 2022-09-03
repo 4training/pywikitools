@@ -225,13 +225,16 @@ class WriteReport(LanguagePostProcessor):
             pdf_color = Color.RED
             content += f'| colspan="2" style="background-color:{Color.RED}; text-align:center" | -\n'
 
-        # column 7: Link to translated ODT file (if existing)
-        if lang_worksheet is not None and lang_worksheet.has_file_type("odt"):
-            odt_color = Color.GREEN if version_color == Color.GREEN else Color.ORANGE
-            content += f'| style="background-color:{odt_color}" '
-            content += f"| [[File:{lang_worksheet.get_file_type_name('odt')}]]\n"
+        # column 7: Link to translated ODT/ODG file (if existing)
+        if lang_worksheet is not None and (lang_worksheet.has_file_type("odt") or lang_worksheet.has_file_type("odg")):
+            od_color = Color.GREEN if version_color == Color.GREEN else Color.ORANGE
+            content += f'| style="background-color:{od_color}" '
+            od_file = lang_worksheet.get_file_type_name('odt')
+            if od_file == "":
+                od_file = lang_worksheet.get_file_type_name('odg')
+            content += f"| [[File:{od_file}]]\n"
         else:
-            odt_color = Color.RED
+            od_color = Color.RED
             content += f'| style="background-color:{Color.RED}; text-align:center" | -\n'
 
         # Now we append content for column 7: version information
@@ -246,10 +249,10 @@ class WriteReport(LanguagePostProcessor):
         # Determine the line color (for the first two cells)
         line_color = Color.RED
         if version_color == Color.GREEN or progress_color != Color.RED or \
-           odt_color != Color.RED or pdf_color != Color.RED:
+           od_color != Color.RED or pdf_color != Color.RED:
             line_color = Color.ORANGE
         if version_color == Color.GREEN and progress_color == Color.GREEN and \
-           odt_color == Color.GREEN and pdf_color == Color.GREEN:
+           od_color == Color.GREEN and pdf_color == Color.GREEN:
             line_color = Color.GREEN
         content = f'|- style="background-color:{line_color}"\n' + content
         return content

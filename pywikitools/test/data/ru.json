@@ -229,8 +229,15 @@
           "translated": 14,
           "fuzzy": 0,
           "total": 14
-        }
-      },
+        },
+        "files": [
+          {
+            "file_type": "odg",
+            "url": "https://www.4training.net/mediawiki/images/f/ff/Трехсторонний_процесс.odg",
+            "timestamp": "2022-09-03T11:56:00+00:00"
+          }
+        ]
+    },
       {
         "page": "A_Daily_Prayer",
         "language_code": "ru",
