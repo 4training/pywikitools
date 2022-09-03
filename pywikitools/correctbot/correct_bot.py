@@ -81,7 +81,7 @@ class CorrectBot:
         if unit.is_title():
             # translation unit holds the title
             return corrector.title_correct(unit)
-        if re.search(r"\.(odt|pdf|odg)$", unit.get_definition()):
+        if re.search(r"\.(odt|pdf|odg|png)$", unit.get_definition()):
             # translation unit holds a filename
             return corrector.filename_correct(unit)
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
