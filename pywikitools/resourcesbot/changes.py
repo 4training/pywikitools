@@ -64,10 +64,7 @@ class ChangeLog:
         return len(self._changes)
 
     def __str__(self) -> str:
-        output = ""
-        for change_item in self._changes:
-            output += f"{change_item}\n"
-        return output
+        return "\n".join([str(change) for change in self._changes])
 
     def __iter__(self):
         """Make this class iterable in a simple way (not suitable for concurrency!)"""

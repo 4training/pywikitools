@@ -1,5 +1,6 @@
 import unittest
 from pywikitools.fortraininglib import ForTrainingLib
+from pywikitools.resourcesbot.changes import ChangeLog
 
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.data_structures import LanguageInfo
@@ -27,11 +28,9 @@ class TestConsistencyCheck(unittest.TestCase):
         """All consistency checks should pass in English"""
         cc = ConsistencyCheck(self.fortraininglib)
         language_info = LanguageInfo("en", "English")
-        self.assertTrue(cc.check_bible_reading_hints_titles(language_info))
-        self.assertTrue(cc.check_gods_story_titles(language_info))
-        self.assertTrue(cc.check_who_do_i_need_to_forgive(language_info))
-        self.assertTrue(cc.check_bible_reading_hints_links(language_info))
-        self.assertTrue(cc.check_book_of_acts(language_info))
+        with self.assertLogs("pywikitools.resourcesbot.consistency_checks", level="INFO") as logs:
+            cc.run(language_info, LanguageInfo("en", "English"), ChangeLog(), ChangeLog())
+        self.assertIn("Consistency checks for English: 5/5 passed", logs.output[0])
 
 
 if __name__ == '__main__':

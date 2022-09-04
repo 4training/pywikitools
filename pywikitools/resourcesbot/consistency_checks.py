@@ -74,7 +74,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         if base is None or other is None:
             return True
         if other.get_translation() == base.get_translation():
-            self.logger.info(f"Consistency check passed: {base.get_translation()} == {other.get_translation()}")
+            self.logger.debug(f"Consistency check passed: {base.get_translation()} == {other.get_translation()}")
             return True
         self.logger.warning(f"Consistency check failed: {other.get_translation()} is not equal to "
                             f"{base.get_translation()}. Check {base.get_name()} and {other.get_name()}")
@@ -85,8 +85,8 @@ class ConsistencyCheck(LanguagePostProcessor):
         if base is None or other is None:
             return True
         if other.get_translation().startswith(base.get_translation()):
-            self.logger.info(f"Consistency check passed: "
-                             f"{other.get_translation()} starts with {base.get_translation()}.")
+            self.logger.debug(f"Consistency check passed: "
+                              f"{other.get_translation()} starts with {base.get_translation()}.")
             return True
         self.logger.warning(f"Consistency check failed: {other.get_translation()} does not start with "
                             f"{base.get_translation()}. Check {base.get_name()} and {other.get_name()}")
@@ -149,11 +149,13 @@ class ConsistencyCheck(LanguagePostProcessor):
         return self.should_be_equal(t24, t26)
 
     def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
-        self.check_bible_reading_hints_titles(language_info)
-        self.check_gods_story_titles(language_info)
-        self.check_who_do_i_need_to_forgive(language_info)
-        self.check_bible_reading_hints_links(language_info)
-        self.check_book_of_acts(language_info)
+        checks_passed: int = 0
+        checks_passed += int(self.check_bible_reading_hints_titles(language_info))
+        checks_passed += int(self.check_gods_story_titles(language_info))
+        checks_passed += int(self.check_who_do_i_need_to_forgive(language_info))
+        checks_passed += int(self.check_bible_reading_hints_links(language_info))
+        checks_passed += int(self.check_book_of_acts(language_info))
+        self.logger.info(f"Consistency checks for {language_info.english_name}: {checks_passed}/5 passed")
 
 
 """

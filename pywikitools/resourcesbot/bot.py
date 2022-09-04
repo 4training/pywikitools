@@ -149,6 +149,7 @@ class ResourcesBot:
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         assert "en" in self._result
         assert "en" in self._changelog
+        self.logger.info(f"Starting post-processing for languages {list(self._result.keys())}")
         for lang in self._result:
             consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
             export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
