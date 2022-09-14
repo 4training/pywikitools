@@ -71,7 +71,7 @@ class ForTrainingLib():
             "Bible_Reading_Hints_(Starting_with_the_Creation)",
             "The_Three-Thirds_Process", "Training_Meeting_Outline", "A_Daily_Prayer",
             "Overcoming_Fear_and_Anger", "Getting_Rid_of_Colored_Lenses", "Family_and_our_Relationship_with_God",
-            "Overcoming_Negative_Inheritance",
+            "Overcoming_Pride_and_Rebellion", "Overcoming_Negative_Inheritance",
             "Forgiving_Step_by_Step:_Training_Notes", "Leading_Others_Through_Forgiveness",
             "The_Role_of_a_Helper_in_Prayer", "Leading_a_Prayer_Time",
             "How_to_Continue_After_a_Prayer_Time", "Four_Kinds_of_Disciples"]
