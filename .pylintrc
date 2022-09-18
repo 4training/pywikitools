@@ -1,7 +1,0 @@
-[LOGGING]
-# Our standard is to use f-strings everywhere, also for logging 
-# e.g. logger.info(f"Language: {lang}")
-logging-format-style=fstr
-
-[FORMAT]
-max-line-length=120
