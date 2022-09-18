@@ -1,22 +1,26 @@
 """
-Script to fill the "Available Resources in ..." sections of all languages
-
-This scripts scans through the worksheets and all their translations, saving also the links for PDF and ODT files.
-It checks if new translations were added and changes the language overview pages where necessary.
+The ResourcesBot scans through the resources and all their translations, retrieving also information
+on PDF/ODT files. It checks if new translations were added and does many helpful things then
+like updating language overview pages where necessary.
 It is supposed to run daily as a cronjob.
 
 Main steps:
     1. gather data: go through all worksheets and all their translations
        This will take quite some time as it is many API calls
-    2. Update language overview pages where necessary
-       For example: https://www.4training.net/German#Available_training_resources_in_German
-       To make that easier, a JSON representation is saved for every language, e.g.
+    2. Update JSON representation for every language if necessary, e.g.
        https://www.4training.net/4training:de.json
-       The script will compare its results to the JSON and update the JSON and the language overview page when necessary
-    3. Post-processing (TODO: not yet implemented)
-       With information like "we now have a Hindi translation of the Prayer worksheet" we can do helpful things, e.g.
-       - update a zip file with all Hindi worksheets
-       - send an email notification to all interested in the Hindi resources
+       This serves as a cache / "database"
+    3. Post-processing:
+       - Update language overview pages where necessary (WriteList)
+         for example: https://www.4training.net/German#Available_training_resources_in_German
+       - Update language reports (WriteReport)
+         for example: https://www.4training.net/4training:German
+       - WriteSidebarMessages
+       - Export worksheets in HTML format to a repository (ExportHTML)
+       - Push the local repository to origin (ExportRepository)
+       Not yet implemented:
+       - update a zip file with all worksheets of a language
+       - send email notifications on updates to mailing lists of the corresponding language
 
 Command line options:
     --lang LANGUAGECODE: only look at this one language (significantly faster)
@@ -62,12 +66,12 @@ def parse_arguments() -> ResourcesBot:
     Parses command-line arguments.
     @return: ResourcesBot instance
     """
-    msg: str = 'Update list of available training resources in the language information pages'
-    epi_msg: str = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
+    description = 'Update list of available training resources in the language information pages'
+    epilog = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
     rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'sidebar']
 
-    parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=msg, epilog=epi_msg)
+    parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=description, epilog=epilog)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
     parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')

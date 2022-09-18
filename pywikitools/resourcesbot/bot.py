@@ -50,7 +50,6 @@ class ResourcesBot:
         """
         # read-only list of download file types
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
-        # Read the configuration from config.ini in the same directory
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
         self.site: pywikibot.site.APISite = pywikibot.Site()

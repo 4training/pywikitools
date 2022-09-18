@@ -44,7 +44,7 @@ if __name__ == "__main__":
     root.addHandler(sh)
 
     config = ConfigParser()
-    config.read(join(dirname(abspath(__file__)), "..", "config.ini"))
+    config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
     correctbot = CorrectBot(config, simulate=True)
 
     for worksheet in correctbot.fortraininglib.get_worksheet_list():

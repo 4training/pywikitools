@@ -1,32 +1,8 @@
-"""
-This script produces a translated ODT file for a given worksheet and a given language.
-It does so by:
-1. accessing the worksheet in the mediawiki system together with its translation
-2. downloading the English ODT file (the URL is found in the result of the first step)
-3. doing search and replace: For each translation unit
-   - do some cleansing (removing links, unnecessary spaces)
-   - split it up even further into small snippets (when the translation unit contains lists etc.)
-   - search for each snippet and replace it by its translation
-4. saving the created ODT file
-
-It does quite some logging:
-    - error level: serious issues where the script had to be aborted
-    - warning level: these should be checked afterwards
-    - info level: going along what the script does
-    - debug level: extensive details for debugging
-
-Command line options:
-    -h, --help: help message
-    -l [debug, info, warning, error]: set loglevel
-    --keep-english-file: don't delete the downloaded English ODT file after we're finished
-"""
-import argparse
-import sys
 import logging
 import os.path
 import re
 from configparser import ConfigParser
-from typing import Dict, Final, List, Optional, Set
+from typing import Dict, List, Optional
 import requests
 from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.fortraininglib import ForTrainingLib
@@ -34,41 +10,8 @@ from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
-
-SNIPPET_WARN_LENGTH = 3     # give a warning when search or replace string is shorter than 3 characters
-# The following templates don't contain any translation units and can be ignored
-IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
-                    'Template:PrintPdfDownload',
-                    'Template:Translatable template', 'Template:Version', 'Module:Template translation',
-                    'Template:Italic']
-# for the following languages we don't add ", version x.y" to the keywords in the document properties
-# because the translation of "version" is very close to the English word "version"
-# TODO should 'ko' be in this list?
-NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
-
-
-class TranslateOdtConfig:
-    """Contains configuration on how to process one worksheet:
-    Which translation units should be ignored?
-    Which translation units should be processed multiple times?
-
-    It is read from a config file (see TranslateODT.read_worksheet_config()) of the following structure:
-    [Ignore]
-    # Don't process the following translation units
-    Template:BibleReadingHints/18
-    Template:BibleReadingHints/25
-
-    [Multiple]
-    # Process the following translation unit 5 times
-    Template:BibleReadingHints/6 = 5
-    """
-    __slots__ = ["ignore", "multiple"]
-
-    def __init__(self):
-        # Set of translation unit identifiers that shouldn't be processed
-        self.ignore: Final[Set[str]] = set()
-        # Translation unit identifier -> number of times it should be processed
-        self.multiple: Final[Dict[str, int]] = {}
+from pywikitools.translateodt.config import IGNORE_TEMPLATES, NO_ADD_ENGLISH_VERSION, SNIPPET_WARN_LENGTH, \
+                                            TranslateOdtConfig
 
 
 class UsableUniversalCorrector(UniversalCorrector):
@@ -477,29 +420,3 @@ class TranslateODT:
             cc0_notice += native_to_standard_numeral(page.language_code, page.get_worksheet_info().version)
 
         self._loffice.set_properties(headline, subject, cc0_notice)
-
-
-if __name__ == '__main__':
-    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
-
-    msg = "Create translated ODT file of a worksheet"
-    parser = argparse.ArgumentParser(prog="python3 translateodt.py", description=msg)
-    parser.add_argument("worksheet", help="Name of the mediawiki page")
-    parser.add_argument("language_code", help="Language code of the translation language")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
-    parser.add_argument("--keep-english-file", dest="keep_english_file", action="store_true",
-                        help="Don't delete the downloaded English ODT file after we're finished")
-
-    args = parser.parse_args()
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    sh = logging.StreamHandler(sys.stdout)
-    fformatter = logging.Formatter('%(levelname)s: %(message)s')
-    sh.setFormatter(fformatter)
-    numeric_level = getattr(logging, args.loglevel.upper(), None)
-    assert isinstance(numeric_level, int)
-    sh.setLevel(numeric_level)
-    root.addHandler(sh)
-
-    translateodt = TranslateODT(keep_english_file=args.keep_english_file)
-    translateodt.translate_worksheet(args.worksheet, args.language_code)

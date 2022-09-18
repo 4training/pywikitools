@@ -10,7 +10,7 @@ import os
 import logging
 import getopt
 import requests
-from fortraininglib import ForTrainingLib
+from pywikitools.fortraininglib import ForTrainingLib
 
 
 def usage():
