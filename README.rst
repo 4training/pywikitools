@@ -46,7 +46,7 @@ Setup:
     * This is not necessary for all scripts, only for our LibreOffice module and scripts using it (``translateodt.py``)
     * Running the complete test suite requires it, though
 
-#. Request a user-config.py (not in the repository) and place it in the ``pywikitools/pywikitools/`` directory
+#. Request a user-config.py (not in the repository) and place it in the base directory
    (same directory where the python scripts you want to run are located).
 
 #. Alternatively you can generate it yourself by using a "full" pywikibot installation:
@@ -64,16 +64,6 @@ Setup:
 
         * ``cp config.example.ini config.ini``
         * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
-
-#. Make sure the pywikitools package is found by python. Options:
-
-    * Create a new PTH file in the site-packages directory:
-
-        * If you do not use a virtual environment: ``~/.local/lib/python3.8/site-packages/``) and write the base path of this repository into it
-        * If you use a virtual environment: ``~/your_env_name/lib/python3.8/site-packages``
-        * Create a new PTH file ``pywikitools.pth`` and copy the base path into the new file: ``/YOUR_HOME_PATH/pywikitools/``.
-    * Appending it to PYTHONPATH
-    * TODO: Remove this awkward step - see https://github.com/4training/pywikitools/issues/41
 
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
