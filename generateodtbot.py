@@ -69,13 +69,16 @@ def notify_user(username: str, worksheet: str, languagecode: str, admin: bool):
         logger.info('Sending email to ' + username)
         msg = "Hello " + username + ",\n"
         msg += """
-The automated generation of the translated .odt file is finished. You find the created .odt file in the Dropbox:
+The automated generation of the translated .odt and .pdf files is finished. You find them in the Dropbox:
 https://www.dropbox.com/sh/sghbc73ekwm39r2/AADPw-KftZkwjXUM6e3Xqdtpa?dl=0
 
-Please check it and adjust the formatting so that everything looks nice and fits well.
-When you're done, save the file and upload it into the system: https://www.4training.net/Special:Upload
-Export it as PDF (with the right options) and upload the PDF file as well.
-Afterwards it will be available for everyone to download and use it easily.
+Please check the PDF: If everything is fine and it fits well, you can directly upload both files.
+
+Otherwise open the ODT file and adjust the formatting until everything looks nice and fits well.
+When you're done, save the file and export a PDF (with the right options).
+
+Upload files here: https://www.4training.net/Special:Upload
+Afterwards they will be available for everyone to download and use them easily.
 Here you find the detailed documentation for all the steps:
 https://www.4training.net/4training:Creating_and_Uploading_Files
 
@@ -86,9 +89,12 @@ Ask us for support if you have any questions on how to teach this worksheet or w
 Thank you very much for all your work!
 
 
-Please check the following log for any warnings:
 """
-        msg += stream.getvalue()
+        log = stream.getvalue()
+        if log != "":
+            msg += "Please check the following log for any warnings:\n" + log
+        else:
+            msg += "Everything went smooth, no warnings or remarks :)"
         if admin:
             msg += "\nDEBUG:\n" + stream_debug.getvalue()
 
