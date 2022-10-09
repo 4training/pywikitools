@@ -1,5 +1,6 @@
 import logging
-import os.path
+import os
+from os.path import abspath, dirname, join
 import re
 from configparser import ConfigParser
 from typing import Dict, List, Optional
@@ -30,10 +31,10 @@ class TranslateODT:
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
         self.config: ConfigParser = ConfigParser()
-        self.config.read_dict({'Paths': {'worksheets': os.path.abspath(os.getcwd()) + '/worksheets/'},
+        self.config.read_dict({'Paths': {'worksheets': abspath(os.getcwd()) + '/worksheets/'},
                                'translateodt': {'closeoffice': True,
                                                 'headless': False}})
-        self.config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+        self.config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
         self.config.read_dict(config)
 
         self.correctbot = CorrectBot(self.config, simulate=True)
