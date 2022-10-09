@@ -14,7 +14,7 @@ import sys
 import logging
 import traceback
 import io
-import translateodt
+from pywikitools.translateodt import TranslateODT
 import dropboxupload
 import fcntl
 import time
@@ -145,7 +145,9 @@ while not got_lock:
 logger.info('Got exclusive lock. Retries: ' + str(retries))
 
 try:
-    filename = translateodt.translateodt(worksheet, languagecode)
+    translateodt = TranslateODT()
+    filename = translateodt.translate_worksheet(worksheet, languagecode)
+
     fcntl.flock(f, fcntl.LOCK_UN)       # We can release the lock now
     if isinstance(filename, str):
         if not dropboxupload.upload_file(languagecode, filename):
