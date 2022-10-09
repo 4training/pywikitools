@@ -226,6 +226,43 @@ class NoSpaceBeforePunctuationCorrector():
         return re.sub(check_wrong_spaces, r'\1\2', text)
 
 
+class QuotationMarkCorrector(ABC):
+    """Ensure correct starting and ending quotation marks
+
+    This can be used for any language where we just need to define which characters are used
+    for the start and the end of a quotation.
+    (For more complex rules like in French involving non-breaking spaces you can't use this class)
+
+    To use it, implement a function that calls _correct_quotes() with the right quotation mark for start and end.
+    Example for Spanish:
+    def correct_quotes(self, text: str) -> str:
+        return self._correct_quotes('“', '”', text)
+    """
+
+    def _correct_quotes(self, start_quotation_mark: str, end_quotation_mark: str, text: str) -> str:
+        """Correct quotation marks: Ensure correct starting and ending quotation mark
+
+        We do this by replacing all of „“”" with start and end quotation mark (alternating).
+        This only works if we have an even amount of quotation marks. If not, we issue a warning
+        and don't change anything.
+
+        Args:
+            start_quotation_mark: The character used at the start of a quotation
+            end_quotation_mark: The character used at the end of a quotation
+        """
+        splitted_text: List[str] = re.split('[„“”"]', text)
+        if (len(splitted_text) % 2) != 1:   # Not an even amount of quotes: we don't do anything
+            logger = logging.getLogger(__name__)
+            logger.warning(f'Found uneven amount of quotation marks (")! Please correct manually: {text}')
+        else:
+            # Put all parts together again, replacing all simple quotation marks
+            text = splitted_text[0]
+            for counter in range(1, len(splitted_text)):
+                text += start_quotation_mark if counter % 2 == 1 else end_quotation_mark
+                text += splitted_text[counter]
+        return text
+
+
 class RTLCorrector():
     """Corrections for right-to-left languages"""
 

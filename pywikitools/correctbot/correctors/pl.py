@@ -1,31 +1,18 @@
-import logging
-import re
 from typing import List
 
 from .base import CorrectorBase
-from .universal import NoSpaceBeforePunctuationCorrector, UniversalCorrector
+from .universal import NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector, UniversalCorrector
 
 
-class PolishCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector):
+class PolishCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector):
     """
-    Correct typical Polish typos. Currently one rule is implemented
+    Correct Polish typos:
     * Polish quotations start with „ and end with ”
+    * Common corrections from UniversalCorrector and NoSpaceBeforePunctuationCorrector
     """
     def correct_quotes(self, text: str) -> str:
         """Ensure correct Polish quotes (example: „poprawny”)"""
-        # This code is taken from the GermanCorrector (just that the ending quote is different)
-        # TODO: create some way to reduce code redundancy
-        splitted_text: List[str] = re.split('[„“”"]', text)
-        if (len(splitted_text) % 2) != 1:   # Not an even amount of quotes: we don't do anything
-            logger = logging.getLogger(__name__)
-            logger.warning(f'Found uneven amount of quotation marks (")! Please correct manually: {text}')
-        else:
-            # Put all parts together again, replacing all simple quotation marks with „ and ” (alternating)
-            text = splitted_text[0]
-            for counter in range(1, len(splitted_text)):
-                text += '„' if counter % 2 == 1 else '”'
-                text += splitted_text[counter]
-        return text
+        return self._correct_quotes('„', '”', text)
 
     def _capitalization_exceptions(self) -> List[str]:
         return []

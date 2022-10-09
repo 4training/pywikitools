@@ -17,8 +17,8 @@ from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
-from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, RTLCorrector, \
-                                                        UniversalCorrector
+from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector, \
+                                                        RTLCorrector, UniversalCorrector
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR
 
@@ -309,6 +309,26 @@ class TestNoSpaceBeforePunctuationCorrector(CorrectorTestCase):
         self.assertEqual(correct(corrector, "Ellipsis … ? Sure … !"), "Ellipsis … ? Sure … !")
 
 
+class QuotationMarkCorrectorTester(CorrectorBase, QuotationMarkCorrector):
+    """With this class we can test the rules of QuotationMarkCorrector"""
+    def correct_quotes(self, text: str) -> str:
+        return self._correct_quotes('»', '«', text)
+
+
+class TestQuotationMarkCorrector(CorrectorTestCase):
+    def test_correct_quotes(self):
+        corrector = QuotationMarkCorrectorTester()
+        for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
+            self.assertEqual(correct(corrector, wrong), '»Test«')
+            self.assertEqual(correct(corrector, f"Start and {wrong}"), 'Start and »Test«')
+            self.assertEqual(correct(corrector, f"{wrong} and end."), '»Test« and end.')
+            self.assertEqual(correct(corrector, f"Start and {wrong} and end."), 'Start and »Test« and end.')
+            self.assertEqual(correct(corrector, f"{wrong}, {wrong} and “Test”."), '»Test«, »Test« and »Test«.')
+
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(corrector, '"Something" wrong"'), '"Something" wrong"')
+
+
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
     """With this class we can test the rules of RTLCorrector"""
     pass
@@ -334,9 +354,8 @@ class TestGermanCorrector(CorrectorTestCase):
             self.assertEqual(correct(corrector, f"Beginn und {wrong}"), 'Beginn und „Test“')
             self.assertEqual(correct(corrector, f"{wrong} und Ende."), '„Test“ und Ende.')
             self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
-            self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
 
-        with self.assertLogs('pywikitools.correctbot.correctors.de', level='WARNING'):
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             self.assertEqual(correct(corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"')
 
         valid_strings: List[str] = [    # Some more complex examples
