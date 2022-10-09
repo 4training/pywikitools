@@ -28,7 +28,7 @@ global_site = pywikibot.Site()
 config = configparser.ConfigParser()
 config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
-logger = logging.getLogger('pywikitools.generateodtbot')
+logger = logging.getLogger('pywikitools')   # Also catch logs from pywikitools.translateodt and pywikitools.correctbot
 logger.setLevel(logging.DEBUG)
 fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
 log_path = config.get('Paths', 'logs', fallback='')
@@ -161,7 +161,7 @@ try:
         if not dropboxupload.upload_file(languagecode, filename.replace('.odt', '.pdf')):
             logger.error("Dropbox upload of " + filename.replace('odt', '.pdf') + " failed!")
     else:
-        logger.error("Translateodt failed. Please ask an administrator to fix this (see debug logs for more details)")
+        logger.error("Translateodt failed. See log above or ask an administrator for help.")
     if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.txt', stream.getvalue()):
         logger.error('Dropbox upload of log/' + worksheet + '.txt failed')
     if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.debug.txt', stream_debug.getvalue()):
