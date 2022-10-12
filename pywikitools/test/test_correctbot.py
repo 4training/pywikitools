@@ -339,6 +339,13 @@ class TestRTLCorrector(CorrectorTestCase):
     def setUpClass(cls):
         cls.corrector = RTLCorrectorTester()
 
+    def test_correct_punctuation(self):
+        self.assertEqual(correct(self.corrector, ","), "،")
+        self.assertEqual(correct(self.corrector, "منهم; حتى"), "منهم؛ حتى")
+        self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
+        # Make sure mediawiki : and ; formatting (at beginning of lines) remain unchanged
+        self.assertEqual(correct(self.corrector, ";التدوين و الكتابة\n:من"), ";التدوين و الكتابة\n:من")
+
     def test_fix_rtl_title(self):
         self.compare_title_revisions("Bible_Reading_Hints_(Seven_Stories_full_of_Hope)", "fa", 57796, 62364)
 
@@ -444,15 +451,8 @@ class TestArabicCorrector(CorrectorTestCase):
     def setUpClass(cls):
         cls.corrector = ArabicCorrector()
 
-    def test_correct_punctuation(self):
-        self.assertEqual(correct(self.corrector, ","), "،")
-        self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
-        self.assertEqual(correct(self.corrector, "منهم; حتى"), "منهم؛ حتى")
-        self.assertEqual(correct(self.corrector, "ما هو من عند الله?"), "ما هو من عند الله؟")
-        # Make sure mediawiki : and ; formatting (at beginning of lines) remain unchanged
-        self.assertEqual(correct(self.corrector, ";التدوين و الكتابة\n:من"), ";التدوين و الكتابة\n:من")
-
     def test_correct_spaces(self):
+        self.assertEqual(correct(self.corrector, "منهم،حتى"), "منهم، حتى")
         self.assertEqual(correct(self.corrector, "يدعي  و يصلي"), "يدعي و يصلي")
         self.assertEqual(correct(self.corrector, "بحرص ،  أن"), "بحرص، أن")
 

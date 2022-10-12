@@ -278,3 +278,10 @@ class RTLCorrector():
     def fix_rtl_filename(self, text: str) -> str:
         """When file name has a closing parenthesis before the file ending, make sure we have a RTL mark afterwards!"""
         return re.sub(r'\)\.([a-z]{3})$', ')\u200f.\\1', text)
+
+    def correct_punctuation(self, text: str) -> str:
+        """Replace normal comma, semicolon, question mark with RTL version of it"""
+        text = text.replace(",", "،")
+        text = text.replace("?", "؟")
+        # Replace semicolon only if it's after a character or a space (not at the beginning of a line)
+        return re.sub(r"([\w ])[;]", "\\1؛", text)

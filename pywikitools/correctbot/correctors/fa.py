@@ -3,14 +3,14 @@ from .base import CorrectorBase
 from .universal import QuotationMarkCorrector, UniversalCorrector, RTLCorrector
 
 
-class ArabicCorrector(CorrectorBase, UniversalCorrector, RTLCorrector, QuotationMarkCorrector):
+class PersianCorrector(CorrectorBase, UniversalCorrector, RTLCorrector, QuotationMarkCorrector):
     """
-    Correct Arabic typos:
-    * Arabic quotations start with start with « and end with »
+    Correct Persian typos:
+    * Persian quotations start with start with « and end with »
     * Common corrections from UniversalCorrector and RTLCorrector
     """
     def correct_quotes(self, text: str) -> str:
-        """Ensure correct Arabic quotes (example: «اقتباس»)"""
+        """Ensure correct Persian quotes (example: «نقل قول»)"""
         return self._correct_quotes('«', '»', text)
 
     def _capitalization_exceptions(self) -> List[str]:
