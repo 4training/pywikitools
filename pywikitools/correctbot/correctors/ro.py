@@ -15,7 +15,8 @@ class RomanianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuat
         return self._correct_quotes('„', '”', text)
 
     def _capitalization_exceptions(self) -> List[str]:
-        return ["ex.", "Ex."]
+        return ["ex.", "Ex.", "ș.a.m.d.", "ș.a.m.", "ș.a.", "Ș.a.m.d.", "Ș.a.m.", "Ș.a."]
+        # TODO only adding "ș.a.m.d." is not enough, that's currently a workaround, find a better solution
 
     def _missing_spaces_exceptions(self) -> List[str]:
-        return []
+        return ["ș.a.m.d.", "Ș.a.m.d."]
