@@ -410,6 +410,8 @@ class TranslateODT:
         subject = page.get_english_info().title
         subject += subtitle_en
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code, 'en'))
+        if page.language_code == "fa":  # Persian is also often known as Farsi
+            subject += " Farsi"         # TODO: Put this special case somewhere else?
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code))
 
         # Keywords: [Translated no-copyright notice + version] - copyright-free, version [original version]

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from os.path import abspath, dirname, join
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
@@ -87,6 +87,14 @@ class TestTranslateODT(unittest.TestCase):
             "Titel - Überschrift", "Title - Headline German Deutsch",
             "Kein Copyright: Dieses Arbeitsblatt darf ohne Einschränkungen weitergegeben und weiterverarbeitet werden"
             " (CC0). Version 1.2 - copyright-free")
+
+    def test_persian_properties(self):
+        # Test special case for Persian
+        headline = TranslationUnit("Test/Page_display_title", "fa", "Healing", "شفا")
+        unit_version = TranslationUnit("Test/2", "fa", "1.2", "1.2")
+        translated_page = TranslatedPage("Test", "fa", [headline, unit_version])
+        self.translate_odt._set_properties(translated_page)
+        self.translate_odt._loffice.set_properties.assert_called_with("شفا", "Healing Persian Farsi فارسی", ANY)
 
     def test_cleanup_units(self):
         # should warn because "sin" can be found in the German translation "Wir versinken..."
