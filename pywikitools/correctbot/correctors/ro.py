@@ -14,7 +14,7 @@ class RomanianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuat
         """Ensure correct Romanian quotes (example: „quote”)"""
         return self._correct_quotes('„', '”', text)
 
-    def correct_s_and_t_comma(self, text: str) -> str:
+    def correct_s_and_t_comma_also_in_title(self, text: str) -> str:
         """Replace Ş/ş/Ţ/ţ with the correct Ș/ș/Ț/ț in Romanian"""
         # See https://en.wikipedia.org/wiki/S-comma and https://en.wikipedia.org/wiki/T-comma
         text = text.replace("Ţ", "Ț")

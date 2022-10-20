@@ -242,6 +242,7 @@ class TestUniversalCorrector(unittest.TestCase):
                                             "Missing. Spaces, after punctuation? Behold, again.")
         self.assertEqual(correct(corrector, "This entry contains redundant spaces , before , punctuation ."),
                                             "This entry contains redundant spaces, before, punctuation.")
+        self.assertEqual(correct(corrector, "   before and after  "), " before and after ")
         # now let's try if exceptions are correctly respected:
         self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
         self.assertEqual(correct(corrector, "Test.This remains untouched."), "Test.This remains untouched.")
@@ -252,6 +253,8 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
         self.assertEqual(correct(corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
         self.assertEqual(correct(corrector, "How do I survive if … ?"), "How do I survive if … ?")
+        self.assertEqual(correct(corrector, "□ Yes    □ No    □"), "□ Yes    □ No    □")
+        self.assertEqual(correct(corrector, "□ Yes    □ No    □  "), "□ Yes    □ No    □ ")
 
         # TODO Test also print_stats()
 #        self.assertIn("6 corrections", corrector.print_stats())

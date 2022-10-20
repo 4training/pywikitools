@@ -73,11 +73,21 @@ class UniversalCorrector(ABC):
         result = result[0].upper() + result[1:]
         return result
 
-    @suggest_only
     def correct_multiple_spaces_also_in_title(self, text: str) -> str:
         """Reduce multiple spaces to one space"""
         check_multiple_spaces = re.compile(r'( ){2,}')
-        return re.sub(check_multiple_spaces, ' ', text)
+        # As we want to check for exceptions (more than one space followed by a "□" character) it gets more complicated
+        # Otherwise we could just say
+        # return re.sub(check_multiple_spaces, ' ', text)
+
+        last_start_pos = 0
+        while match := check_multiple_spaces.search(text, last_start_pos):
+            if (len(text) > match.end()) and (text[match.end()] == '□'):
+                last_start_pos = match.end()
+                continue
+            text = text[:match.start()] + " " + text[match.end():]
+            last_start_pos = match.start() + 1   # +1 because we inserted a space
+        return text
 
     @abstractmethod
     def _missing_spaces_exceptions(self) -> List[str]:
