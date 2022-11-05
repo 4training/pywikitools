@@ -251,28 +251,52 @@ class LibreOffice:
         properties.Subject = subject
         properties.Keywords = [keywords]
 
-    def set_default_style(self, language_code: str, rtl: bool = False):
-        """Setting properties of the ODT document's default style:
+    def _get_default_paragraph_style(self) -> Optional[Any]:
+        """Return the default paragraph style: XStyle object (None on error)"""
+        assert self._model is not None
+        paragraph_styles = self._model.getStyleFamilies().getByName("ParagraphStyles")
+        if paragraph_styles.hasByName("Default Style"):       # until LibreOffice 6
+            return paragraph_styles.getByName("Default Style")
+        elif paragraph_styles.hasByName("Default Paragraph Style"):
+            # got renamed in LibreOffice 7, see https://bugs.documentfoundation.org/show_bug.cgi?id=129568
+            return paragraph_styles.getByName("Default Paragraph Style")
+        self.logger.warning("Couldn't find Default Style in paragraph styles.")
+        return None
+
+    def _get_default_page_style(self) -> Optional[Any]:
+        """Return the default page style: XStyle object (None on error)"""
+        assert self._model is not None
+        page_styles = self._model.getStyleFamilies().getByName("PageStyles")
+        if page_styles.hasByName("Default Style"):       # until LibreOffice 6
+            return page_styles.getByName("Default Style")
+        elif page_styles.hasByName("Default Page Style"):
+            # got renamed in LibreOffice 7, see https://bugs.documentfoundation.org/show_bug.cgi?id=129568
+            return page_styles.getByName("Default Page Style")
+        self.logger.warning("Couldn't find Default Style in page styles.")
+        return None
+
+    def set_default_styles(self, language_code: str, rtl: bool = False):
+        """Setting properties of the ODT document's default paragraph and page styles:
         Locale (with language code) and writing mode (LTR/RTL)
         Does some logging on errors (not optimal from software design perspective)
         """
         assert self._model is not None
-        par_styles = self._model.getStyleFamilies().getByName("ParagraphStyles")
-        default_style = None
-        if par_styles.hasByName("Default Style"):       # until LibreOffice 6
-            default_style = par_styles.getByName("Default Style")
-        elif par_styles.hasByName("Default Paragraph Style"):
-            # got renamed in LibreOffice 7, see https://bugs.documentfoundation.org/show_bug.cgi?id=129568
-            default_style = par_styles.getByName("Default Paragraph Style")
-        else:
-            self.logger.warning("Couldn't find Default Style in paragraph styles."
-                                "Can't set RTL and language locale, please do that manually.")
+        default_paragraph_style = self._get_default_paragraph_style()
+        if default_paragraph_style is None:
+            self.logger.warning("Can't set RTL and language locale, please do that manually.")
             return
 
         if rtl:
             self.logger.debug("Setting language direction to RTL")
-            default_style.ParaAdjust = 1   # alignment (0: left; 1: right; 2: justified; 3: center)
-            default_style.WritingMode = 1  # writing direction (0: LTR; 1: RTL; 4: use superordinate object settings)
+            default_paragraph_style.ParaAdjust = 1   # alignment (0: left; 1: right; 2: justified; 3: center)
+            default_paragraph_style.WritingMode = 1  # direction (0: LTR; 1: RTL; 4: use superordinate object settings)
+            default_page_style = self._get_default_page_style()
+            if default_page_style is not None:
+                default_page_style.WritingMode = 1
+            frame_styles = self._model.getStyleFamilies().getByName("FrameStyles")
+            if frame_styles.hasByName("Frame"):
+                # This is used for boxes that some worksheets have
+                frame_styles.getByName("Frame").WritingMode = 1
 
         # default_style.CharLocale.Language and .Country seem to be read-only
         self.logger.debug("Setting language locale of Default Style")
@@ -281,22 +305,22 @@ class LibreOffice:
             struct_locale = lang.to_locale()
             self.logger.info(f"Assigning Locale for language '{language_code}': {lang}")
             if lang.is_standard():
-                default_style.CharLocale = struct_locale
+                default_paragraph_style.CharLocale = struct_locale
             if lang.is_asian():
-                default_style.CharLocaleAsian = struct_locale
+                default_paragraph_style.CharLocaleAsian = struct_locale
             if lang.is_complex():
-                default_style.CharLocaleComplex = struct_locale
+                default_paragraph_style.CharLocaleComplex = struct_locale
             if lang.has_custom_font():
                 self.logger.warning(f'Using font "{lang.get_custom_font()}". Please make sure you have it installed.')
-                default_style.CharFontName = lang.get_custom_font()
-                default_style.CharFontNameAsian = lang.get_custom_font()
-                default_style.CharFontNameComplex = lang.get_custom_font()
+                default_paragraph_style.CharFontName = lang.get_custom_font()
+                default_paragraph_style.CharFontNameAsian = lang.get_custom_font()
+                default_paragraph_style.CharFontNameComplex = lang.get_custom_font()
         else:
             self.logger.warning(f'Language "{language_code}" not in LANG_LOCALE. '
                                 "Please ask an administrator to fix this.")
             struct_locale = Locale(language_code, "", "")
             # We don't know which of the three this language belongs to... so we assign it to all Fontstyles
             # (unfortunately e.g. "ar" can be assigned to "Western Font" so try-and-error-assigning doesn't work)
-            default_style.CharLocale = struct_locale
-            default_style.CharLocaleAsian = struct_locale
-            default_style.CharLocaleComplex = struct_locale
+            default_paragraph_style.CharLocale = struct_locale
+            default_paragraph_style.CharLocaleAsian = struct_locale
+            default_paragraph_style.CharLocaleComplex = struct_locale

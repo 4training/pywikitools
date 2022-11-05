@@ -45,7 +45,7 @@ class DummyLibreOffice(LibreOffice):
     def set_properties(self, title: str, subject: str, keywords: str):
         self.logger.debug("DummyLibreOffice.set_properties()")
 
-    def set_default_style(self, language_code: str, rtl: bool = False):
+    def set_default_styles(self, language_code: str, rtl: bool = False):
         self.logger.debug("DummyLibreOffice.set_default_style()")
 
 

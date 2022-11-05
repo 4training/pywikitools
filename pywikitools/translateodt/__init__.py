@@ -351,7 +351,7 @@ class TranslateODT:
         config = self.read_worksheet_config(worksheet)
         self.translate_odt(odt_path, translated_page, config)
         self._set_properties(translated_page)
-        self._loffice.set_default_style(translated_page.language_code,
+        self._loffice.set_default_styles(translated_page.language_code,
             self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")     # noqa: E128
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
