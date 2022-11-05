@@ -35,7 +35,7 @@ from inspect import signature
 import logging
 from logging.handlers import QueueHandler
 from queue import SimpleQueue
-from typing import Callable, DefaultDict, Dict, Final, Generator, List
+from typing import Callable, DefaultDict, Dict, Final, Generator, List, Optional
 from collections import defaultdict
 
 from pywikitools.lang.translated_page import TranslationUnit
@@ -84,19 +84,25 @@ class CorrectorBase:
     correct(), title_correct() and filename_correct() are the three entry functions. They don't touch
     the given translation unit but return all changes and suggestions in the CorrectionResult structure
     """
-    def correct(self, unit: TranslationUnit) -> CorrectionResult:
+    def correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
         """Call all available correction functions one after the other"""
+        if apply_only_rule is not None:
+            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
         return self._run_functions(unit, (s for s in dir(self) if s.startswith("correct_")))
 
-    def title_correct(self, unit: TranslationUnit) -> CorrectionResult:
+    def title_correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
         """Call all correction functions for titles one after the other
         We don't do any checks if unit actually is a title - that's the responsibility of the caller
         """
+        if apply_only_rule is not None:
+            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
         return self._run_functions(unit, (s for s in dir(self) if s.endswith("_title")))
 
-    def filename_correct(self, unit: TranslationUnit) -> CorrectionResult:
+    def filename_correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
         """Call all correction functions for filenames one after the other
         We don't do any checks if unit actually is a filename - that's the responsibility of the caller"""
+        if apply_only_rule is not None:
+            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
         return self._run_functions(unit, (s for s in dir(self) if s.endswith("_filename")))
 
     def _run_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> CorrectionResult:

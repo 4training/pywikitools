@@ -67,10 +67,14 @@ class CorrectBot:
 
         raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
 
-    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit) -> Optional[CorrectionResult]:
+    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit,
+                   apply_only_rule: Optional[str] = None) -> Optional[CorrectionResult]:
         """
         Check one specific translation unit: Run the right correction rules on it.
         For this we analyze: Is it a title, a file name or a "normal" translation unit?
+
+        Args:
+            apply_only_rule: If specified, only apply the correction rule with this name
 
         Returns:
             Result of running all correction functions on the translation unit
@@ -80,10 +84,10 @@ class CorrectBot:
             return None
         if unit.is_title():
             # translation unit holds the title
-            return corrector.title_correct(unit)
+            return corrector.title_correct(unit, apply_only_rule)
         if re.search(r"\.(odt|pdf|odg|png)$", unit.get_definition()):
             # translation unit holds a filename
-            return corrector.filename_correct(unit)
+            return corrector.filename_correct(unit, apply_only_rule)
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
             return None
@@ -94,9 +98,10 @@ class CorrectBot:
             else:
                 # But for any longer content there's most likely something wrong
                 return CorrectionResult(unit, unit, {}, {}, "Translation is the same as English original.")
-        return corrector.correct(unit)
+        return corrector.correct(unit, apply_only_rule)
 
-    def check_page(self, page: str, language_code: str) -> Optional[List[CorrectionResult]]:
+    def check_page(self, page: str, language_code: str,
+                   apply_only_rule: Optional[str] = None) -> Optional[List[CorrectionResult]]:
         """
         Check one specific page and store the results in this class
 
@@ -104,6 +109,9 @@ class CorrectBot:
         get_correction_counter(), get_suggestion_counter() and get_warning_counter();
         get_correction_stats(), get_suggestion_stats() and get_warnings();
         get_correction_diff() and get_suggestion_diff()
+
+        Args:
+            apply_only_rule: If specified, only apply the correction rule with this name
 
         Returns:
             CorrectionResult for each processed translation unit
@@ -126,7 +134,7 @@ class CorrectBot:
         corrector = self._load_corrector(language_code)()
         results: List[CorrectionResult] = []
         for translation_unit in translated_page:
-            result = self.check_unit(corrector, translation_unit)
+            result = self.check_unit(corrector, translation_unit, apply_only_rule)
             if result is None:
                 continue
             results.append(result)
@@ -306,12 +314,15 @@ class CorrectBot:
             self.logger.warning("Settings for invoking runJobs.php missing in config.ini. Can't empty job queue.")
             return False
 
-    def run(self, page: str, language_code: str):
+    def run(self, page: str, language_code: str, apply_only_rule: Optional[str] = None):
         """
         Correct the translation of a page.
+        Args:
+            page: The name of the worksheet
+            apply_only_rule: If specified, only apply the correction rule with this name
         """
         page = page.replace(' ', '_')   # spaces may lead to problems in some places: "Time with God" -> "Time_with_God"
-        results = self.check_page(page, language_code)
+        results = self.check_page(page, language_code, apply_only_rule)
         if results is None:
             print(f"Error while trying to correct {page}")
             return
@@ -366,6 +377,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("-s", "--simulate", action="store_true",
                         help="Simulates the corrections but does not apply them to the webpage.")
     parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
+    parser.add_argument("--only", help="Only apply the correction rule with the specified method name")
     return parser.parse_args()
 
 
@@ -387,4 +399,8 @@ if __name__ == "__main__":
     config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
 
     correctbot = CorrectBot(config, args.simulate)
-    correctbot.run(args.page, args.language_code)
+    apply_only_rule = None
+    if args.only is not None:
+        apply_only_rule = str(args.only)
+
+    correctbot.run(args.page, args.language_code, apply_only_rule)

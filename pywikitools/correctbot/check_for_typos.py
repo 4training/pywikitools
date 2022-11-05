@@ -28,6 +28,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("language_code", help="Language code")
     parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
+    parser.add_argument("--only", help="Only apply the correction rule with the specified method name")
     return parser.parse_args()
 
 
@@ -47,10 +48,14 @@ if __name__ == "__main__":
     config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
     correctbot = CorrectBot(config, simulate=True)
 
+    apply_only_rule = None
+    if args.only is not None:
+        apply_only_rule = str(args.only)
+
     for worksheet in correctbot.fortraininglib.get_worksheet_list():
-        correctbot.check_page(worksheet, args.language_code)
+        correctbot.check_page(worksheet, args.language_code, apply_only_rule)
         print(f"{worksheet}: {correctbot.get_correction_counter()} corrections")
-        if correctbot.get_correction_counter() > 0:
+        if correctbot.get_correction_counter() > 0 or correctbot.get_suggestion_counter() > 0:
             print(correctbot.get_correction_stats())
             print(correctbot.get_correction_diff())
             print(correctbot.get_suggestion_stats())

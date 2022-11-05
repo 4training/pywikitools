@@ -509,6 +509,17 @@ class TestCorrectBot(unittest.TestCase):
             result = self.correctbot.check_unit(corrector, translation_unit)
             self.assertEqual(faulty, result.corrections.get_original_translation())
             self.assertEqual(corrected, result.suggestions.get_translation())
+            # Apply only one rule which doesn't even exist: No changes should be made
+            result = self.correctbot.check_unit(corrector, translation_unit, "not_existing_rule")
+            self.assertEqual(faulty, result.corrections.get_original_translation())
+            self.assertEqual(faulty, result.suggestions.get_translation())
+
+        # Test that apply_only_rule works as expected
+        translation_unit = TranslationUnit("Test", "fr", "ignored", "Mais moi , je vous dis: Si")
+        result = self.correctbot.check_unit(corrector, translation_unit, "correct_spaces_before_comma_and_dot")
+        self.assertEqual("Mais moi, je vous dis: Si", result.suggestions.get_translation())
+        result = self.correctbot.check_unit(corrector, translation_unit, "correct_spaces_before_punctuation")
+        self.assertEqual("Mais moi , je vous dis\u00a0: Si", result.suggestions.get_translation())
 
         # TODO add checks for the other (normal) cases
 
