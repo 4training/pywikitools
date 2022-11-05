@@ -3,6 +3,19 @@ from typing import Dict
 
 class NativeNumerals:
     # Constants
+    farsi: Dict[str, str] = {
+        '۰': '0',
+        '۱': '1',
+        '۲': '2',
+        '۳': '3',
+        '۴': '4',
+        '۵': '5',
+        '۶': '6',
+        '۷': '7',
+        '۸': '8',
+        '۹': '9'
+    }
+
     hindi: Dict[str, str] = {
         '०': '0',
         '१': '1',
@@ -43,6 +56,7 @@ class NativeNumerals:
     }
 
     languages: Dict[str, Dict] = {
+        'fa': farsi,
         'hi': hindi,
         'kn': kannada,
         'ta': tamil
