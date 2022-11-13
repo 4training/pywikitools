@@ -17,9 +17,6 @@ config = configparser.ConfigParser()
 config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
 
-############################################################################################
-# Check inputs
-############################################################################################
 def usage():
     print("Usage: python3 dropboxupload.py [-l loglevel] languagecode filename")
 
@@ -60,31 +57,33 @@ def _upload(filename: str, content: bytes) -> bool:
     return True
 
 
-def upload_string(languagecode: str, filename: str, content: str) -> bool:
+def upload_string(language_code: str, filename: str, content: str) -> bool:
     """
     Create a new file in the dropbox (OAuth token in config.ini)
-    @param languagecode
-    @param filename the name of the file that should be created (can also include a relative path)
-    @param content fill the file with this content
-    @return True if successful
+    Args:
+        filename: the name of the file that should be created (can also include a relative path)
+        content: fill the file with this content
+    Returns:
+        True if successful
     """
-    return _upload(languagecode + '/' + filename, content.encode())
+    return _upload(language_code + '/' + filename, content.encode())
 
 
-def upload_file(languagecode: str, filename: str) -> bool:
+def upload_file(language_code: str, filename: str) -> bool:
     """
     Upload the specified file to the dropbox (OAuth token in config.ini)
-    @param languagecode
-    @param filename can also include a path
-    @return True for Success, False if error occured
+    Args:
+        filename: can also include a path
+    Returns:
+        True for Success, False if error occured
     """
     with open(filename, 'rb') as f:
         # We use WriteMode=overwrite to make sure that the settings in the file are changed on upload
         pos = filename.rfind('/')   # check if filename contains path as well
         if (pos > -1):
-            upload_filename = languagecode + "/" + filename[pos+1:]
+            upload_filename = language_code + "/" + filename[pos+1:]
         else:
-            upload_filename = languagecode + "/" + filename
+            upload_filename = language_code + "/" + filename
 
         logger.info("Uploading " + filename + " to Dropbox as " + upload_filename + " ...")
         return _upload(upload_filename, f.read())

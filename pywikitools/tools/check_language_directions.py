@@ -11,18 +11,19 @@ test run time too much - it's sufficient to run it once in a while to check corr
 import json
 from pywikitools.fortraininglib import ForTrainingLib
 
-fortraininglib = ForTrainingLib("https://www.4training.net")
-language_list = json.loads(fortraininglib.get_page_source("4training:languages.json"))
-counter: int = 0
-warning: int = 0
-for lang in language_list:
-    counter += 1
-    json = fortraininglib._get({"action": "query", "titles": f"Start/{lang}", "prop": "info", "format": "json"})
-    page_number = list(json["query"]["pages"])[0]
-    direction_api = json["query"]["pages"][page_number]["pagelanguagedir"]
-    direction_lib = fortraininglib.get_language_direction(lang)
-    if direction_api != direction_lib:
-        warning += 1
-        print(f"WARNING: fortraininglib.get_language_direction({lang}) returns incorrect result.")
+if __name__ == '__main__':
+    fortraininglib = ForTrainingLib("https://www.4training.net")
+    language_list = json.loads(fortraininglib.get_page_source("4training:languages.json"))
+    counter: int = 0
+    warning: int = 0
+    for lang in language_list:
+        counter += 1
+        json = fortraininglib._get({"action": "query", "titles": f"Start/{lang}", "prop": "info", "format": "json"})
+        page_number = list(json["query"]["pages"])[0]
+        direction_api = json["query"]["pages"][page_number]["pagelanguagedir"]
+        direction_lib = fortraininglib.get_language_direction(lang)
+        if direction_api != direction_lib:
+            warning += 1
+            print(f"WARNING: fortraininglib.get_language_direction({lang}) returns incorrect result.")
 
-print(f"Checked {counter} languages, {warning} warnings.")
+    print(f"Checked {counter} languages, {warning} warnings.")

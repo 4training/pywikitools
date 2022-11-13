@@ -23,42 +23,7 @@ import configparser
 CONNECT_TRIES = 10
 LOCKFILENAME = 'generateodtbot.lock'    # in the "base" directory as defined in config.ini
 
-global_site = pywikibot.Site()
-# Read the configuration from config.ini in the same directory
-config = configparser.ConfigParser()
-config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
-logger = logging.getLogger('pywikitools')   # Also catch logs from pywikitools.translateodt and pywikitools.correctbot
-logger.setLevel(logging.DEBUG)
-fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
-log_path = config.get('Paths', 'logs', fallback='')
-if log_path == '':
-    logger.warning('No log directory specified in configuration. Using current working directory')
-if config.has_option('generateodtbot', 'logfile'):
-    fh = logging.FileHandler(log_path + config['generateodtbot']['logfile'])
-    fh.setLevel(logging.WARNING)
-    fh.setFormatter(fformatter)
-    logger.addHandler(fh)
-if config.has_option('generateodtbot', 'debuglogfile'):
-    fh_debug = logging.FileHandler(log_path + config['generateodtbot']['debuglogfile'])
-    fh_debug.setLevel(logging.DEBUG)
-    fh_debug.setFormatter(fformatter)
-    logger.addHandler(fh_debug)
-
-sformatter = logging.Formatter('%(levelname)s: %(message)s')
-stream = io.StringIO()
-sh = logging.StreamHandler(stream)
-sh.setLevel(logging.WARNING)
-sh.setFormatter(sformatter)
-logger.addHandler(sh)
-stream_debug = io.StringIO()
-sh_debug = logging.StreamHandler(stream_debug)
-sh_debug.setLevel(logging.DEBUG)
-sh_debug.setFormatter(fformatter)
-logger.addHandler(sh_debug)
-
-
-# Reading command line arguments
 def usage():
     print("Usage: python3 pwb.py generateodtbot.py worksheet languagecode username")
 
@@ -105,75 +70,111 @@ Thank you very much for all your work!
         logger.error('User ' + username + ' is not emailable. No notification sent.')
 
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
-except getopt.GetoptError as err:
-    # print help information and exit:
-    print(err)
-    usage()
-    sys.exit(2)
-if (len(args) != 3):
-    usage()
-    sys.exit(2)
-worksheet = args[0]
-languagecode = args[1]
-username = args[2]
-for o, a in opts:
-    if o in ("-h", "--help"):
-        usage()
-        sys.exit()
-    else:
-        logger.warning("Unhandled option: " + o)
+if __name__ == '__main__':
+    global_site = pywikibot.Site()
+    # Read the configuration from config.ini in the same directory
+    config = configparser.ConfigParser()
+    config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
 
-logger.debug("worksheet: " + worksheet + ", languagecode: " + languagecode + ", username: " + username)
+    logger = logging.getLogger('pywikitools')   # Also catch logs from pywikitools.translateodt, pywikitools.correctbot
+    logger.setLevel(logging.DEBUG)
+    fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
+    log_path = config.get('Paths', 'logs', fallback='')
+    if log_path == '':
+        logger.warning('No log directory specified in configuration. Using current working directory')
+    if config.has_option('generateodtbot', 'logfile'):
+        fh = logging.FileHandler(log_path + config['generateodtbot']['logfile'])
+        fh.setLevel(logging.WARNING)
+        fh.setFormatter(fformatter)
+        logger.addHandler(fh)
+    if config.has_option('generateodtbot', 'debuglogfile'):
+        fh_debug = logging.FileHandler(log_path + config['generateodtbot']['debuglogfile'])
+        fh_debug.setLevel(logging.DEBUG)
+        fh_debug.setFormatter(fformatter)
+        logger.addHandler(fh_debug)
 
-# We use an exclusive lock here because I'm afraid there could be race conditions if two scripts access
-# LibreOffice at the same time
-# So better safe than sorry: We use an exclusive lock here for the time the script is connecting with LibreOffice
-base_path = config.get('Paths', 'base', fallback='')
-if base_path == '':
-    logger.warning('No base directory specified in configuration. Using current working directory')
-f = open(base_path + LOCKFILENAME, 'w')
-retries = 0
-got_lock = False
-while not got_lock:
+    sformatter = logging.Formatter('%(levelname)s: %(message)s')
+    stream = io.StringIO()
+    sh = logging.StreamHandler(stream)
+    sh.setLevel(logging.WARNING)
+    sh.setFormatter(sformatter)
+    logger.addHandler(sh)
+    stream_debug = io.StringIO()
+    sh_debug = logging.StreamHandler(stream_debug)
+    sh_debug.setLevel(logging.DEBUG)
+    sh_debug.setFormatter(fformatter)
+    logger.addHandler(sh_debug)
+
+    # Reading command line arguments
     try:
-        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        retries += 1
-        logger.debug("Couldn't get exclusive lock. Waiting 5s and trying again. This is attempt #" + str(retries))
-        if retries > CONNECT_TRIES:
-            logger.error("Couldn't get exclusive lock. Tried " + str(CONNECT_TRIES) + " times, giving up now.")
-            sys.exit(1)
-        time.sleep(5)
-    else:
-        got_lock = True
-logger.info('Got exclusive lock. Retries: ' + str(retries))
+        opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print(err)
+        usage()
+        sys.exit(2)
+    if (len(args) != 3):
+        usage()
+        sys.exit(2)
+    worksheet = args[0]
+    languagecode = args[1]
+    username = args[2]
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        else:
+            logger.warning("Unhandled option: " + o)
 
-try:
-    translateodt = TranslateODT()
-    filename = translateodt.translate_worksheet(worksheet, languagecode)
+    logger.debug("worksheet: " + worksheet + ", languagecode: " + languagecode + ", username: " + username)
 
-    fcntl.flock(f, fcntl.LOCK_UN)       # We can release the lock now
-    if isinstance(filename, str):
-        if not dropboxupload.upload_file(languagecode, filename):
-            logger.error("Dropbox upload of " + filename + " failed!")
-        if not dropboxupload.upload_file(languagecode, filename.replace('.odt', '.pdf')):
-            logger.error("Dropbox upload of " + filename.replace('odt', '.pdf') + " failed!")
-    else:
-        logger.error("Translateodt failed. See log above or ask an administrator for help.")
-    if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.txt', stream.getvalue()):
-        logger.error('Dropbox upload of log/' + worksheet + '.txt failed')
-    if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.debug.txt', stream_debug.getvalue()):
-        logger.error('Dropbox upload of log/' + worksheet + '.debug.txt failed')
-    notify_user(username, worksheet, languagecode, False)
-    if config.has_option('generateodtbot', 'admin1'):
-        notify_user(config['generateodtbot']['admin1'], worksheet, languagecode, True)
-    else:
-        logger.warning('No admin1 in configuration defined. Sending no admin notification')
-    if config.has_option('generateodtbot', 'admin2'):
-        notify_user(config['generateodtbot']['admin2'], worksheet, languagecode, True)
+    # We use an exclusive lock here because I'm afraid there could be race conditions if two scripts access
+    # LibreOffice at the same time
+    # So better safe than sorry: We use an exclusive lock here for the time the script is connecting with LibreOffice
+    base_path = config.get('Paths', 'base', fallback='')
+    if base_path == '':
+        logger.warning('No base directory specified in configuration. Using current working directory')
+    f = open(base_path + LOCKFILENAME, 'w')
+    retries = 0
+    got_lock = False
+    while not got_lock:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            retries += 1
+            logger.debug("Couldn't get exclusive lock. Waiting 5s and trying again. This is attempt #" + str(retries))
+            if retries > CONNECT_TRIES:
+                logger.error("Couldn't get exclusive lock. Tried " + str(CONNECT_TRIES) + " times, giving up now.")
+                sys.exit(1)
+            time.sleep(5)
+        else:
+            got_lock = True
+    logger.info('Got exclusive lock. Retries: ' + str(retries))
 
-except Exception as e:
-    logger.error('Critical error during execution: ' + str(e))
-    logger.error(traceback.format_exc())
+    try:
+        translateodt = TranslateODT()
+        filename = translateodt.translate_worksheet(worksheet, languagecode)
+
+        fcntl.flock(f, fcntl.LOCK_UN)       # We can release the lock now
+        if isinstance(filename, str):
+            if not dropboxupload.upload_file(languagecode, filename):
+                logger.error("Dropbox upload of " + filename + " failed!")
+            if not dropboxupload.upload_file(languagecode, filename.replace('.odt', '.pdf')):
+                logger.error("Dropbox upload of " + filename.replace('odt', '.pdf') + " failed!")
+        else:
+            logger.error("Translateodt failed. See log above or ask an administrator for help.")
+        if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.txt', stream.getvalue()):
+            logger.error('Dropbox upload of log/' + worksheet + '.txt failed')
+        if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.debug.txt', stream_debug.getvalue()):
+            logger.error('Dropbox upload of log/' + worksheet + '.debug.txt failed')
+        notify_user(username, worksheet, languagecode, False)
+        if config.has_option('generateodtbot', 'admin1'):
+            notify_user(config['generateodtbot']['admin1'], worksheet, languagecode, True)
+        else:
+            logger.warning('No admin1 in configuration defined. Sending no admin notification')
+        if config.has_option('generateodtbot', 'admin2'):
+            notify_user(config['generateodtbot']['admin2'], worksheet, languagecode, True)
+
+    except Exception as e:
+        logger.error('Critical error during execution: ' + str(e))
+        logger.error(traceback.format_exc())
