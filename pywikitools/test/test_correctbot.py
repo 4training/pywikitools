@@ -407,7 +407,7 @@ class TestGermanCorrector(CorrectorTestCase):
 
     def test_correct_links(self):
         corrector = GermanCorrector()
-        to_correct = "Siehe [[Gebet|Gebet]] und [[Heilung]][[Test]] oder [[#unten]]."
+        to_correct = "Siehe [[Gebet| Gebet]] und [[Heilung]][[Test]] oder [[#unten]]."
         corrected = "Siehe [[Prayer/de|Gebet]] und [[Healing/de|Heilung]][[Test/de|Test]] oder [[#unten]]."
         english = "See [[Prayer|Prayer]] and [[Healing|Healing]][[Test|Test]] or [[#below]]."
         self.assertEqual(correct(corrector, to_correct, english), corrected)

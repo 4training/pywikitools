@@ -266,7 +266,7 @@ class UniversalCorrector(ABC):
                 logger.warning(f"Found misformatted link in English original: {match_original.group(0)}. "
                                "Please inform an administrator.")
 
-            translated_description = match_translation.group(1).split("|")[-1]
+            translated_description = match_translation.group(1).split("|")[-1].strip()
             new_result = text[:match_translation.start()] + "[[" + destination + "/" + self._get_language_code() \
                                                           + "|" + translated_description + "]]"
             last_start_pos = len(new_result)

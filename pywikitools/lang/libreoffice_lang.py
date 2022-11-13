@@ -77,6 +77,7 @@ LANG_LOCALE: Final[Dict[str, Lang]] = {
         'it': Lang('it', 'IT'),
         'ka': Lang('ka', 'GE'),
         'ku': Lang('ku', 'TR'),
+        'lg': Lang('lg', 'UG'),
         'sv': Lang('sv', 'SE'),
         'sq': Lang('sq', 'AL'),
         'pl': Lang('pl', 'PL'),

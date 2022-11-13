@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # Read the configuration from config.ini in the parent directory
     config = configparser.ConfigParser()
     path = Path(__file__)
-    config.read(str(path.resolve().parent.parent) + '/config.ini')
+    config.read(str(path.resolve().parent.parent.parent) + '/config.ini')
     if config.has_option('Paths', 'pwb') and config.has_option('Paths', 'generateodtbot'):
         args = [config['Paths']['pwb'], config['Paths']['generateodtbot'],
                 worksheet, languagecode, username]
