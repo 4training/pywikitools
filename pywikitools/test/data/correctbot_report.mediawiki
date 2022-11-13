@@ -1,22 +1,6 @@
 __NOTOC____NOEDITSECTION__
 Results for this CorrectBot run of [[Test/fr]]: <b>6 corrections, 0 suggestions, 4 warnings</b> (for older reports see [[Special:PageHistory/CorrectBot:Test/fr|report history]])
 
-== Corrections ==
-6 corrections:
-* Erase redundant spaces before commas and dots (2x)
-* Ensure we have non-breaking spaces before : ; ! ? (3x)
-* Insert missing spaces between punctuation and characters (1x)
-
-<i>You can also look at the [[Special:PageHistory/Test/fr|version history of Test/fr]] and compare revisions.</i>
-=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/1/fr&action=edit Translations:Test/1/fr] ===
-{{StringDiff|Mais moi , je vous dis: Si|Mais moi, je vous dis : Si}}
-=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/2/fr&action=edit Translations:Test/2/fr] ===
-{{StringDiff|Si quelqu’un dit à son frère: Imbécile!|Si quelqu’un dit à son frère : Imbécile !}}
-=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/3/fr&action=edit Translations:Test/3/fr] ===
-{{StringDiff|Comment prier?<br/>Comment jeûner?|Comment prier ?<br/>Comment jeûner ?}}
-=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/4/fr&action=edit Translations:Test/4/fr] ===
-{{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu|Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu}}
-
 == Warnings ==
 === [https://www.4training.net/mediawiki/index.php?title=Translations:Test/warnings1/fr&action=edit Translations:Test/warnings1/fr] ===
 <b><pre><nowiki>Formatting issues in Translations:Test/warnings1/fr. Please check that all special characters like * = # ; : <b> <i> are correct.
@@ -57,3 +41,19 @@ this is a "quote"
 |
 Ceci est une „citation"
 |}
+
+== Corrections ==
+6 corrections:
+* Erase redundant spaces before commas and dots (2x)
+* Ensure we have non-breaking spaces before : ; ! ? (3x)
+* Insert missing spaces between punctuation and characters (1x)
+
+<i>The following changes were made by CorrectBot - you don't need to do anything about them, this is just for your information. You can also look at the [[Special:PageHistory/Test/fr|version history of Test/fr]] and compare revisions.</i>
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/1/fr&action=edit Translations:Test/1/fr] ===
+{{StringDiff|Mais moi , je vous dis: Si|Mais moi, je vous dis : Si}}
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/2/fr&action=edit Translations:Test/2/fr] ===
+{{StringDiff|Si quelqu’un dit à son frère: Imbécile!|Si quelqu’un dit à son frère : Imbécile !}}
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/3/fr&action=edit Translations:Test/3/fr] ===
+{{StringDiff|Comment prier?<br/>Comment jeûner?|Comment prier ?<br/>Comment jeûner ?}}
+=== [https://www.4training.net/mediawiki/index.php?title=Translations:Test/4/fr&action=edit Translations:Test/4/fr] ===
+{{StringDiff|Ne jugez pas les autres,et Dieu ne vous jugera pas . En effet ,Dieu|Ne jugez pas les autres, et Dieu ne vous jugera pas. En effet, Dieu}}

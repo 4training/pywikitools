@@ -240,19 +240,19 @@ class CorrectBot:
         if self.fortraininglib.count_jobs() > 0:
             self.logger.warning("MediaWiki job queue is not empty!")
             report += "  <i>Warning: MediaWiki job queue is not empty, some corrections may not be visible yet.</i>\n"
-        if self.get_correction_counter() > 0:
-            report += f"\n== Corrections ==\n{self.get_correction_stats()}\n<i>You can also look at the "
-            report += f"[[Special:PageHistory/{page}/{language_code}|version history of {page}/{language_code}]]"
-            report += " and compare revisions.</i>\n"
+        if self.get_warning_counter() > 0:
+            report += "\n== Warnings ==\n"
             for result in results:
-                if result.corrections.has_translation_changes():
+                if result.warnings != "":
                     report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
                     report += f" {result.corrections.get_name()}] ===\n"
-                    report += "{{StringDiff|" + result.corrections.get_original_translation()
-                    report += "|" + result.corrections.get_translation()
+                    report += f"<b><pre><nowiki>{result.warnings}</nowiki></pre></b>\n"
+                    report += '{| class="wikitable'
                     if self.fortraininglib.get_language_direction(language_code) == "rtl":
-                        report += "|direction=rtl"
-                    report += "}}\n"
+                        report += " mw-content-rtl"
+                    report += '"\n|-\n! Original\n! Translation\n|- style="vertical-align:top"\n'
+                    report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
+                    report += "|}\n"
         if self.get_suggestion_counter() > 0:
             report += f"\n== Suggestions ==\n{self.get_suggestion_stats()}\n<i>Look at the following suggestions. "
             report += f"If you find good ones, please correct them manually in [{self.fortraininglib.index_url}"
@@ -267,19 +267,21 @@ class CorrectBot:
                     if self.fortraininglib.get_language_direction(language_code) == "rtl":
                         report += "|direction=rtl"
                     report += "}}\n"
-        if self.get_warning_counter() > 0:
-            report += "\n== Warnings ==\n"
+        if self.get_correction_counter() > 0:
+            report += f"\n== Corrections ==\n{self.get_correction_stats()}\n<i>The following changes were"
+            report += " made by CorrectBot - you don't need to do anything about them, this is just for your"
+            report += " information. You can also look at the "
+            report += f"[[Special:PageHistory/{page}/{language_code}|version history of {page}/{language_code}]]"
+            report += " and compare revisions.</i>\n"
             for result in results:
-                if result.warnings != "":
+                if result.corrections.has_translation_changes():
                     report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
                     report += f" {result.corrections.get_name()}] ===\n"
-                    report += f"<b><pre><nowiki>{result.warnings}</nowiki></pre></b>\n"
-                    report += '{| class="wikitable'
+                    report += "{{StringDiff|" + result.corrections.get_original_translation()
+                    report += "|" + result.corrections.get_translation()
                     if self.fortraininglib.get_language_direction(language_code) == "rtl":
-                        report += " mw-content-rtl"
-                    report += '"\n|-\n! Original\n! Translation\n|- style="vertical-align:top"\n'
-                    report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
-                    report += "|}\n"
+                        report += "|direction=rtl"
+                    report += "}}\n"
 
         report_page = pywikibot.Page(self.site, page_name)
         if report_page.text.strip() != report.strip():
