@@ -129,6 +129,11 @@ class TestTranslationUnit(unittest.TestCase):
         self.assertEqual(match_br[1].content, "<br/>\n")
         self.assertEqual(match_br[2].content, "Next line")
 
+        # Test that [[#internal links]] get ignored
+        split_hashtags = TranslationUnit.split_into_snippets("# See [[#below]]\n# Continue")
+        self.assertEqual(split_hashtags[1].content, "See [[#below]]\n")
+        self.assertEqual(len(split_hashtags), 4)
+
     def test_is_translation_well_structured(self):
         with_lists = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
         well_structured, warnings = with_lists.is_translation_well_structured()

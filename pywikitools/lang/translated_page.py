@@ -184,7 +184,7 @@ class TranslationUnit:
         Split the given text into snippets
 
         We split at the following formatting / markup items:
-            * or #: bullet list / numbered list items
+            * or #: bullet list / numbered list items (exception: [[#internal links]])
             == up to ======: section headings
             : at the beginning of a line: definition list / indent text
             ; at the beginning of a line: definition list
@@ -195,6 +195,8 @@ class TranslationUnit:
         last_pos = 0
         pattern = re.compile(r"<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
         for match in re.finditer(pattern, text):
+            if (match.group()[0] == '#') and (match.start() >= 2) and (text[match.start() - 2:match.start()] == "[["):
+                continue        # Ignore '#' if it's part of an [[#internal link]]
             if match.start() > last_pos:
                 text_snippet = TranslationSnippet(SnippetType.TEXT_SNIPPET, text[last_pos:match.start()])
                 snippets.append(text_snippet)
