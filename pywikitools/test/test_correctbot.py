@@ -234,69 +234,79 @@ class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
 
 
 class TestUniversalCorrector(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.corrector = UniversalCorrectorTester()
+
     def test_spaces(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "This entry   contains     too  many spaces."),
+        self.assertEqual(correct(self.corrector, "This entry   contains     too  many spaces."),
                                             "This entry contains too many spaces.")
-        self.assertEqual(correct(corrector, "Missing.Spaces,after punctuation?Behold,again."),
+        self.assertEqual(correct(self.corrector, "Missing.Spaces,after punctuation?Behold,again."),
                                             "Missing. Spaces, after punctuation? Behold, again.")
-        self.assertEqual(correct(corrector, "This entry contains redundant spaces , before , punctuation ."),
+        self.assertEqual(correct(self.corrector, "This entry contains redundant spaces , before , punctuation ."),
                                             "This entry contains redundant spaces, before, punctuation.")
-        self.assertEqual(correct(corrector, "   before and after  "), " before and after ")
+        self.assertEqual(correct(self.corrector, "   before and after  "), " before and after ")
         # now let's try if exceptions are correctly respected:
-        self.assertEqual(correct(corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
-        self.assertEqual(correct(corrector, "Test.This remains untouched."), "Test.This remains untouched.")
-        self.assertEqual(correct(corrector, "Do not touch Test.This"), "Do not touch Test.This")
-        self.assertEqual(correct(corrector, "Use e.g. unittest"), "Use e.g. unittest")
-        self.assertEqual(correct(corrector, "E.g. this"), "E.g. this")
-        self.assertEqual(correct(corrector, "Go ,end with ."), "Go, end with.")
-        self.assertEqual(correct(corrector, "Continue ..."), "Continue ...")
-        self.assertEqual(correct(corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
-        self.assertEqual(correct(corrector, "How do I survive if … ?"), "How do I survive if … ?")
-        self.assertEqual(correct(corrector, "□ Yes    □ No    □"), "□ Yes    □ No    □")
-        self.assertEqual(correct(corrector, "□ Yes    □ No    □  "), "□ Yes    □ No    □ ")
+        self.assertEqual(correct(self.corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
+        self.assertEqual(correct(self.corrector, "Test.This remains untouched."), "Test.This remains untouched.")
+        self.assertEqual(correct(self.corrector, "Do not touch Test.This"), "Do not touch Test.This")
+        self.assertEqual(correct(self.corrector, "Use e.g. unittest"), "Use e.g. unittest")
+        self.assertEqual(correct(self.corrector, "E.g. this"), "E.g. this")
+        self.assertEqual(correct(self.corrector, "Go ,end with ."), "Go, end with.")
+        self.assertEqual(correct(self.corrector, "Continue ..."), "Continue ...")
+        self.assertEqual(correct(self.corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
+        self.assertEqual(correct(self.corrector, "How do I survive if … ?"), "How do I survive if … ?")
+        self.assertEqual(correct(self.corrector, "□ Yes    □ No    □"), "□ Yes    □ No    □")
+        self.assertEqual(correct(self.corrector, "□ Yes    □ No    □  "), "□ Yes    □ No    □ ")
 
         # TODO Test also print_stats()
-#        self.assertIn("6 corrections", corrector.print_stats())
-#        self.assertIn("Reduce multiple spaces", corrector.print_stats())
-#        self.assertIn("Insert missing spaces", corrector.print_stats())
-#        self.assertIn("Erase redundant spaces", corrector.print_stats())
+#        self.assertIn("6 corrections", self.corrector.print_stats())
+#        self.assertIn("Reduce multiple spaces", self.corrector.print_stats())
+#        self.assertIn("Insert missing spaces", self.corrector.print_stats())
+#        self.assertIn("Erase redundant spaces", self.corrector.print_stats())
 
     def test_capitalization(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
-                                            "Lowercase start.<br/>And lowercase after full stop. Yes.")
-        self.assertEqual(correct(corrector, "Question? answer!<br/>more lowercase.<br/>why? didn't check."),
-                                            "Question? Answer!<br/>More lowercase.<br/>Why? Didn't check.")
-        self.assertEqual(correct(corrector, "After colons: and semicolons; we don't correct."),
-                                            "After colons: and semicolons; we don't correct.")
+        self.assertEqual(correct(self.corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
+                                                 "Lowercase start.<br/>And lowercase after full stop. Yes.")
+        self.assertEqual(correct(self.corrector, "Question? answer!<br/>more lowercase.<br/>why? didn't check."),
+                                                 "Question? Answer!<br/>More lowercase.<br/>Why? Didn't check.")
+        self.assertEqual(correct(self.corrector, "After colons: and semicolons; we don't correct."),
+                                                 "After colons: and semicolons; we don't correct.")
 
     def test_filename_corrections(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(filename_correct(corrector, "dummy file name.pdf"), "dummy_file_name.pdf")
-        self.assertEqual(filename_correct(corrector, "too__many___underscores.odt"), "too_many_underscores.odt")
-        self.assertEqual(filename_correct(corrector, "capitalized_extension.PDF"), "capitalized_extension.pdf")
-        self.assertEqual(filename_correct(corrector, "capitalized_extension.Pdf"), "capitalized_extension.pdf")
+        self.assertEqual(filename_correct(self.corrector, "dummy file name.pdf"), "dummy_file_name.pdf")
+        self.assertEqual(filename_correct(self.corrector, "too__many___underscores.odt"), "too_many_underscores.odt")
+        self.assertEqual(filename_correct(self.corrector, "capitalized_extension.PDF"), "capitalized_extension.pdf")
+        self.assertEqual(filename_correct(self.corrector, "capitalized_extension.Pdf"), "capitalized_extension.pdf")
 
     def test_dash_correction(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "Using long dash - not easy."), "Using long dash – not easy.")
+        self.assertEqual(correct(self.corrector, "Using long dash - not easy."), "Using long dash – not easy.")
 
     def test_final_dot_correction(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "* Ein Wort\n* Ein ganzer Satz", "* A word\n* A full sentence."),
-                                            "* Ein Wort\n* Ein ganzer Satz.")
-        self.assertEqual(correct(corrector, "Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
+        self.assertEqual(correct(self.corrector, "* Ein Wort\n* Ein ganzer Satz", "* A word\n* A full sentence."),
+                                                 "* Ein Wort\n* Ein ganzer Satz.")
+        self.assertEqual(correct(self.corrector, "Ein ganzer Satz", "A full sentence"), "Ein ganzer Satz")
 
     def test_mediawiki_bold_italic(self):
-        corrector = UniversalCorrectorTester()
-        self.assertEqual(correct(corrector, "''italic'' and '''bold'''"), "<i>italic</i> and <b>bold</b>")
-        self.assertEqual(correct(corrector, "This is '''''italic and bold'''''."),
-                                            "This is <b><i>italic and bold</i></b>.")
+        self.assertEqual(correct(self.corrector, "''italic'' and '''bold'''"), "<i>italic</i> and <b>bold</b>")
+        self.assertEqual(correct(self.corrector, "This is '''''italic and bold'''''."),
+                                                 "This is <b><i>italic and bold</i></b>.")
+
+    def test_get_language_code(self):
+        # This should return an empty string as we're not in a language-specific corrector
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(self.corrector._get_language_code(), "")
+
+    def test_correct_links(self):
+        # In this test setting nothing should be changed
+        self.assertEqual(self.corrector.correct_links("[[Dest|Desc]]", "[[Orig|Orig]]"), "[[Dest|Desc]]")
+        # Warn on misformatted link
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(self.corrector.correct_links("[[Simple link]]", "[[Orig]]"), "[[Simple link]]")
+
 
 # TODO    def test_correct_ellipsis(self):
-#        corrector = UniversalCorrectorTester()
-#        self.assertEqual(correct(corrector, "…"), "...")
+#        self.assertEqual(correct(self.corrector, "…"), "...")
 
 
 class NoSpaceBeforePunctuationCorrectorTester(CorrectorBase, NoSpaceBeforePunctuationCorrector):
@@ -391,6 +401,21 @@ class TestGermanCorrector(CorrectorTestCase):
         for exception in ["So z.B. auch", "1.Korinther 14,3", "Siehe 1.Mose 40", "Z.B.", "Ggf. möglich"]:
             self.assertEqual(correct(corrector, exception), exception)
 
+    def test_get_language_code(self):
+        corrector = GermanCorrector()
+        self.assertEqual(corrector._get_language_code(), "de")
+
+    def test_correct_links(self):
+        corrector = GermanCorrector()
+        to_correct = "Siehe [[Gebet|Gebet]] und [[Heilung]][[Test]] oder [[#unten]]."
+        corrected = "Siehe [[Prayer/de|Gebet]] und [[Healing/de|Heilung]][[Test/de|Test]] oder [[#unten]]."
+        english = "See [[Prayer|Prayer]] and [[Healing|Healing]][[Test|Test]] or [[#below]]."
+        self.assertEqual(correct(corrector, to_correct, english), corrected)
+        self.assertEqual(correct(corrector, corrected, english), corrected)     # correct text should not change
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            # Warn because the number of links in translation is less than in the English original
+            self.assertEqual(correct(corrector, to_correct[21:], english), to_correct[21:])
+
 
 """TODO
 class TestEnglishCorrector(unittest.TestCase):
@@ -445,6 +470,10 @@ class TestFrenchCorrector(unittest.TestCase):
         self.assertEqual(correct(corrector, " Connect ".join(wrongs)), " Connect ".join(["«\u00a0Test\u00a0»"] * 3))
         with self.assertLogs('pywikitools.correctbot.correctors.fr', level="WARNING"):
             self.assertEqual(correct(corrector, "Test a “test”"), "Test a “test”")
+
+    def test_get_language_code(self):
+        corrector = FrenchCorrector()
+        self.assertEqual(corrector._get_language_code(), "fr")
 
 
 class TestArabicCorrector(CorrectorTestCase):

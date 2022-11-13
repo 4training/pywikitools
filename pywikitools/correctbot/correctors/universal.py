@@ -35,6 +35,22 @@ class UniversalCorrector(ABC):
         """
         return []
 
+    def _get_language_code(self) -> str:
+        """Return the language code of the language-specific corrector we got plugged into
+
+        We do this with introspection: UniversalCorrector is an abstract base class,
+        self is an instance of the actual corrector class and from it we get the language code
+        Returns:
+            Language code like "fr" for French or empty string on error
+        """
+        # self.__module__ should contain e.g. 'correctors.fr'
+        pos = self.__module__.rfind('.')
+        if pos >= 0:
+            return self.__module__[pos+1:]
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Unexpected module name {self.__module__} in _get_language_code()")
+        return ""
+
     @suggest_only
     @use_snippets
     def correct_wrong_capitalization(self, text: str) -> str:
@@ -220,6 +236,42 @@ class UniversalCorrector(ABC):
     def remove_multiple_underscores_in_filename(self, text: str) -> str:
         """Replace multiple consecutive underscores with single underscore in file name"""
         return re.sub(r"_+", '_', text)
+
+    def correct_links(self, text: str, original: str) -> str:
+        """Correct mediawiki links
+
+        English links should have the form [[Link destination|Link description]].
+        Ensure that translated links look like [[Link destination/language code|Translated description]].
+        [[#Internal links]] get ignored.
+        """
+        if (text == original) or (self._get_language_code() == ""):     # This can happen in testing context
+            return text
+        logger = logging.getLogger(__name__)
+        unchanged_text = text
+        find_link = re.compile(r'\[\[([^\]]+)\]\]')
+        last_start_pos = 0  # within the translated text
+        # We go through all the links in the original and for each find the corresponding link in the translation
+        # and correct it. If there is more than one link, we assume the order of them is the same in the translation.
+        for match_original in re.finditer(find_link, original):
+            match_translation = find_link.search(text, last_start_pos)
+            if match_translation is None:
+                logger.warning(f"Missing [[Destination/{self._get_language_code()}|Link description]] in translation.")
+                return unchanged_text
+            if match_original.group(1)[0] == '#':   # We don't touch [[#internal links]]
+                last_start_pos = match_translation.end()
+                continue
+            link_parts = match_original.group(1).split("|")
+            destination = link_parts[0]
+            if len(link_parts) != 2:
+                logger.warning(f"Found misformatted link in English original: {match_original.group(0)}. "
+                               "Please inform an administrator.")
+
+            translated_description = match_translation.group(1).split("|")[-1]
+            new_result = text[:match_translation.start()] + "[[" + destination + "/" + self._get_language_code() \
+                                                          + "|" + translated_description + "]]"
+            last_start_pos = len(new_result)
+            text = new_result + text[match_translation.end():]
+        return text
 
 
 class NoSpaceBeforePunctuationCorrector():
