@@ -233,6 +233,10 @@ class UniversalCorrector(ABC):
             return text[:-1]
         return text
 
+    def correct_by_trimming_also_in_title(self, text: str) -> str:
+        """Remove leading and trailing whitespaces"""
+        return text.strip()
+
     def correct_links(self, text: str, original: str) -> str:
         """Correct mediawiki links
 

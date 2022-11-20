@@ -225,7 +225,7 @@ class TestUniversalCorrector(unittest.TestCase):
                                             "Missing. Spaces, after punctuation? Behold, again.")
         self.assertEqual(correct(self.corrector, "This entry contains redundant spaces , before , punctuation ."),
                                             "This entry contains redundant spaces, before, punctuation.")
-        self.assertEqual(correct(self.corrector, "   before and after  "), " before and after ")
+        self.assertEqual(correct(self.corrector, "Before  and   after."), "Before and after.")
         # now let's try if exceptions are correctly respected:
         self.assertEqual(correct(self.corrector, "John 3:16.Johannes 3,16."), "John 3:16. Johannes 3,16.")
         self.assertEqual(correct(self.corrector, "Test.This remains untouched."), "Test.This remains untouched.")
@@ -237,7 +237,6 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(self.corrector, "How do I survive if ... ?"), "How do I survive if ... ?")
         self.assertEqual(correct(self.corrector, "How do I survive if … ?"), "How do I survive if … ?")
         self.assertEqual(correct(self.corrector, "□ Yes    □ No    □"), "□ Yes    □ No    □")
-        self.assertEqual(correct(self.corrector, "□ Yes    □ No    □  "), "□ Yes    □ No    □ ")
 
     def test_print_stats(self):
         self.assertIn("Correct mediawiki links", self.corrector.print_stats({'correct_links': 4}))
@@ -297,6 +296,9 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(title_correct(self.corrector, "Title."), "Title")
         self.assertEqual(title_correct(self.corrector, "Title with no dot"), "Title with no dot")
 
+    def test_correct_by_trimming(self):
+        self.assertEqual(correct(self.corrector, "\tTitle \n"), "Title")
+        self.assertEqual(title_correct(self.corrector, "\tTitle \n"), "Title")
 
 # TODO    def test_correct_ellipsis(self):
 #        self.assertEqual(correct(self.corrector, "…"), "...")
