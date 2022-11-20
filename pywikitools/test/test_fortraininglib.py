@@ -66,6 +66,12 @@ class TestFortrainingLib(unittest.TestCase):
             self.lib._get({})
         mock_get.assert_called_once()
 
+    def test_convert_to_filename(self):
+        self.assertEqual(self.lib.convert_to_filename("Hearing from God"), "Hearing_from_God")
+        self.assertEqual(self.lib.convert_to_filename("Nothing_changes"), "Nothing_changes")
+        self.assertEqual(self.lib.convert_to_filename("Title's nightmare: Test."), "Titles_nightmare_Test")
+        self.assertEqual(self.lib.convert_to_filename("RTL (challenge)\u200f"), "RTL_(challenge)\u200f")
+
     def test_get_language_name(self):
         self.assertEqual(self.lib.get_language_name('de'), 'Deutsch')
         self.assertEqual(self.lib.get_language_name('en'), 'English')

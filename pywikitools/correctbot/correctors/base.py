@@ -29,6 +29,7 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+from abc import ABC, abstractmethod
 import copy
 import functools
 from inspect import signature
@@ -74,16 +75,25 @@ class CorrectionResult:
         self.warnings: Final[str] = warnings
 
 
-class CorrectorBase:
+class CorrectorBase(ABC):
     """
     Base class for all language-specific correctors
 
     Correctors should inherit from this class first.
     Correctors for groups of languages should not inherit from the class.
 
-    correct(), title_correct() and filename_correct() are the three entry functions. They don't touch
+    correct() and title_correct() are the two entry functions. They don't touch
     the given translation unit but return all changes and suggestions in the CorrectionResult structure
     """
+    @abstractmethod
+    def _suffix_for_print_version(self) -> str:
+        """For correction of filenames: What suffix should be added if we have a printing-version PDF?
+
+        This is only relevant for worksheets that use a smaller size than a normal page and have
+        a second PDF for printing, combining multiple of the small-sized PDFs so that it fills one standard page.
+        In English the suffix is "_print", as in Bible_Reading_Hints_print.pdf"""
+        return "_print"
+
     def correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
         """Call all available correction functions one after the other"""
         if apply_only_rule is not None:
@@ -97,13 +107,6 @@ class CorrectorBase:
         if apply_only_rule is not None:
             return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
         return self._run_functions(unit, (s for s in dir(self) if s.endswith("_title")))
-
-    def filename_correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
-        """Call all correction functions for filenames one after the other
-        We don't do any checks if unit actually is a filename - that's the responsibility of the caller"""
-        if apply_only_rule is not None:
-            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
-        return self._run_functions(unit, (s for s in dir(self) if s.endswith("_filename")))
 
     def _run_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> CorrectionResult:
         """
@@ -213,10 +216,13 @@ class CorrectorBase:
         """
         details: str = ""
         for function_name, counter in stats.items():
-            documentation = getattr(self, function_name).__doc__
-            if documentation is not None:
-                details += "* " + documentation.partition("\n")[0]
+            if function_name == "filename":
+                # This comes from CorrectBot.check_unit() directly correcting a filename
+                details += "* Correct filename (according to title)"
             else:
-                details += "* " + function_name
+                if hasattr(self, function_name) and (docstring := getattr(self, function_name).__doc__) is not None:
+                    details += "* " + docstring.partition("\n")[0]
+                else:
+                    details += "* " + function_name
             details += f" ({counter}x)\n"
         return details

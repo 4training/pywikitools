@@ -14,6 +14,9 @@ class SwahiliCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuati
         """Ensure correct Swahili quotes (example: “quote”)"""
         return self._correct_quotes('“', '”', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_print"     # TODO
+
     def _capitalization_exceptions(self) -> List[str]:
         return []
 

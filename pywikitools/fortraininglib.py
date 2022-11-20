@@ -84,6 +84,15 @@ class ForTrainingLib():
         """
         return ['pdf', 'odt', 'odg']
 
+    def convert_to_filename(self, title: str) -> str:
+        """
+        Convert a worksheet title to a filename (no extension is added)
+
+        This does some basic replacements to make sure we have a valid file name
+        """
+        filename: str = re.sub(" ", '_', title)
+        return re.sub("['’:.]", "", filename)
+
     def get_language_direction(self, language_code: str) -> str:
         """
         Returns language direction 'rtl' or 'ltr'

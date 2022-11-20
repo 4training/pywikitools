@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 import requests
 from typing import Dict, Final, Set
 
@@ -62,11 +61,7 @@ class ExportHTML(LanguagePostProcessor):
         return False
 
     def make_html_name(self, title: str) -> str:
-        # TODO copied from TranslateODT._get_odt_filename() - move this to a central place to use it in both places?
-        filename: str = re.sub(" ", '_', title)
-        filename = re.sub("[':]", "", filename)
-        filename += ".html"
-        return filename
+        return self.fortraininglib.convert_to_filename(title) + ".html"
 
     def download_file(self, files_folder: str, filename: str) -> bool:
         """Download a file from the mediawiki server

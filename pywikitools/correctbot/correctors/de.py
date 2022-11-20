@@ -14,8 +14,11 @@ class GermanCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuatio
         """Ensure correct German quotes (example: „korrekt“)"""
         return self._correct_quotes('„', '“', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_Druckversion"
+
     def _capitalization_exceptions(self) -> List[str]:
-        return ["Z.B.", "z.B.", "ggf.", "Ggf."]
+        return ["Z.B.", "z.B.", "ggf.", "Ggf.", "usw."]
 
     def _missing_spaces_exceptions(self) -> List[str]:
         return ["1.Mose", "2.Mose", "3.Mose", "4.Mose", "5.Mose", "1.Samuel", "2.Samuel", "1.Könige", "2.Könige",

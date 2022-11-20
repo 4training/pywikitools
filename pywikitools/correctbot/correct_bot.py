@@ -14,6 +14,7 @@ Run with dummy page:
 import argparse
 from collections import Counter
 from configparser import ConfigParser
+import copy
 import logging
 import importlib
 from os.path import abspath, dirname, join
@@ -21,7 +22,7 @@ import subprocess
 import pywikibot
 import re
 import sys
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.base import CorrectionResult, CorrectorBase
@@ -40,6 +41,7 @@ class CorrectBot:
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
         self.site: pywikibot.site.APISite = pywikibot.Site()
         self._simulate: bool = simulate
+        self._translated_title: Optional[str] = None
         self._correction_diff: str = ""
         self._suggestion_diff: str = ""
         self._warnings: str = ""
@@ -82,12 +84,36 @@ class CorrectBot:
         """
         if unit.get_translation() == "":
             return None
-        if unit.is_title():
-            # translation unit holds the title
-            return corrector.title_correct(unit, apply_only_rule)
+
+        if unit.is_title():     # translation unit holds the title
+            result = corrector.title_correct(unit, apply_only_rule)
+            # We save this internally to correct the filename later
+            self._translated_title = result.corrections.get_translation()
+            return result
+
         if re.search(r"\.(odt|pdf|odg|png)$", unit.get_definition()):
-            # translation unit holds a filename
-            return corrector.filename_correct(unit, apply_only_rule)
+            # translation unit holds a filename: directly correct it here (as we have information on worksheet title)
+            if self._translated_title is None:
+                self.logger.warning("Trying to correct filename but we don't have information on translated title")
+                return None
+            if self._translated_title == "":  # Title isn't translated yet
+                return None
+            is_print_pdf = len(unit.get_definition()) > 10 and unit.get_definition().endswith("_print.pdf")
+            extension = unit.get_definition()[-4:]  # Currently all possible extensions have three characters
+
+            # Tedious work: We need to build up the CorrectionResult structure (see CorrectorBase._run_functions())
+            corrections: TranslationUnit = copy.copy(unit)
+            correction_stats: Dict[str, int] = {}
+            new_title = self.fortraininglib.convert_to_filename(self._translated_title)
+            if is_print_pdf:
+                new_title += corrector._suffix_for_print_version()
+            new_title += extension
+            if new_title != unit.get_translation():
+                corrections.set_translation(new_title)
+                correction_stats['filename'] = 1    # Caution: CorrectorBase.print_stats() needs to understand this
+            suggestions = copy.copy(corrections)
+            return CorrectionResult(corrections, suggestions, correction_stats, {}, "")
+
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
             return None
@@ -117,6 +143,7 @@ class CorrectBot:
             CorrectionResult for each processed translation unit
             None if an error occurred
         """
+        self._translated_title = None   # This is in the first translation unit and we need it to correct the file name
         self._correction_diff = ""
         self._suggestion_diff = ""
         self._correction_stats = None

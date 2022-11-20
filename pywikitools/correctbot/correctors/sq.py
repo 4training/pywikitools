@@ -14,6 +14,9 @@ class AlbanianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuat
         """Ensure correct Albanian quotes (example: «quote»)"""
         return self._correct_quotes('«', '»', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_printim"
+
     def _capitalization_exceptions(self) -> List[str]:
         return ["p.sh.", "P.sh.", "p. sh.", "P. sh."]
 

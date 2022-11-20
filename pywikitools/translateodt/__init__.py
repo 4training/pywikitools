@@ -148,14 +148,12 @@ class TranslateODT:
         return odt_path
 
     def _get_odt_filename(self, translated_page: TranslatedPage) -> str:
-        """Create filename from headline of translated page
+        """Create filename from headline of translated page (e.g. "Hearing from God" -> "Hearing_from_God.odt")
 
-        E.g. page "Hearing from God" -> "Hearing_from_God.odt"
-        Compares it to the translated file name and gives a warning if it doesn't match"""
-        # TODO correct wrong filename translations automatically in the system?
-        filename: str = re.sub(" ", '_', translated_page.get_worksheet_info().title)
-        filename = re.sub("[':]", "", filename)
-        filename += ".odt"
+        Compare it to the translated file name and give a warning if it doesn't match.
+        However, that shouldn't happen anymore since CorrectBot is correcting that
+        (see CorrectBot.check_unit()) - maybe remove this extra safety net?"""
+        filename = self.fortraininglib.convert_to_filename(translated_page.get_worksheet_info().title) + ".odt"
         if translated_page.get_worksheet_info().get_file_type_name("odt") != filename:
             self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
                                 f"Translation: {translated_page.get_worksheet_info().get_file_type_name('odt')}, "

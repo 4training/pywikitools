@@ -14,6 +14,9 @@ class RussianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuati
         """Ensure correct Russian quotes (example: «quote»)"""
         return self._correct_quotes('«', '»', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_печать"
+
     def _capitalization_exceptions(self) -> List[str]:
         return []
 

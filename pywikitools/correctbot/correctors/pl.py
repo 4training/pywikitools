@@ -14,6 +14,9 @@ class PolishCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuatio
         """Ensure correct Polish quotes (example: „poprawny”)"""
         return self._correct_quotes('„', '”', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_wydruk"
+
     def _capitalization_exceptions(self) -> List[str]:
         return []
 

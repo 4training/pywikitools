@@ -22,6 +22,9 @@ class RomanianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuat
         text = text.replace("Ş", "Ș")
         return text.replace("ş", "ș")
 
+    def _suffix_for_print_version(self) -> str:
+        return "_print"     # TODO
+
     def _capitalization_exceptions(self) -> List[str]:
         return ["ex.", "Ex.", "ș.a.m.d.", "ș.a.m.", "ș.a.", "Ș.a.m.d.", "Ș.a.m.", "Ș.a."]
         # TODO only adding "ș.a.m.d." is not enough, that's currently a workaround, find a better solution

@@ -59,6 +59,9 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
         text = re.sub(r'([^\s])»', '\\1\u00A0»', text)
         return text
 
+    def _suffix_for_print_version(self) -> str:
+        return "_impression"
+
     def _capitalization_exceptions(self) -> List[str]:
         return []   # TODO
 

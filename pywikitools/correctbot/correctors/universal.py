@@ -21,10 +21,6 @@ class UniversalCorrector(ABC):
     # TODO: Instead of ellipsis (…), use "..." - write a function for it.
     # Should we have that in this class, e.g. do we want this for all languages?
 
-#    def correct_replace_e_with_i(self, text: str) -> str:
-#        """TODO for testing only: Replace e with i"""
-#        return text.replace("e", "i")
-
     @abstractmethod
     def _capitalization_exceptions(self) -> List[str]:
         """Define exceptions to the following function correct_wrong_capitalization()
@@ -222,20 +218,11 @@ class UniversalCorrector(ABC):
                 text += splitted_text[counter]
         return text
 
-    def make_lowercase_extension_in_filename(self, text: str) -> str:
-        """Have file ending in lower case"""
-        if len(text) <= 4:
-            logging.getLogger(__name__).warning(f"File name too short: {text}")
-            return text
-        return text[:-4] + text[-4:].lower()
-
-    def remove_spaces_in_filename(self, text: str) -> str:
-        """Replace spaces in file name with single underscore"""
-        return re.sub(r"( )+", '_', text)
-
-    def remove_multiple_underscores_in_filename(self, text: str) -> str:
-        """Replace multiple consecutive underscores with single underscore in file name"""
-        return re.sub(r"_+", '_', text)
+    def remove_trailing_dot_in_title(self, text: str) -> str:
+        """Remove trailing dot in a worksheet title"""
+        if text.endswith('.'):
+            return text[:-1]
+        return text
 
     def correct_links(self, text: str, original: str) -> str:
         """Correct mediawiki links
@@ -336,10 +323,6 @@ class RTLCorrector():
     def fix_rtl_title(self, text: str) -> str:
         """When title ends with closing parenthesis, add a RTL mark at the end"""
         return re.sub(r'\)$', ')\u200f', text)
-
-    def fix_rtl_filename(self, text: str) -> str:
-        """When file name has a closing parenthesis before the file ending, make sure we have a RTL mark afterwards!"""
-        return re.sub(r'\)\.([a-z]{3})$', ')\u200f.\\1', text)
 
     def correct_punctuation(self, text: str) -> str:
         """Replace normal comma, semicolon, question mark with RTL version of it"""

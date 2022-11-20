@@ -49,15 +49,6 @@ def title_correct(corrector: CorrectorBase, text: str, original: Optional[str] =
     return result.suggestions.get_translation()
 
 
-def filename_correct(corrector: CorrectorBase, text: str, original: Optional[str] = None) -> str:
-    """Shorthand function for running a test with CorrectorBase.filename_correct()"""
-    if original is None:
-        original = ""       # filename correcting functions should never use @use_snippets
-    unit = TranslationUnit("Test/3", "test", original, text)
-    result = corrector.filename_correct(unit)
-    return result.suggestions.get_translation()
-
-
 class CorrectorTestCase(unittest.TestCase):
     """
     Adds functions to check corrections against revisions made in the mediawiki system
@@ -101,20 +92,6 @@ class CorrectorTestCase(unittest.TestCase):
         self.assertIsNotNone(new_content)
         self.assertEqual(title_correct(self.corrector, old_content), new_content)
 
-    def compare_filename_revisions(self, page: str, language_code: str, identifier: int,
-                                   old_revision: int, new_revision):
-        """Calls CorrectorBase.filename_correct()"""
-        fortraininglib = ForTrainingLib("https://www.4training.net")
-        old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
-        new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
-        fortraininglib.session.close()
-        self.assertIsNotNone(old_content)
-        self.assertIsNotNone(new_content)
-        # Check that we really have a translation unit with a file name. TODO use the following line instead:
-        # with self.assertNoLogs(): # Available from Python 3.10
-        self.assertIn(new_content[-3:], fortraininglib.get_file_types())
-        self.assertEqual(filename_correct(self.corrector, old_content), new_content)
-
 
 class TestLanguageCorrectors(unittest.TestCase):
     def setUp(self):
@@ -151,7 +128,7 @@ class TestLanguageCorrectors(unittest.TestCase):
             self.flexible_correctors.append(getattr(universal_module, class_name))
 
     def test_for_meaningful_names(self):
-        """Make sure each function either starts with "correct_" or ends with "_title" or with "_filename."""
+        """Make sure each function either starts with 'correct_' or ends with '_title'"""
         for language_corrector in self.language_correctors:
             for function_name in dir(language_corrector):
                 # Ignore private functions
@@ -160,9 +137,9 @@ class TestLanguageCorrectors(unittest.TestCase):
                 # Ignore everything inherited from CorrectorBase
                 if getattr(language_corrector, function_name).__module__ == MOD_BASE:
                     continue
+                self.assertNotEqual(function_name, "filename")  # Special case from CorrectBot.check_unit()
                 self.assertTrue(function_name.startswith("correct_")
-                                or function_name.endswith("_title")
-                                or function_name.endswith("_filename"),
+                                or function_name.endswith("_title"),
                                 msg=f"Invalid function name {language_corrector.__name__}.{function_name}")
 
     def test_for_correct_parameters(self):
@@ -226,6 +203,9 @@ class TestLanguageCorrectors(unittest.TestCase):
 
 class UniversalCorrectorTester(CorrectorBase, UniversalCorrector):
     """With this class we can test the rules of UniversalCorrector"""
+    def _suffix_for_print_version(self) -> str:
+        return "_print"
+
     def _missing_spaces_exceptions(self) -> List[str]:
         return ["Test.This", "e.g.", "E.g."]
 
@@ -259,11 +239,14 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(self.corrector, "□ Yes    □ No    □"), "□ Yes    □ No    □")
         self.assertEqual(correct(self.corrector, "□ Yes    □ No    □  "), "□ Yes    □ No    □ ")
 
-        # TODO Test also print_stats()
-#        self.assertIn("6 corrections", self.corrector.print_stats())
-#        self.assertIn("Reduce multiple spaces", self.corrector.print_stats())
-#        self.assertIn("Insert missing spaces", self.corrector.print_stats())
-#        self.assertIn("Erase redundant spaces", self.corrector.print_stats())
+    def test_print_stats(self):
+        self.assertIn("Correct mediawiki links", self.corrector.print_stats({'correct_links': 4}))
+        stats: Dict[str, int] = {'correct_multiple_spaces_also_in_title': 2,
+                                 'correct_wrong_capitalization': 3}
+        self.assertIn("Reduce multiple spaces", self.corrector.print_stats(stats))
+        self.assertIn("Fix wrong capitalization", self.corrector.print_stats(stats))
+        self.assertIn("not_existing", self.corrector.print_stats({'not_existing': 2}))
+        self.assertIn("Correct filename", self.corrector.print_stats({'filename': 5}))
 
     def test_capitalization(self):
         self.assertEqual(correct(self.corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
@@ -272,12 +255,6 @@ class TestUniversalCorrector(unittest.TestCase):
                                                  "Question? Answer!<br/>More lowercase.<br/>Why? Didn't check.")
         self.assertEqual(correct(self.corrector, "After colons: and semicolons; we don't correct."),
                                                  "After colons: and semicolons; we don't correct.")
-
-    def test_filename_corrections(self):
-        self.assertEqual(filename_correct(self.corrector, "dummy file name.pdf"), "dummy_file_name.pdf")
-        self.assertEqual(filename_correct(self.corrector, "too__many___underscores.odt"), "too_many_underscores.odt")
-        self.assertEqual(filename_correct(self.corrector, "capitalized_extension.PDF"), "capitalized_extension.pdf")
-        self.assertEqual(filename_correct(self.corrector, "capitalized_extension.Pdf"), "capitalized_extension.pdf")
 
     def test_dash_correction(self):
         self.assertEqual(correct(self.corrector, "Using long dash - not easy."), "Using long dash – not easy.")
@@ -304,6 +281,10 @@ class TestUniversalCorrector(unittest.TestCase):
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             self.assertEqual(self.corrector.correct_links("[[Simple link]]", "[[Orig]]"), "[[Simple link]]")
 
+    def test_remove_trailing_dot_in_title(self):
+        self.assertEqual(title_correct(self.corrector, "Title."), "Title")
+        self.assertEqual(title_correct(self.corrector, "Title with no dot"), "Title with no dot")
+
 
 # TODO    def test_correct_ellipsis(self):
 #        self.assertEqual(correct(self.corrector, "…"), "...")
@@ -311,7 +292,8 @@ class TestUniversalCorrector(unittest.TestCase):
 
 class NoSpaceBeforePunctuationCorrectorTester(CorrectorBase, NoSpaceBeforePunctuationCorrector):
     """With this class we can test the rules of NoSpaceBeforePunctuationCorrector"""
-    pass
+    def _suffix_for_print_version(self) -> str:
+        return "_print"
 
 
 class TestNoSpaceBeforePunctuationCorrector(CorrectorTestCase):
@@ -326,6 +308,9 @@ class QuotationMarkCorrectorTester(CorrectorBase, QuotationMarkCorrector):
     """With this class we can test the rules of QuotationMarkCorrector"""
     def correct_quotes(self, text: str) -> str:
         return self._correct_quotes('»', '«', text)
+
+    def _suffix_for_print_version(self) -> str:
+        return "_print"
 
 
 class TestQuotationMarkCorrector(CorrectorTestCase):
@@ -344,7 +329,8 @@ class TestQuotationMarkCorrector(CorrectorTestCase):
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
     """With this class we can test the rules of RTLCorrector"""
-    pass
+    def _suffix_for_print_version(self) -> str:
+        return "_print"
 
 
 class TestRTLCorrector(CorrectorTestCase):
@@ -362,21 +348,21 @@ class TestRTLCorrector(CorrectorTestCase):
     def test_fix_rtl_title(self):
         self.compare_title_revisions("Bible_Reading_Hints_(Seven_Stories_full_of_Hope)", "fa", 57796, 62364)
 
-    def test_fix_rtl_filename(self):
-        self.compare_filename_revisions("Bible_Reading_Hints_(Seven_Stories_full_of_Hope)", "fa", 2, 22794, 22801)
-
 
 class TestGermanCorrector(CorrectorTestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.corrector = GermanCorrector()
+
     def test_correct_quotes(self):
-        corrector = GermanCorrector()
         for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
-            self.assertEqual(correct(corrector, wrong), '„Test“')
-            self.assertEqual(correct(corrector, f"Beginn und {wrong}"), 'Beginn und „Test“')
-            self.assertEqual(correct(corrector, f"{wrong} und Ende."), '„Test“ und Ende.')
-            self.assertEqual(correct(corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
+            self.assertEqual(correct(self.corrector, wrong), '„Test“')
+            self.assertEqual(correct(self.corrector, f"Beginn und {wrong}"), 'Beginn und „Test“')
+            self.assertEqual(correct(self.corrector, f"{wrong} und Ende."), '„Test“ und Ende.')
+            self.assertEqual(correct(self.corrector, f"Beginn und {wrong} und Ende."), 'Beginn und „Test“ und Ende.')
 
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
-            self.assertEqual(correct(corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"')
+            self.assertEqual(correct(self.corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"')
 
         valid_strings: List[str] = [    # Some more complex examples
             "(siehe Arbeitsblatt „[[Forgiving Step by Step/de|Schritte der Vergebung]]“)",
@@ -390,31 +376,31 @@ class TestGermanCorrector(CorrectorTestCase):
         ]
         for valid in valid_strings:
             # with self.assertNoLogs(): # Available from Python 3.10
-            self.assertEqual(correct(corrector, valid), valid)   # Check that correct strings remain correct
+            self.assertEqual(correct(self.corrector, valid), valid)   # Check that correct strings remain correct
             needs_correction = valid.replace("„", '"')
             needs_correction = needs_correction.replace("”", '"')
             # Now make sure this problematic version gets corrected back to the correct form
-            self.assertEqual(correct(corrector, needs_correction), valid)
+            self.assertEqual(correct(self.corrector, needs_correction), valid)
 
     def test_exceptions(self):
-        corrector = GermanCorrector()
         for exception in ["So z.B. auch", "1.Korinther 14,3", "Siehe 1.Mose 40", "Z.B.", "Ggf. möglich"]:
-            self.assertEqual(correct(corrector, exception), exception)
+            self.assertEqual(correct(self.corrector, exception), exception)
 
     def test_get_language_code(self):
-        corrector = GermanCorrector()
-        self.assertEqual(corrector._get_language_code(), "de")
+        self.assertEqual(self.corrector._get_language_code(), "de")
 
     def test_correct_links(self):
-        corrector = GermanCorrector()
         to_correct = "Siehe [[Gebet| Gebet]] und [[Heilung]][[Test]] oder [[#unten]]."
         corrected = "Siehe [[Prayer/de|Gebet]] und [[Healing/de|Heilung]][[Test/de|Test]] oder [[#unten]]."
         english = "See [[Prayer|Prayer]] and [[Healing|Healing]][[Test|Test]] or [[#below]]."
-        self.assertEqual(correct(corrector, to_correct, english), corrected)
-        self.assertEqual(correct(corrector, corrected, english), corrected)     # correct text should not change
+        self.assertEqual(correct(self.corrector, to_correct, english), corrected)
+        self.assertEqual(correct(self.corrector, corrected, english), corrected)     # correct text should not change
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             # Warn because the number of links in translation is less than in the English original
-            self.assertEqual(correct(corrector, to_correct[21:], english), to_correct[21:])
+            self.assertEqual(correct(self.corrector, to_correct[21:], english), to_correct[21:])
+
+    def test_suffix_for_print_version(self):
+        self.assertNotEqual(self.corrector._suffix_for_print_version(), "_print")
 
 
 """TODO
@@ -475,6 +461,10 @@ class TestFrenchCorrector(unittest.TestCase):
         corrector = FrenchCorrector()
         self.assertEqual(corrector._get_language_code(), "fr")
 
+    def test_suffix_for_print_version(self):
+        corrector = FrenchCorrector()
+        self.assertNotEqual(corrector._suffix_for_print_version(), "_print")
+
 
 class TestArabicCorrector(CorrectorTestCase):
     # TODO research which of these changes to improve Arabic language quality could be automated:
@@ -528,10 +518,10 @@ class TestCorrectBot(unittest.TestCase):
     def test_check_unit(self):
         corrector = FrenchCorrector()
         # check_unit() should return None if translation is empty
-        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "de", "Test", "")))
+        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "fr", "Test", "")))
 
         # check_unit() should return None if we have the translation unit with version information
-        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "de", "1.2", "1.2a")))
+        self.assertIsNone(self.correctbot.check_unit(corrector, TranslationUnit("Test/1", "fr", "1.2", "1.2a")))
 
         for faulty, corrected in FRENCH_CORRECTIONS.items():
             translation_unit = TranslationUnit("Test", "fr", "ignored", faulty)
@@ -550,7 +540,37 @@ class TestCorrectBot(unittest.TestCase):
         result = self.correctbot.check_unit(corrector, translation_unit, "correct_spaces_before_punctuation")
         self.assertEqual("Mais moi , je vous dis\u00a0: Si", result.suggestions.get_translation())
 
-        # TODO add checks for the other (normal) cases
+        # Test correction of file name according to title
+        unit_title = TranslationUnit("Test/Page_display_title", "fr", "Testing: Now", "Tester: Maintenant")
+        self.correctbot.check_unit(corrector, unit_title)
+        self.assertEqual(self.correctbot._translated_title, "Tester: Maintenant")
+        unit_filename = TranslationUnit("Test/5", "fr", "Testing_Now.pdf", "Wrong.pdf")
+        result = self.correctbot.check_unit(corrector, unit_filename)
+        self.assertIsNotNone(result)
+        self.assertTrue(result.corrections.has_translation_changes())
+        self.assertEqual(result.corrections.get_translation(), "Tester_Maintenant.pdf")
+        self.assertFalse(unit_filename.has_translation_changes())    # The unit we gave shouldn't be touched
+        # A special PDF for printing should receive the translated suffix
+        unit_filename_print = TranslationUnit("Test/6", "fr", "Testing_Now_print.pdf", "Pas_correcte.pdf")
+        result = self.correctbot.check_unit(corrector, unit_filename_print)
+        self.assertEqual(result.corrections.get_translation(), "Tester_Maintenant_impression.pdf")
+        # Internal error: we haven't information on title yet
+        self.correctbot._translated_title = None
+        with self.assertLogs("pywikitools.correctbot", level="WARNING"):
+            self.assertIsNone(self.correctbot.check_unit(corrector, unit_filename))
+        # Title isn't translated
+        self.correctbot._translated_title = ""
+        self.assertIsNone(self.correctbot.check_unit(corrector, unit_filename))
+
+        # If original and translation is the same: Below a length of 15 characters we assume that's okay
+        unit = TranslationUnit("Test/2", "fr", "accident", "accident")
+        self.assertIsNone(self.correctbot.check_unit(corrector, unit))
+        unit = TranslationUnit("Test/2", "fr", "Please translate this.", "Please translate this.")
+        result = self.correctbot.check_unit(corrector, unit)
+        self.assertIsNotNone(result)
+        self.assertFalse(result.corrections.has_translation_changes())
+        self.assertFalse(result.suggestions.has_translation_changes())
+        self.assertNotEqual(result.warnings, "")
 
     def prepare_translated_page(self) -> TranslatedPage:
         """Prepare a TranslatedPage object out of the FRENCH_CORRECTIONS dictionary"""

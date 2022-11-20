@@ -13,6 +13,9 @@ class PersianCorrector(CorrectorBase, UniversalCorrector, RTLCorrector, Quotatio
         """Ensure correct Persian quotes (example: «نقل قول»)"""
         return self._correct_quotes('«', '»', text)
 
+    def _suffix_for_print_version(self) -> str:
+        return "_برای_چاپ"
+
     def _capitalization_exceptions(self) -> List[str]:
         return []
 
