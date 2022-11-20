@@ -186,6 +186,7 @@ class UniversalCorrector(ABC):
         splitted_text: List[str] = re.split("'''''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''''': we don't do anything
             logger.warning(f"Found uneven amount of bold italic formatting (''''') Please correct manually: {text}")
+            return text
         else:
             # Put all parts together again, replacing ''''' with <b><i> and </i></b> (alternating)
             text = splitted_text[0]
@@ -197,6 +198,7 @@ class UniversalCorrector(ABC):
         splitted_text = re.split("'''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''': we don't do anything
             logger.warning(f"Found uneven amount of bold formatting (''') Please correct manually: {text}")
+            return text
         else:
             # Put all parts together again, replacing ''' with <b> and </b> (alternating)
             text = splitted_text[0]
@@ -208,6 +210,7 @@ class UniversalCorrector(ABC):
         splitted_text = re.split("''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of '': we don't do anything
             logger.warning(f"Found uneven amount of italic formatting ('') Please correct manually: {text}")
+            return text
         else:
             # Put all parts together again, replacing '' with <i> and </i> (alternating)
             text = splitted_text[0]

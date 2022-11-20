@@ -269,6 +269,14 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(self.corrector, "This is '''''italic and bold'''''."),
                                                  "This is <b><i>italic and bold</i></b>.")
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "'''''Uneven markup"), "'''''Uneven markup")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "''''Problematic markup"), "''''Problematic markup")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "'''Uneven''' '''markup"), "'''Uneven''' '''markup")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "''Uneven'' ''markup"), "''Uneven'' ''markup")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             self.assertEqual(correct(self.corrector, "<b>Uneven tags<b>"), "<b>Uneven tags<b>")
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             self.assertEqual(correct(self.corrector, "</i>Uneven tags</i>"), "</i>Uneven tags</i>")
