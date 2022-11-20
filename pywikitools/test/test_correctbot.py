@@ -268,6 +268,10 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertEqual(correct(self.corrector, "''italic'' and '''bold'''"), "<i>italic</i> and <b>bold</b>")
         self.assertEqual(correct(self.corrector, "This is '''''italic and bold'''''."),
                                                  "This is <b><i>italic and bold</i></b>.")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "<b>Uneven tags<b>"), "<b>Uneven tags<b>")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, "</i>Uneven tags</i>"), "</i>Uneven tags</i>")
 
     def test_get_language_code(self):
         # This should return an empty string as we're not in a language-specific corrector

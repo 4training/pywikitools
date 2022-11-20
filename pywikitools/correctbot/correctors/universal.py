@@ -180,11 +180,11 @@ class UniversalCorrector(ABC):
         """Replace mediawiki formatting '''bold''' with <b>bold</b> and ''italic'' with <i>italic</i>"""
         # Three times doing almost the same but order is important: We need to start with the longest search string
         # So first correcting ''''', then ''' and finally '' - is a shorter implementation possible?
+        logger = logging.getLogger(__name__)
 
         # Replacing ''''' (bold and italic)
         splitted_text: List[str] = re.split("'''''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''''': we don't do anything
-            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of bold italic formatting (''''') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing ''''' with <b><i> and </i></b> (alternating)
@@ -196,7 +196,6 @@ class UniversalCorrector(ABC):
         # Replacing ''' (bold)
         splitted_text = re.split("'''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of ''': we don't do anything
-            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of bold formatting (''') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing ''' with <b> and </b> (alternating)
@@ -208,7 +207,6 @@ class UniversalCorrector(ABC):
         # Replacing '' (italic)
         splitted_text = re.split("''", text)
         if (len(splitted_text) % 2) != 1:   # Not an even amount of '': we don't do anything
-            logger = logging.getLogger(__name__)
             logger.warning(f"Found uneven amount of italic formatting ('') Please correct manually: {text}")
         else:
             # Put all parts together again, replacing '' with <i> and </i> (alternating)
@@ -216,6 +214,14 @@ class UniversalCorrector(ABC):
             for counter in range(1, len(splitted_text)):
                 text += '<i>' if counter % 2 == 1 else '</i>'
                 text += splitted_text[counter]
+
+        # Check that there is always the same amount of formatting start and end tags
+        b_start, b_end, i_start, i_end = text.count('<b>'), text.count('</b>'), text.count('<i>'), text.count('</i>')
+        if b_start != b_end:
+            logger.warning(f"Formatting not even: {b_start} occurrences of <b> but {b_end} occurrences of </b>")
+        if i_start != i_end:
+            logger.warning(f"Formatting not even: {i_start} occurrences of <i> but {i_end} occurrences of </i>")
+
         return text
 
     def remove_trailing_dot_in_title(self, text: str) -> str:
