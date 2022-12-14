@@ -178,6 +178,10 @@ class UniversalCorrector(ABC):
 
     def correct_mediawiki_bold_italic(self, text: str) -> str:
         """Replace mediawiki formatting '''bold''' with <b>bold</b> and ''italic'' with <i>italic</i>"""
+        # Correct confused tags
+        text = text.replace('>b<', '<b>')
+        text = text.replace('>i<', '<i>')
+
         # Three times doing almost the same but order is important: We need to start with the longest search string
         # So first correcting ''''', then ''' and finally '' - is a shorter implementation possible?
         logger = logging.getLogger(__name__)

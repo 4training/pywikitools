@@ -395,7 +395,7 @@ class TranslatedPage:
                 odt_original = u.get_definition()
                 odt_translation = u.get_translation()
             # Searching for version number (valid examples: 1.0; 2.1; 0.7b; 1.5a)
-            if re.search(r"^\d\.\d[a-zA-Z]?$", u.get_definition()):
+            if re.search(r"^\d\.\d([a-zA-Z]|rc|RC)?$", u.get_definition()):
                 version_original = u.get_definition()
                 version_translation = u.get_translation()
 

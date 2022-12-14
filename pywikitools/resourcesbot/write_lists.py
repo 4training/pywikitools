@@ -143,6 +143,7 @@ class WriteList(LanguagePostProcessor):
             if not page.exists():
                 self.logger.warning(f"Redirect target for language {language} doesn't exist!")
                 return
+            language = page.title()
 
         list_start, list_end = self._find_resources_list(page.text, language)
         if (list_start == 0) or (list_end == 0):
