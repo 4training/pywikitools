@@ -11,8 +11,9 @@ from os.path import abspath, dirname, isfile, join, normpath
 from typing import Callable, Dict, List, Optional
 from unittest.mock import patch, Mock
 
-from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.fortraininglib import ForTrainingLib
+from pywikitools.correctbot.correct_bot import CorrectBot
+from pywikitools.correctbot.correctors.fa import PersianCorrector
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
@@ -279,6 +280,8 @@ class TestUniversalCorrector(unittest.TestCase):
             self.assertEqual(correct(self.corrector, "<b>Uneven tags<b>"), "<b>Uneven tags<b>")
         with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
             self.assertEqual(correct(self.corrector, "</i>Uneven tags</i>"), "</i>Uneven tags</i>")
+        with self.assertLogs('pywikitools.correctbot.correctors.universal', level='WARNING'):
+            self.assertEqual(correct(self.corrector, ">i<Confused tags>b<"), "<i>Confused tags<b>")
 
     def test_get_language_code(self):
         # This should return an empty string as we're not in a language-specific corrector
@@ -423,7 +426,7 @@ class TestEnglishCorrector(unittest.TestCase):
         corrector = EnglishCorrector()
         self.assertEqual(correct(corrector, "God's"), "God’s")
 
-    def test_correct_quotation_marks(self):
+    def test_correct_quotes(self):
         corrector = EnglishCorrector()
         for wrong in ['"Test"', '“Test”', '“Test„', '„Test„', '“Test“', '„Test"', '„Test“']:
             self.assertEqual(correct(corrector, wrong), '“Test”')
@@ -461,7 +464,7 @@ class TestFrenchCorrector(unittest.TestCase):
         corrector = FrenchCorrector()
         self.assertEqual(correct(corrector, "Example"), "Exemple")
 
-    def test_correct_quotation_marks(self):
+    def test_correct_quotes(self):
         corrector = FrenchCorrector()
         wrongs: List[str] = ['"Test"', "« Test »", "«Test»"]
         for wrong in wrongs:
@@ -492,11 +495,22 @@ class TestArabicCorrector(CorrectorTestCase):
         self.assertEqual(correct(self.corrector, "يدعي  و يصلي"), "يدعي و يصلي")
         self.assertEqual(correct(self.corrector, "بحرص ،  أن"), "بحرص، أن")
 
+    def test_correct_quotes(self):
+        self.assertEqual(correct(self.corrector, 'و "كلمة الله" و'), 'و ”كلمة الله“ و')
+        self.assertEqual(correct(self.corrector, 'و “كلمة الله” و'), 'و ”كلمة الله“ و')
+
     def test_real_life_examples(self):
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 4, 62201, 62260)
         self.compare_revisions("How to Continue After a Prayer Time", "ar", 16, 62225, 62270)
         self.compare_title_revisions("How to Continue After a Prayer Time", "ar", 62193, 62274)
         self.compare_revisions("How_to_Continue_After_a_Prayer_Time", "ar", 1, 62195, 62258)
+
+
+class TestPersianCorrector(CorrectorTestCase):
+    def test_correct_quotes(self):
+        corrector = PersianCorrector()
+        self.assertEqual(correct(corrector, 'کلمه "شنیدن" استفاده'), 'کلمه «شنیدن» استفاده')
+        self.assertEqual(correct(corrector, 'کلمه ”شنیدن“ استفاده'), 'کلمه «شنیدن» استفاده')
 
 
 class TestCorrectBot(unittest.TestCase):
@@ -596,7 +610,7 @@ class TestCorrectBot(unittest.TestCase):
         # Add one translation unit that will produce warnings because of wrong structure
         translation_units.append(TranslationUnit("Test/warnings1", "fr",
                                  TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR))
-        # This unit will produce two warnings in correct_quotation_marks()
+        # This unit will produce two warnings in correct_quotes()
         translation_units.append(TranslationUnit("Test/warnings2", "fr",
                                  'this is a "quote"', 'Ceci est une „citation"'))
         return TranslatedPage("Test", "fr", translation_units)

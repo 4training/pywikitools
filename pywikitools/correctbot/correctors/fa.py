@@ -10,7 +10,10 @@ class PersianCorrector(CorrectorBase, UniversalCorrector, RTLCorrector, Quotatio
     * Common corrections from UniversalCorrector and RTLCorrector
     """
     def correct_quotes(self, text: str) -> str:
-        """Ensure correct Persian quotes (example: «نقل قول»)"""
+        """Ensure correct Persian quotes (example: «Persian»)
+
+        This works because « and » are mirrored characters in unicode:
+        in a RTL context they face the opposite direction (see TestPersianCorrector)"""
         return self._correct_quotes('«', '»', text)
 
     def _suffix_for_print_version(self) -> str:

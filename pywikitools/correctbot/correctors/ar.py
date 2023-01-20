@@ -11,8 +11,12 @@ class ArabicCorrector(CorrectorBase, UniversalCorrector, RTLCorrector, Quotation
     * Common corrections from UniversalCorrector and RTLCorrector
     """
     def correct_quotes(self, text: str) -> str:
-        """Ensure correct Arabic quotes (example: “اقتباس”)"""
-        return self._correct_quotes('“', '”', text)
+        """Ensure correct Arabic quotes (example: “Arabic”)
+
+        It must be this way round because ” and “ are not mirrored characters in unicode,
+        so in RTL ” comes first and “ at the end (see TestArabicCorrector)
+        """
+        return self._correct_quotes('”', '“', text)
 
     def _suffix_for_print_version(self) -> str:
         return "_print"
