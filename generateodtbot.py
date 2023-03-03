@@ -167,6 +167,11 @@ if __name__ == '__main__':
             logger.error('Dropbox upload of log/' + worksheet + '.txt failed')
         if not dropboxupload.upload_string(languagecode, 'log/' + worksheet + '.debug.txt', stream_debug.getvalue()):
             logger.error('Dropbox upload of log/' + worksheet + '.debug.txt failed')
+
+        # Trying to log in - otherwise notify_user() will fail and raise error
+        if not global_site.logged_in():
+            logger.info("We're not logged in. Trying to log in...")
+            global_site.login()
         notify_user(username, worksheet, languagecode, False)
         if config.has_option('generateodtbot', 'admin1'):
             notify_user(config['generateodtbot']['admin1'], worksheet, languagecode, True)
