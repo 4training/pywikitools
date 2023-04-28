@@ -67,16 +67,16 @@ class TestBeautifyHTML(unittest.TestCase):
         # Now check the change_hrefs functionality
         change_hrefs: Dict[str, str] = {
             "/Prayer": "/Prayer_redirected",
-            "/Church": "/redirected/Church"
+            "/Church": "Church.html"
         }
         beautify = BeautifyHTML(change_hrefs=change_hrefs)
         self.assertEqual(beautify.process_html('<div><a href="/Prayer"><span>test</span></a></div>'),
                                                '<a href="/Prayer_redirected"><span>test</span></a>')    # noqa: E127
         self.assertEqual(beautify.process_html('<div><p><b><a href="/Church">Test<br/></a></b></p></div>'),
-                                               '<p><b><a href="/redirected/Church">Test<br/></a></b></p>')  # noqa: E127
+                                               '<p><b><a href="Church.html">Test<br/></a></b></p>')  # noqa: E127
         with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify.process_html('<div><a href="/other">not in change_hrefs</a></div>'),
-                                                   '<a href="/other">not in change_hrefs</a>')          # noqa: E127
+                                                   'not in change_hrefs')          # noqa: E127
 
 
 if __name__ == '__main__':

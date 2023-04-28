@@ -113,6 +113,9 @@ class ExportHTML(LanguagePostProcessor):
         change_hrefs: Dict[str, str] = {}   # Dictionary to set correct targets for links in the HTML files
         for worksheet, info in language_info.worksheets.items():
             change_hrefs[f"/{worksheet}/{language_info.language_code}"] = self.make_html_name(info.title)
+            if language_info.language_code == 'en':     # English links normally don't have /en at the end
+                change_hrefs[f"/{worksheet}"] = self.make_html_name(info.title)
+
         file_collector: Set[str] = set()
         beautifyhtml = CustomBeautifyHTML(change_hrefs=change_hrefs, file_collector=file_collector)
 

@@ -62,6 +62,7 @@ class BeautifyHTML:
                 # Remove <a> links around <img> tags
                 element.unwrap()
                 continue
+            del element['title']
             # Rewrite hrefs
             if self._change_hrefs is not None:
                 href = unquote(element['href'])
@@ -70,8 +71,8 @@ class BeautifyHTML:
                     self.logger.info(f"Rewriting a href source {element['href']} with {new_href}")
                     element['href'] = new_href
                 else:
-                    self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}")
-            del element['title']
+                    self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}. Removing link.")
+                    element.unwrap()
 
         return str(soup)
 
