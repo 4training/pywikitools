@@ -144,6 +144,17 @@ class WriteReport(LanguagePostProcessor):
         content += "|}\n"
         return content
 
+    def _note(self, en_worksheet: WorksheetInfo) -> str:
+        """Helper function to add a quick note for certain worksheets
+
+        Currently we only use this for the Bible Reading Hints (by including a template)
+        Returns:
+            string with mediawiki code or an empty string (for all other worksheets)
+        """
+        if en_worksheet.title == "Bible Reading Hints":
+            return " {{4training:ReportNote-BibleReadingHints}}"
+        return ""
+
     def create_worksheet_line(self, language_code: str,
                               en_worksheet: WorksheetInfo, lang_worksheet: Optional[WorksheetInfo]) -> str:
         """Create mediawiki code with report for one worksheet (one line of the overview)
@@ -167,7 +178,7 @@ class WriteReport(LanguagePostProcessor):
 
         # column 3: Link to translated worksheet (if existing)
         if lang_worksheet is not None:
-            content += f"| [[{en_worksheet.title}/{language_code}|{lang_worksheet.title}]]\n"
+            content += f"| [[{en_worksheet.title}/{language_code}|{lang_worksheet.title}]]{self._note(en_worksheet)}\n"
         else:
             content += "| -\n"
 

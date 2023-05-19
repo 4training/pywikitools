@@ -122,7 +122,7 @@
 |- style="background-color:orange"
 | style="text-align:center" | ✓
 | [[Bible Reading Hints]]
-| [[Bible Reading Hints/ru|Подсказки для чтения Библии]]
+| [[Bible Reading Hints/ru|Подсказки для чтения Библии]] {{4training:ReportNote-BibleReadingHints}}
 | style="text-align:right;background-color:green" | [https://www.4training.net/mediawiki/index.php?title=Special:Translate&group=page-Bible_Reading_Hints&action=page&filter=translated&language=ru 100%]
 | style="background-color:orange" | [[File:Подсказки_для_чтения_Библии.pdf]]
 | style="background-color:orange" | <div title="Metadata: incorrect. PDF/1A: yes. (Warnings: Expected subject to start with 'Prayer' but found '')">⚠</div>
