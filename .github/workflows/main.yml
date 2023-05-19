@@ -29,7 +29,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run all tests
-        run: python -m unittest discover -s pywikitools/test
+        run: python -X dev -m unittest discover -s pywikitools/test
 
       # Now we're generating the coverage report
       - name: Install coverage.py
