@@ -54,10 +54,13 @@ class CorrectBot:
     def _load_corrector(self, language_code: str) -> Callable:
         """Load the corrector class for the specified language and return it.
 
-        Raises ImportError if corrector class can't be found"""
+        Raises RuntimeError if corrector class can't be found"""
         # Dynamically load e.g. correctors/de.py
         module_name = f"pywikitools.correctbot.correctors.{language_code}"
-        module = importlib.import_module(module_name)
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            raise RuntimeError(f"Missing corrector for language {language_code}")
 
         # There should be exactly one class named "XYCorrector" in there - let's get it
         for class_name in dir(module):
@@ -67,7 +70,7 @@ class CorrectBot:
                 if corrector_class.__module__ == module_name:
                     return corrector_class
 
-        raise ImportError(f"Couldn't load corrector for language {language_code}. Giving up")
+        raise RuntimeError(f"Couldn't load corrector for language {language_code}. Giving up")
 
     def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit,
                    apply_only_rule: Optional[str] = None) -> Optional[CorrectionResult]:
@@ -127,7 +130,7 @@ class CorrectBot:
         return corrector.correct(unit, apply_only_rule)
 
     def check_page(self, page: str, language_code: str,
-                   apply_only_rule: Optional[str] = None) -> Optional[List[CorrectionResult]]:
+                   apply_only_rule: Optional[str] = None) -> List[CorrectionResult]:
         """
         Check one specific page and store the results in this class
 
@@ -141,7 +144,9 @@ class CorrectBot:
 
         Returns:
             CorrectionResult for each processed translation unit
-            None if an error occurred
+
+        Raises:
+            RuntimeError if an error occurred
         """
         self._translated_title = None   # This is in the first translation unit and we need it to correct the file name
         self._correction_diff = ""
@@ -157,7 +162,7 @@ class CorrectBot:
 
         translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
         if translated_page is None:
-            return None
+            raise RuntimeError("Couldn't query translation units")
         corrector = self._load_corrector(language_code)()
         results: List[CorrectionResult] = []
         for translation_unit in translated_page:
@@ -351,9 +356,10 @@ class CorrectBot:
             apply_only_rule: If specified, only apply the correction rule with this name
         """
         page = page.replace(' ', '_')   # spaces may lead to problems in some places: "Time with God" -> "Time_with_God"
-        results = self.check_page(page, language_code, apply_only_rule)
-        if results is None:
-            print(f"Error while trying to correct {page}")
+        try:
+            results = self.check_page(page, language_code, apply_only_rule)
+        except Exception as e:
+            print(f"Error while trying to correct {page}: {e}")
             return
         saved_corrections = False
         saved_report = False

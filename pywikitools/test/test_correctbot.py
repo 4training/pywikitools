@@ -616,13 +616,13 @@ class TestCorrectBot(unittest.TestCase):
         return TranslatedPage("Test", "fr", translation_units)
 
     def test_check_page(self):
-        # check_page() returns None if the page isn't existing
+        # check_page() raises RuntimeError if the page isn't existing
         mock_lib = Mock()
         mock_lib.get_translation_units.return_value = None
         self.correctbot.fortraininglib = mock_lib
-        results = self.correctbot.check_page("NotExisting", "fr")
+        with self.assertRaises(RuntimeError):
+            results = self.correctbot.check_page("NotExisting", "fr")
         mock_lib.get_translation_units.assert_called_once()
-        self.assertIsNone(results)
 
         # let's correct a page with some French translation units for testing
         mock_lib.get_translation_units.return_value = self.prepare_translated_page()
@@ -639,6 +639,10 @@ class TestCorrectBot(unittest.TestCase):
                 continue
             faulty = result.corrections.get_original_translation()
             self.assertEqual(FRENCH_CORRECTIONS[faulty], result.suggestions.get_translation())
+
+        # _load_corrector() and then check_page() should raise RuntimeError in case we can't load the corrector class
+        with self.assertRaises(RuntimeError):
+            self.correctbot.check_page("Test", "invalid")
 
     @patch("pywikibot.Page")
     def test_save_report(self, mock_page):
