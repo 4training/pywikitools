@@ -14,7 +14,6 @@ Run with dummy page:
 import argparse
 from collections import Counter
 from configparser import ConfigParser
-import copy
 import logging
 import importlib
 from os.path import abspath, dirname, join
@@ -22,7 +21,7 @@ import subprocess
 import pywikibot
 import re
 import sys
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.base import CorrectionResult, CorrectorBase
@@ -95,27 +94,13 @@ class CorrectBot:
             return result
 
         if re.search(r"\.(odt|pdf|odg|png)$", unit.get_definition()):
-            # translation unit holds a filename: directly correct it here (as we have information on worksheet title)
+            # translation unit holds a filename -> correct it according to worksheet title
             if self._translated_title is None:
                 self.logger.warning("Trying to correct filename but we don't have information on translated title")
                 return None
             if self._translated_title == "":  # Title isn't translated yet
                 return None
-            is_print_pdf = len(unit.get_definition()) > 10 and unit.get_definition().endswith("_print.pdf")
-            extension = unit.get_definition()[-4:]  # Currently all possible extensions have three characters
-
-            # Tedious work: We need to build up the CorrectionResult structure (see CorrectorBase._run_functions())
-            corrections: TranslationUnit = copy.copy(unit)
-            correction_stats: Dict[str, int] = {}
-            new_title = self.fortraininglib.convert_to_filename(self._translated_title)
-            if is_print_pdf:
-                new_title += corrector._suffix_for_print_version()
-            new_title += extension
-            if new_title != unit.get_translation():
-                corrections.set_translation(new_title)
-                correction_stats['filename'] = 1    # Caution: CorrectorBase.print_stats() needs to understand this
-            suggestions = copy.copy(corrections)
-            return CorrectionResult(corrections, suggestions, correction_stats, {}, "")
+            return corrector.filename_correct(unit, self.fortraininglib.convert_to_filename(self._translated_title))
 
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it

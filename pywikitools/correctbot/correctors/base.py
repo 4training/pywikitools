@@ -82,7 +82,7 @@ class CorrectorBase(ABC):
     Correctors should inherit from this class first.
     Correctors for groups of languages should not inherit from the class.
 
-    correct() and title_correct() are the two entry functions. They don't touch
+    correct() and title_correct() (and filename_correct()) are the two entry functions. They don't touch
     the given translation unit but return all changes and suggestions in the CorrectionResult structure
     """
     @abstractmethod
@@ -93,6 +93,35 @@ class CorrectorBase(ABC):
         a second PDF for printing, combining multiple of the small-sized PDFs so that it fills one standard page.
         In English the suffix is "_print", as in Bible_Reading_Hints_print.pdf"""
         return "_print"
+
+    def _compose_filename(self, converted_title: str, extension: str, is_print_pdf: bool) -> str:
+        """Return the complete translated filename
+
+        This function can also be overwritten by a language-specific corrector (e.g. for a language variant)"""
+        if is_print_pdf:
+            converted_title += self._suffix_for_print_version()
+        converted_title += extension
+        return converted_title
+
+    def filename_correct(self, unit: TranslationUnit, converted_title: str) -> CorrectionResult:
+        """Correct filename (according to title)
+
+        We directly construct the correct filename and don't call any rules
+        Args:
+            converted_title: worksheet title converted for filename usage (see ForTrainingLib.convert_to_filename())
+        """
+        is_print_pdf = len(unit.get_definition()) > 10 and unit.get_definition().endswith("_print.pdf")
+        extension = unit.get_definition()[-4:]  # Currently all possible extensions have three characters
+
+        # Tedious work: We need to build up the CorrectionResult structure
+        corrections: TranslationUnit = copy.copy(unit)
+        correction_stats: Dict[str, int] = {}
+        new_title = self._compose_filename(converted_title, extension, is_print_pdf)
+        if new_title != unit.get_translation():
+            corrections.set_translation(new_title)
+            correction_stats['filename_correct'] = 1        # the name of our function
+        suggestions = copy.copy(corrections)
+        return CorrectionResult(corrections, suggestions, correction_stats, {}, "")
 
     def correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
         """Call all available correction functions one after the other"""
@@ -216,13 +245,9 @@ class CorrectorBase(ABC):
         """
         details: str = ""
         for function_name, counter in stats.items():
-            if function_name == "filename":
-                # This comes from CorrectBot.check_unit() directly correcting a filename
-                details += "* Correct filename (according to title)"
+            if hasattr(self, function_name) and (docstring := getattr(self, function_name).__doc__) is not None:
+                details += "* " + docstring.partition("\n")[0]
             else:
-                if hasattr(self, function_name) and (docstring := getattr(self, function_name).__doc__) is not None:
-                    details += "* " + docstring.partition("\n")[0]
-                else:
-                    details += "* " + function_name
+                details += "* " + function_name
             details += f" ({counter}x)\n"
         return details

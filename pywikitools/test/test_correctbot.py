@@ -11,6 +11,10 @@ from os.path import abspath, dirname, isfile, join, normpath
 from typing import Callable, Dict, List, Optional
 from unittest.mock import patch, Mock
 
+from pywikitools.correctbot.correctors.tr import TurkishCorrector
+# hyphen in module name is not recommended so we need to use import_module here
+tr_tanri = importlib.import_module("pywikitools.correctbot.correctors.tr-tanri")
+
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.correctbot.correctors.fa import PersianCorrector
@@ -246,7 +250,7 @@ class TestUniversalCorrector(unittest.TestCase):
         self.assertIn("Reduce multiple spaces", self.corrector.print_stats(stats))
         self.assertIn("Fix wrong capitalization", self.corrector.print_stats(stats))
         self.assertIn("not_existing", self.corrector.print_stats({'not_existing': 2}))
-        self.assertIn("Correct filename", self.corrector.print_stats({'filename': 5}))
+        self.assertIn("Correct filename", self.corrector.print_stats({'filename_correct': 5}))
 
     def test_capitalization(self):
         self.assertEqual(correct(self.corrector, "lowercase start.<br/>and lowercase after full stop. yes."),
@@ -481,6 +485,30 @@ class TestFrenchCorrector(unittest.TestCase):
     def test_suffix_for_print_version(self):
         corrector = FrenchCorrector()
         self.assertNotEqual(corrector._suffix_for_print_version(), "_print")
+
+class TestTurkishCorrector(CorrectorTestCase):
+    def test_all_rules(self):
+        corrector = TurkishCorrector()
+        self.assertEqual(corrector._get_language_code(), "tr")
+        self.assertEqual(corrector._compose_filename("Şifa", ".pdf", False), "Şifa.pdf")
+        self.assertEqual(corrector._compose_filename("Kutsal_Kitabı_okuma_ipuçları", ".pdf", True),
+                                                     "Kutsal_Kitabı_okuma_ipuçları_yazdır.pdf")
+        self.assertEqual(correct(corrector, '"küçük"  bir günah işlediler - bizim için.devam , bitti .'),
+                                            '“küçük” bir günah işlediler – bizim için. Devam, bitti.')
+        self.assertEqual(correct(corrector, "1.Yuhanna, 1.Petrus,1.Timoteos vs. okuyun ."),
+                                            "1.Yuhanna, 1.Petrus, 1.Timoteos vs. okuyun.")
+
+class TestTurkishSecularCorrector(CorrectorTestCase):
+    def test_all_rules(self):
+        corrector = tr_tanri.TurkishSecularCorrector()
+        self.assertEqual(corrector._get_language_code(), "tr-tanri")
+        self.assertEqual(corrector._compose_filename("Şifa", ".pdf", False), "Şifa_(Tanrı).pdf")
+        self.assertEqual(corrector._compose_filename("Kutsal_Kitabı_okuma_ipuçları", ".pdf", True),
+                                                     "Kutsal_Kitabı_okuma_ipuçları_(Tanrı)_yazdır.pdf")
+        self.assertEqual(corrector._compose_filename("Tanrının_Hikâyesi", ".pdf", False),
+                                                     "Tanrının_Hikâyesi.pdf")
+        self.assertEqual(correct(corrector, '"küçük"  bir günah işlediler - bizim vs. için.devam , bitti .'),
+                                            '“küçük” bir günah işlediler – bizim vs. için. Devam, bitti.')
 
 
 class TestArabicCorrector(CorrectorTestCase):

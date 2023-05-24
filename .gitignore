@@ -7,7 +7,7 @@ generateodtbot.lock
 # Contains (potentially sensitive) details to log into a specific mediawiki instance
 user-config.py
 # Holds the cookie after successful login - sensitive
-pywikibot.lwp
+pywikibot*.lwp
 # pywikibot throttle control
 throttle.ctrl
 # pywikibot caching
