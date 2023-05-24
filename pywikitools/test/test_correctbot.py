@@ -11,10 +11,6 @@ from os.path import abspath, dirname, isfile, join, normpath
 from typing import Callable, Dict, List, Optional
 from unittest.mock import patch, Mock
 
-from pywikitools.correctbot.correctors.tr import TurkishCorrector
-# hyphen in module name is not recommended so we need to use import_module here
-tr_tanri = importlib.import_module("pywikitools.correctbot.correctors.tr-tanri")
-
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correct_bot import CorrectBot
 from pywikitools.correctbot.correctors.fa import PersianCorrector
@@ -22,10 +18,15 @@ from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
+from pywikitools.correctbot.correctors.tr import TurkishCorrector
 from pywikitools.correctbot.correctors.universal import NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector, \
                                                         RTLCorrector, UniversalCorrector
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.test.test_translated_page import TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR
+
+
+# hyphen in module name is not recommended so we need to use import_module here
+tr_tanri = importlib.import_module("pywikitools.correctbot.correctors.tr-tanri")
 
 # Package and module names
 PKG_CORRECTORS = "pywikitools.correctbot.correctors"
@@ -486,6 +487,7 @@ class TestFrenchCorrector(unittest.TestCase):
         corrector = FrenchCorrector()
         self.assertNotEqual(corrector._suffix_for_print_version(), "_print")
 
+
 class TestTurkishCorrector(CorrectorTestCase):
     def test_all_rules(self):
         corrector = TurkishCorrector()
@@ -497,6 +499,7 @@ class TestTurkishCorrector(CorrectorTestCase):
                                             '“küçük” bir günah işlediler – bizim için. Devam, bitti.')
         self.assertEqual(correct(corrector, "1.Yuhanna, 1.Petrus,1.Timoteos vs. okuyun ."),
                                             "1.Yuhanna, 1.Petrus, 1.Timoteos vs. okuyun.")
+
 
 class TestTurkishSecularCorrector(CorrectorTestCase):
     def test_all_rules(self):
