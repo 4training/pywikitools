@@ -250,6 +250,7 @@ class LibreOffice:
         properties.Title = title
         properties.Subject = subject
         properties.Keywords = [keywords]
+        properties.resetUserData("")
 
     def _get_default_paragraph_style(self) -> Optional[Any]:
         """Return the default paragraph style: XStyle object (None on error)"""
