@@ -153,7 +153,7 @@ class TranslateODT:
         Compare it to the translated file name and give a warning if it doesn't match.
         However, that shouldn't happen anymore since CorrectBot is correcting that
         (see CorrectBot.check_unit()) - maybe remove this extra safety net?"""
-        filename = self.fortraininglib.convert_to_filename(translated_page.get_worksheet_info().title) + ".odt"
+        filename = ForTrainingLib.convert_to_filename(translated_page.get_worksheet_info().title) + ".odt"
         if translated_page.get_worksheet_info().get_file_type_name("odt") != filename:
             self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
                                 f"Translation: {translated_page.get_worksheet_info().get_file_type_name('odt')}, "

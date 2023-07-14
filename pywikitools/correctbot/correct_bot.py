@@ -100,7 +100,7 @@ class CorrectBot:
                 return None
             if self._translated_title == "":  # Title isn't translated yet
                 return None
-            return corrector.filename_correct(unit, self.fortraininglib.convert_to_filename(self._translated_title))
+            return corrector.filename_correct(unit, ForTrainingLib.convert_to_filename(self._translated_title))
 
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it

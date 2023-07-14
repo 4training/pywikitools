@@ -25,6 +25,10 @@ class CustomBeautifyHTML(BeautifyHTML):
         self.file_collector.add(element['src'][6:])     # Remove leading "files/"
 
 
+def make_html_name(title: str) -> str:
+    return ForTrainingLib.convert_to_filename(title) + ".html"
+
+
 class ExportHTML(LanguagePostProcessor):
     """
     Export all finished worksheets of this language as HTML into a folder
@@ -60,9 +64,6 @@ class ExportHTML(LanguagePostProcessor):
                 return True
         return False
 
-    def make_html_name(self, title: str) -> str:
-        return self.fortraininglib.convert_to_filename(title) + ".html"
-
     def download_file(self, files_folder: str, filename: str) -> bool:
         """Download a file from the mediawiki server
 
@@ -80,6 +81,7 @@ class ExportHTML(LanguagePostProcessor):
         file_path = os.path.join(files_folder, filename)
         if os.path.isfile(file_path):
             self.logger.info(f"File {file_path} already exists locally, not downloading.")
+            # TODO return True or False
         else:
             url = self.fortraininglib.get_file_url(filename)
             if url is None:
@@ -134,7 +136,7 @@ class ExportHTML(LanguagePostProcessor):
                     self.logger.warning(f"Couldn't get content of {worksheet}/{language_info.language_code}. Skipping")
                     continue
                 html_counter += 1
-                filename = self.make_html_name(info.title)
+                filename = make_html_name(info.title)
                 with open(os.path.join(folder, filename), "w") as f:
                     self.logger.info(f"Exporting HTML to {filename}")
                     content = f"<h1>{info.title}</h1>" + beautifyhtml.process_html(content)
@@ -173,6 +175,7 @@ class StructureEncoder(json.JSONEncoder):
             worksheet_json: Dict[str, Any] = {
                 "page": o.page,
                 "title": o.title,
+                "filename": make_html_name(o.title),
                 "version": o.version,
             }
             pdf_info: Optional[FileInfo] = o.get_file_type_info("pdf")

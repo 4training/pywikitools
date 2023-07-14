@@ -60,17 +60,17 @@ class TestFortrainingLib(unittest.TestCase):
         response = requests.Response()
         response.status_code = 200
         response.json = Mock()
-        response.json.side_effect = requests.exceptions.JSONDecodeError
+        response.json.side_effect = requests.exceptions.JSONDecodeError('Test', 'Test', 0)
         mock_get.return_value = response
         with self.assertLogs('pywikitools.lib', level='WARNING'):
             self.lib._get({})
         mock_get.assert_called_once()
 
     def test_convert_to_filename(self):
-        self.assertEqual(self.lib.convert_to_filename("Hearing from God"), "Hearing_from_God")
-        self.assertEqual(self.lib.convert_to_filename("Nothing_changes"), "Nothing_changes")
-        self.assertEqual(self.lib.convert_to_filename("Title's nightmare: Test."), "Titles_nightmare_Test")
-        self.assertEqual(self.lib.convert_to_filename("RTL (challenge)\u200f"), "RTL_(challenge)\u200f")
+        self.assertEqual(ForTrainingLib.convert_to_filename("Hearing from God"), "Hearing_from_God")
+        self.assertEqual(ForTrainingLib.convert_to_filename("Nothing_changes"), "Nothing_changes")
+        self.assertEqual(ForTrainingLib.convert_to_filename("Title's nightmare: Test."), "Titles_nightmare_Test")
+        self.assertEqual(ForTrainingLib.convert_to_filename("RTL (challenge)\u200f"), "RTL_(challenge)\u200f")
 
     def test_get_language_name(self):
         self.assertEqual(self.lib.get_language_name('de'), 'Deutsch')

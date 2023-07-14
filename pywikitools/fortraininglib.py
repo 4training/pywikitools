@@ -84,7 +84,8 @@ class ForTrainingLib():
         """
         return ['pdf', 'odt', 'odg']
 
-    def convert_to_filename(self, title: str) -> str:
+    @staticmethod
+    def convert_to_filename(title: str) -> str:
         """
         Convert a worksheet title to a filename (no extension is added)
 
