@@ -2,12 +2,12 @@ import json
 import logging
 import os
 import requests
-from typing import Dict, Final, Set
+from typing import Any, Dict, Final, Optional, Set
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
 from pywikitools.resourcesbot.changes import ChangeLog
-from pywikitools.resourcesbot.data_structures import LanguageInfo
+from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
 
 
@@ -112,9 +112,10 @@ class ExportHTML(LanguagePostProcessor):
 
         change_hrefs: Dict[str, str] = {}   # Dictionary to set correct targets for links in the HTML files
         for worksheet, info in language_info.worksheets.items():
-            change_hrefs[f"/{worksheet}/{language_info.language_code}"] = self.make_html_name(info.title)
+            # Most link can stay the same but we need to add them to change_hrefs, otherwise links are removed
+            change_hrefs[f"/{worksheet}/{language_info.language_code}"] = f"/{worksheet}/{language_info.language_code}"
             if language_info.language_code == 'en':     # English links normally don't have /en at the end
-                change_hrefs[f"/{worksheet}"] = self.make_html_name(info.title)
+                change_hrefs[f"/{worksheet}"] = f"/{worksheet}/en"
 
         file_collector: Set[str] = set()
         beautifyhtml = CustomBeautifyHTML(change_hrefs=change_hrefs, file_collector=file_collector)
@@ -147,12 +148,37 @@ class ExportHTML(LanguagePostProcessor):
         # Write contents.json
         # TODO define specifications for contents.json (similar to language jsons?) - for now just a simple structure
         if self._force_rewrite or html_counter > 0:
-            structure = []
-            for worksheet, info in language_info.worksheets.items():
-                structure.append({worksheet: self.make_html_name(info.title)})
+            encoded_json = StructureEncoder().encode(language_info)
             with open(os.path.join(structure_folder, "contents.json"), "w") as f:
                 self.logger.info("Exporting contents.json")
-                f.write(json.dumps(structure))
+                f.write(encoded_json)
 
         self.logger.info(f"ExportHTML {language_info.language_code}: "
                          f"Downloaded {html_counter} HTML files, {file_counter} images")
+
+
+class StructureEncoder(json.JSONEncoder):
+    """
+    Serializes all information needed for the app into a JSON string.
+    This is similar to DataStructureEncoder but removes some stuff we don't need
+    """
+    def default(self, o):
+        if isinstance(o, LanguageInfo):
+            return {
+                "language_code": o.language_code,
+                "english_name": o.english_name,
+                "worksheets": list(o.worksheets.values())
+            }
+        if isinstance(o, WorksheetInfo):
+            worksheet_json: Dict[str, Any] = {
+                "page": o.page,
+                "title": o.title,
+                "version": o.version,
+            }
+            pdf_info: Optional[FileInfo] = o.get_file_type_info("pdf")
+            if pdf_info:
+                pos: int = pdf_info.url.rfind('/')
+                if pos > -1:
+                    worksheet_json["pdf"] = pdf_info.url[pos+1:]
+            return worksheet_json
+        return super().default(o)
