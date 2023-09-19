@@ -151,9 +151,10 @@ class ExportHTML(LanguagePostProcessor):
         # TODO define specifications for contents.json (similar to language jsons?) - for now just a simple structure
         if self._force_rewrite or html_counter > 0:
             encoded_json = StructureEncoder().encode(language_info)
+            pretty_printed_json = json.dumps(json.loads(encoded_json), indent=4)
             with open(os.path.join(structure_folder, "contents.json"), "w") as f:
                 self.logger.info("Exporting contents.json")
-                f.write(encoded_json)
+                f.write(pretty_printed_json)
 
         self.logger.info(f"ExportHTML {language_info.language_code}: "
                          f"Downloaded {html_counter} HTML files, {file_counter} images")
