@@ -67,7 +67,8 @@ class ExportRepository(LanguagePostProcessor):
             # Commiting and pushing to remote
             commit_message = f"Update: {untracked} new, {modified} modified, {deleted} deleted."
             self.logger.warning(f"Pushing to git repository. {commit_message}")
-            repo.index.commit(f"{commit_message}\n\nTODO details", author=self._author)
+            # TODO add details to the commit message
+            repo.index.commit(f"{commit_message}", author=self._author)
             result = repo.remotes.origin.push()
             self.logger.info(f"Pushed to remote, result: {result[0].summary}")
         else:

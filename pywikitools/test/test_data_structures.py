@@ -352,7 +352,6 @@ class TestLanguageInfoComparison(unittest.TestCase):
                                           ChangeItem("Church", ChangeType.UPDATED_WORKSHEET)]))
 
     # TODO: Add tests for list_worksheets_with_missing_pdf(), list_incomplete_translations()
-    # and count_finished_translations()
 
 
 if __name__ == '__main__':

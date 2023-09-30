@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -81,7 +82,7 @@ class ExportHTML(LanguagePostProcessor):
         file_path = os.path.join(files_folder, filename)
         if os.path.isfile(file_path):
             self.logger.info(f"File {file_path} already exists locally, not downloading.")
-            # TODO return True or False
+            return False
         else:
             url = self.fortraininglib.get_file_url(filename)
             if url is None:
@@ -97,7 +98,15 @@ class ExportHTML(LanguagePostProcessor):
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo, changes: ChangeLog, _english_changes):
         if self._base_folder == "":
             return
-        folder: str = os.path.join(self._base_folder, language_info.language_code)
+        # Remove worksheets that aren't finished - don't change the language_info object we got
+        lang_info: LanguageInfo = copy.deepcopy(language_info)
+        del language_info   # prevent accidental usage of the wrong object
+        for worksheet in list(lang_info.worksheets.keys()):
+            if not lang_info.worksheets[worksheet].show_in_list(english_info.worksheets[worksheet]):
+                del lang_info.worksheets[worksheet]
+
+        lang_code = lang_info.language_code
+        folder: str = os.path.join(self._base_folder, lang_code)
         files_folder: str = os.path.join(folder, "files/")
         structure_folder: str = os.path.join(folder, "structure/")
         # Make sure all the folders exist and are ready to be used
@@ -109,14 +118,14 @@ class ExportHTML(LanguagePostProcessor):
                 os.makedirs(structure_folder)
         except OSError as err:
             self.logger.warning(f"Error creating directories for HTML export: {err}. "
-                                f"Won't export HTML files for language {language_info.language_code}.")
+                                f"Won't export HTML files for language {lang_code}.")
             return
 
         change_hrefs: Dict[str, str] = {}   # Dictionary to set correct targets for links in the HTML files
-        for worksheet, info in language_info.worksheets.items():
+        for worksheet, info in lang_info.worksheets.items():
             # Most link can stay the same but we need to add them to change_hrefs, otherwise links are removed
-            change_hrefs[f"/{worksheet}/{language_info.language_code}"] = f"/{worksheet}/{language_info.language_code}"
-            if language_info.language_code == 'en':     # English links normally don't have /en at the end
+            change_hrefs[f"/{worksheet}/{lang_code}"] = f"/{worksheet}/{lang_code}"
+            if lang_code == 'en':     # English links normally don't have /en at the end
                 change_hrefs[f"/{worksheet}"] = f"/{worksheet}/en"
 
         file_collector: Set[str] = set()
@@ -126,14 +135,12 @@ class ExportHTML(LanguagePostProcessor):
         file_counter: int = 0   # Counting downloaded files (images)
 
         # Download all worksheets and save the transformed HTML
-        for worksheet, info in language_info.worksheets.items():
+        for worksheet, info in lang_info.worksheets.items():
             # As elsewhere, we ignore outdated / unfinished translations
-            if not info.show_in_list(english_info.worksheets[worksheet]):
-                continue
             if self._force_rewrite or self.has_relevant_change(worksheet, changes):
-                content = self.fortraininglib.get_page_html(f"{worksheet}/{language_info.language_code}")
+                content = self.fortraininglib.get_page_html(f"{worksheet}/{lang_code}")
                 if content is None:
-                    self.logger.warning(f"Couldn't get content of {worksheet}/{language_info.language_code}. Skipping")
+                    self.logger.warning(f"Couldn't get content of {worksheet}/{lang_code}. Skipping")
                     continue
                 html_counter += 1
                 filename = make_html_name(info.title)
@@ -150,13 +157,13 @@ class ExportHTML(LanguagePostProcessor):
         # Write contents.json
         # TODO define specifications for contents.json (similar to language jsons?) - for now just a simple structure
         if self._force_rewrite or html_counter > 0:
-            encoded_json = StructureEncoder().encode(language_info)
+            encoded_json = StructureEncoder().encode(lang_info)
             pretty_printed_json = json.dumps(json.loads(encoded_json), indent=4)
             with open(os.path.join(structure_folder, "contents.json"), "w") as f:
                 self.logger.info("Exporting contents.json")
                 f.write(pretty_printed_json)
 
-        self.logger.info(f"ExportHTML {language_info.language_code}: "
+        self.logger.info(f"ExportHTML {lang_code}: "
                          f"Downloaded {html_counter} HTML files, {file_counter} images")
 
 
@@ -167,6 +174,7 @@ class StructureEncoder(json.JSONEncoder):
     """
     def default(self, o):
         if isinstance(o, LanguageInfo):
+            # Don't include unfinished / outdated worksheets
             return {
                 "language_code": o.language_code,
                 "english_name": o.english_name,

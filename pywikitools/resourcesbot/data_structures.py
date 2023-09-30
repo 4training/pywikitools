@@ -336,13 +336,6 @@ class LanguageInfo:
         """ Returns a list of worksheets which are translated but are missing the PDF"""
         return [worksheet for worksheet in self.worksheets if not self.worksheets[worksheet].has_file_type('pdf')]
 
-    def count_finished_translations(self) -> int:
-        count: int = 0
-        for worksheet_info in self.worksheets.values():
-            if worksheet_info.has_file_type('pdf'):
-                count += 1
-        return count
-
 
 def json_decode(data: Dict[str, Any]):
     """
