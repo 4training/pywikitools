@@ -8,12 +8,12 @@ from configparser import ConfigParser
 # Constants
 BASE_URL = "https://test.4training.net"
 TEXT_ENDPOINT = f"{BASE_URL}/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-"
-DEEPL_ENDPOINT = "https://api-free.deepl.com/v2/translate"
 
 # Configuration
 config = ConfigParser()
-config.read('deepl_config.ini')
-DEEPL_API_KEY = config.get('DEEPL', 'API_KEY')
+config.read('config.ini')
+DEEPL_API_KEY = config.get('autotranslate', 'deeplkey')
+DEEPL_ENDPOINT = config.get('autotranslate', 'deeplendpoint')
 
 class TranslationTool:
     def __init__(self, base_url, text_endpoint, deepl_endpoint):
@@ -35,9 +35,11 @@ class TranslationTool:
         
         # Split the translation units into snippets to avoide mark-up symbols
         for translation_unit in translated_page:
-            if (translation_unit.identifier != "Dealing_with_Money/35"):
-                continue
-            
+            # if (translation_unit.identifier != "Dealing_with_Money/35"):
+            #     continue
+
+            translation_unit.remove_links()
+
             for snippet, _ in translation_unit:
                 print("Source text: " + snippet.content)
                 snippet.content = self.translate_with_deepl_or_google(snippet.content, language_code)

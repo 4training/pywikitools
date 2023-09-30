@@ -193,7 +193,7 @@ class TranslationUnit:
         """
         snippets: List[TranslationSnippet] = []
         last_pos = 0
-        pattern = re.compile(r"<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
+        pattern = re.compile(r"<.*?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
         for match in re.finditer(pattern, text):
             if (match.group()[0] == '#') and (match.start() >= 2) and (text[match.start() - 2:match.start()] == "[["):
                 continue        # Ignore '#' if it's part of an [[#internal link]]
