@@ -25,18 +25,25 @@ class TranslationTool:
         self.language_supported_by_deepl = True
 
     def fetch_and_translate(self, page_name, language_code, force):
-        response = requests.get(f"{self.text_endpoint}{page_name}&mclanguage=en")
-        data = response.json()
+        translated_page = self.fortraininglib.get_translation_units(page_name, "en")
 
         if force or self.fortraininglib.get_translated_title(page_name, language_code) is None:
             print("No translation found!")
         else:
             print("Translation existed already. If you want to force overwrite, use the -f flag.")
             return
-
-        for item in data["query"]["messagecollection"]:
-            translated_text = self.translate_with_deepl_or_google(item["definition"], language_code)
-            self.upload_translation(item["key"], translated_text, page_name, language_code)
+        
+        # Split the translation units into snippets to avoide mark-up symbols
+        for translation_unit in translated_page:
+            if (translation_unit.identifier != "Dealing_with_Money/35"):
+                continue
+            
+            for snippet, _ in translation_unit:
+                print("Source text: " + snippet.content)
+                snippet.content = self.translate_with_deepl_or_google(snippet.content, language_code)
+                print("Translated text: " + snippet.content)
+            translation_unit.sync_from_snippets()
+            self.upload_translation(translation_unit.identifier, translation_unit._definition, page_name, language_code)
 
     def translate_with_deepl_or_google(self, text, language_code):
         if self.language_supported_by_deepl:
