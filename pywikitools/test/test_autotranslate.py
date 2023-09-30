@@ -1,16 +1,16 @@
 import unittest
 from unittest.mock import patch, Mock
-
 from googletrans import Translator
-
 import pywikibot
-from autotranslate import TranslationTool, BASE_URL, TEXT_ENDPOINT, DEEPL_ENDPOINT
+import sys
+sys.path.append('../../')   # Is there a better way to do it?
+from autotranslate import TranslationTool   # noqa: E402
 
 
 class TestTranslationTool(unittest.TestCase):
 
     def setUp(self):
-        self.translator_tool = TranslationTool(BASE_URL, TEXT_ENDPOINT, DEEPL_ENDPOINT)
+        self.translator_tool = TranslationTool()
 
     @patch('requests.post')
     def test_translate_with_deepl_successful(self, mock_post):
@@ -43,7 +43,7 @@ class TestTranslationTool(unittest.TestCase):
 
     @patch.object(pywikibot.Page, 'save')
     def test_upload_translation(self, mock_save):
-        self.translator_tool.upload_translation("test_key", "Test translation", "Test_Page", "fr")
+        self.translator_tool.upload_translation("Test_Page/1/fr", "Test translation")
         mock_save.assert_called_once_with(summary="Automated translation upload")
 
 

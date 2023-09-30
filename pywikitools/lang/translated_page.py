@@ -11,8 +11,8 @@ from pywikitools.resourcesbot.data_structures import TranslationProgress, FileIn
 
 class SnippetType(Enum):
     """
-    Markup means mediawiki formatting instructions (e.g. <b>, ===, <br/>, ''', ;, # , </i> )
-    Text is some human-readable content without any markup in between
+    Markup means mediawiki formatting instructions (e.g. ===, <br/>, ; , # , * )
+    Text is some human-readable content (may contain <i> or </b>)
     """
     TEXT_SNIPPET = "Text"
     MARKUP_SNIPPET = "Markup"
@@ -79,6 +79,7 @@ class TranslationUnit:
         self._definition_snippets: Optional[List[TranslationSnippet]] = None
         self._translation_snippets: Optional[List[TranslationSnippet]] = None
         self._iterate_pos: int = 0      # For iterating over all snippets in this TranslationUnit
+        self.split_all_tags = False     # Not ideal solution to forward this parameter to split_into_snippets()
         self.logger = logging.getLogger('pywikitools.lang.TranslationUnit')
 
     def is_title(self) -> bool:
@@ -179,7 +180,7 @@ class TranslationUnit:
             self._translation_snippets = None
 
     @staticmethod
-    def split_into_snippets(text: str) -> List[TranslationSnippet]:
+    def split_into_snippets(text: str, split_all_tags: bool = False) -> List[TranslationSnippet]:
         """
         Split the given text into snippets
 
@@ -190,10 +191,16 @@ class TranslationUnit:
             ; at the beginning of a line: definition list
         For <br/>, if there is a following newline, include it also in the match.
         For *#;: if there is a following whitespace character, include it also in the match.
+
+        In case split_all_tags is set to True, we split also at each HTML tag like <i> or </b>
+        We want that only for autotranslate whereas for CorrectBot that would cause problems
         """
         snippets: List[TranslationSnippet] = []
         last_pos = 0
-        pattern = re.compile(r"<.*?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?", flags=re.MULTILINE)
+        regex = r"<br ?/?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?"
+        if split_all_tags:
+            regex = r"<.*?>\n?|[*#]\s?|={2,6}|^:\s?|^;\s?"
+        pattern = re.compile(regex, flags=re.MULTILINE)
         for match in re.finditer(pattern, text):
             if (match.group()[0] == '#') and (match.start() >= 2) and (text[match.start() - 2:match.start()] == "[["):
                 continue        # Ignore '#' if it's part of an [[#internal link]]
@@ -211,9 +218,9 @@ class TranslationUnit:
     def _ensure_split(self):
         """Split into snippets if that hasn't happened yet"""
         if self._definition_snippets is None:
-            self._definition_snippets = self.split_into_snippets(self._definition)
+            self._definition_snippets = self.split_into_snippets(self._definition, self.split_all_tags)
         if self._translation_snippets is None:
-            self._translation_snippets = self.split_into_snippets(self._translation)
+            self._translation_snippets = self.split_into_snippets(self._translation, self.split_all_tags)
 
     def is_translation_well_structured(self) -> Tuple[bool, str]:
         """
