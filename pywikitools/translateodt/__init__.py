@@ -5,7 +5,8 @@ import re
 from configparser import ConfigParser
 from typing import Dict, List, Optional
 import requests
-from pywikitools.correctbot.correct_bot import CorrectBot
+from pywikitools.correctbot.bot import CorrectBot
+from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
@@ -41,10 +42,10 @@ class TranslateODT:
 
         self.logger = logging.getLogger('pywikitools.translateodt')
         self.keep_english_file: bool = keep_english_file
-        if not self.config.has_option('mediawiki', 'baseurl') or not self.config.has_option('mediawiki', 'scriptpath'):
-            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self.config.get('mediawiki', 'baseurl'),
-                                                             self.config.get('mediawiki', 'scriptpath'))
+        if not self.config.has_option('translateodt', 'site'):
+            raise RuntimeError("Missing connection settings for translateodt in config.ini")
+        site = self.config.get('translateodt', 'site')
+        self.fortraininglib = ForTrainingLib(Family().base_url(site, ''), Family().scriptpath(site))
 
         self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
         self._original_page_count: int = 0          # How many pages did the currently opened file have originally?

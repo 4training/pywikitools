@@ -5,6 +5,7 @@ import json
 from configparser import ConfigParser
 from typing import Final, List, Optional, Dict, Tuple
 import pywikibot
+from pywikitools.family import Family
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.pdftools.metadata import check_metadata
@@ -18,22 +19,6 @@ from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, La
 from pywikitools.resourcesbot.write_report import WriteReport
 from pywikitools.resourcesbot.write_sidebar_messages import WriteSidebarMessages
 from pywikitools.resourcesbot.write_summary import WriteSummary
-
-
-# For short creation of a pywikibot site (new feature of pywikibot 7.3)
-# TODO: use this and get rid of user-config.py
-class ForTrainingFamily(pywikibot.family.Family):  # noqa: D101
-
-    name = '4training'
-    langs = {
-        'en': 'www.4training.net',
-    }
-
-    def scriptpath(self, code):
-        return {'en': '/mediawiki'}[code]
-
-    def protocol(self, code):
-        return {'en': 'https'}[code]
 
 
 class ResourcesBot:
@@ -52,21 +37,24 @@ class ResourcesBot:
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
-        self.site: pywikibot.site.APISite = pywikibot.Site()
-#       TODO use this and get rid of user-config.py
-#        family = ForTrainingFamily()
-#        self.site: pywikibot.site.APISite = pywikibot.Site(code='en', fam=family, user="AvailableResourcesBot")
-        if not self._config.has_option('mediawiki', 'baseurl') or \
-           not self._config.has_option('mediawiki', 'scriptpath'):
-            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+
+        if not self._config.has_option('resourcesbot', 'site') or \
+           not self._config.has_option('resourcesbot', 'username'):
+            raise RuntimeError("Missing connection settings for resourcesbot in config.ini")
         if not self._config.has_option("Paths", "temp"):
             self.logger.warning("Missing path for temporary files in config.ini")
             self._config.set("Paths", "temp", os.path.abspath(os.getcwd()) + "/temp/")
         if not os.path.isdir(self._config.get("Paths", "temp")):
             os.makedirs(self._config.get("Paths", "temp"))
 
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'),
-                                                             self._config.get('mediawiki', 'scriptpath'))
+        family = Family()
+        code = self._config.get('resourcesbot', 'site')
+        self.site: pywikibot.site.APISite = pywikibot.Site(code=code, fam=family,
+                                                           user=self._config.get('resourcesbot', 'username'))
+        # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
+        self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
+                                                             family.scriptpath(code))
 
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache

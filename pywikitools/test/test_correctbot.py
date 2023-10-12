@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional
 from unittest.mock import patch, Mock
 
 from pywikitools.fortraininglib import ForTrainingLib
-from pywikitools.correctbot.correct_bot import CorrectBot
+from pywikitools.correctbot.bot import CorrectBot
 from pywikitools.correctbot.correctors.fa import PersianCorrector
 from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
@@ -79,7 +79,7 @@ class CorrectorTestCase(unittest.TestCase):
 
     def compare_revisions(self, page: str, language_code: str, identifier: int, old_revision: int, new_revision: int):
         """For all "normal" translation units: Calls CorrectorBase.correct()"""
-        fortraininglib = ForTrainingLib("https://www.4training.net")
+        fortraininglib = ForTrainingLib("https://test.4training.net")
         old_content = fortraininglib.get_translated_unit(page, language_code, identifier, old_revision)
         new_content = fortraininglib.get_translated_unit(page, language_code, identifier, new_revision)
         original_content = fortraininglib.get_translated_unit(page, "en", identifier)
@@ -90,7 +90,7 @@ class CorrectorTestCase(unittest.TestCase):
 
     def compare_title_revisions(self, page: str, language_code: str, old_revision: int, new_revision):
         """Calls CorrectBase.title_correct()"""
-        fortraininglib = ForTrainingLib("https://www.4training.net")
+        fortraininglib = ForTrainingLib("https://test.4training.net")
         old_content = fortraininglib.get_translated_title(page, language_code, old_revision)
         new_content = fortraininglib.get_translated_title(page, language_code, new_revision)
         fortraininglib.session.close()
@@ -547,10 +547,10 @@ class TestPersianCorrector(CorrectorTestCase):
 class TestCorrectBot(unittest.TestCase):
     def setUp(self):
         self.config = ConfigParser()
-        self.config.read_dict({"mediawiki": {"baseurl": "https://www.4training.net", "scriptpath": "/mediawiki"}})
+        self.config.read_dict({"correctbot": {"site": "test", "username": "TestCorrectBot"}})
         self.correctbot = CorrectBot(self.config, True)
 
-    @patch("pywikitools.correctbot.correct_bot.subprocess.Popen")
+    @patch("pywikitools.correctbot.bot.subprocess.Popen")
     def test_empty_job_queue(self, mock_popen):
         # configuration for emptying job queue missing
         with self.assertLogs("pywikitools.correctbot", level="WARNING"):

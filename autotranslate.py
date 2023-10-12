@@ -2,6 +2,7 @@ import os
 import requests
 import pywikibot
 import argparse
+from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from googletrans import Translator
 from configparser import ConfigParser
@@ -13,20 +14,31 @@ class TranslationTool:
     def __init__(self):
         config = ConfigParser()
         config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-        if not config.has_option('mediawiki', 'baseurl') or \
-           not config.has_option('mediawiki', 'scriptpath'):
-            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
+        if not config.has_option('autotranslate', 'site') or \
+           not config.has_option('autotranslate', 'username'):
+            raise RuntimeError("Missing connection settings for autotranslate in config.ini")
 
+        code = config.get('autotranslate', 'site')
+        family = Family()
+        self.site = pywikibot.Site(code=code, fam=family, user=config.get('autotranslate', 'username'))
+        if not self.site.logged_in():
+            self.site.login()
+            if not self.site.logged_in():
+                raise RuntimeError("Login with pywikibot failed.")
+        # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
+        self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
+                                                             family.scriptpath(code))
+
+        self.language_supported_by_deepl = True
         if not config.has_option('autotranslate', 'deeplendpoint') or \
            not config.has_option('autotranslate', 'deeplapikey'):
-            raise RuntimeError("Missing settings for DeepL connection in config.ini")
-
+            print("Missing settings for DeepL connection in config.ini")
+            self.language_supported_by_deepl = False
         self.deepl_endpoint = config.get('autotranslate', 'deeplendpoint')
         self.deepl_api_key = config.get('autotranslate', 'deeplapikey')
-        self.fortraininglib = ForTrainingLib(config.get('mediawiki', 'baseurl'),
-                                             config.get('mediawiki', 'scriptpath'))
+
         self.google_translator = Translator()
-        self.language_supported_by_deepl = True
 
     def fetch_and_translate(self, page_name, language_code, force=False):
         translated_page = self.fortraininglib.get_translation_units(page_name, "en")
@@ -47,7 +59,7 @@ class TranslationTool:
                                     translation_unit.get_translation())
 
     def translate_with_deepl_or_google(self, text, language_code) -> str:
-        """Do the translation: First try deepl, if that doesn't work (deepl supports less languages), use google"""
+        """Do the translation: First try DeepL, if that doesn't work (DeepL supports less languages), use Google"""
         if self.language_supported_by_deepl:
             data = {
                 "auth_key": self.deepl_api_key,
@@ -66,15 +78,12 @@ class TranslationTool:
 
     def upload_translation(self, identifier: str, translated_text: str):
         """Upload the automatic translation of one translation unit back into the mediawiki system"""
-        site = pywikibot.Site()
-        if not site.logged_in():
-            site.login()
-            if not site.logged_in():
-                raise RuntimeError("Login with pywikibot failed.")
-
-        mediawiki_page = pywikibot.Page(site, f"Translations:{identifier}")
+        mediawiki_page = pywikibot.Page(self.site, f"Translations:{identifier}")
         mediawiki_page.text = translated_text
-        mediawiki_page.save(summary="Automated translation upload")
+        service = "DeepL"
+        if not self.language_supported_by_deepl:
+            service = "Google Translate"
+        mediawiki_page.save(summary=f"Automated translation by {service}")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ Main steps:
 Command line options:
     --lang LANGUAGECODE: only look at this one language (significantly faster)
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
-    --rewrite-all: Rewrite all language information pages
+    --rewrite: Force rewriting of one component or all
     --read-from-cache: Read from the JSON structure instead of querying the current status of all worksheets
 
 Logging:
@@ -40,6 +40,9 @@ Examples:
 
 Only update German language information page with more logging
     python3 resourcesbot.py --lang de -l info
+
+Quickly rewrite German exported HTML files
+    python3 resourcesbot.py --read-from-cache --lang de --rewrite html
 
 Normal run (updating language information pages where necessary)
     python3 resourcesbot.py

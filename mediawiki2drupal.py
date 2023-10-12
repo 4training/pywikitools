@@ -22,6 +22,7 @@ import logging
 from typing import Final, Dict
 from bs4 import BeautifulSoup, Comment
 import configparser
+from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 
 
@@ -204,10 +205,10 @@ if __name__ == "__main__":
     # Read the configuration from config.ini in the same directory
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
-    if config.has_option("mediawiki", "baseurl") and config.has_option("mediawiki", "scriptpath") and \
+    if config.has_option("mediawiki2drupal", "site") and \
        config.has_option("mediawiki2drupal", "endpoint") and \
        config.has_option("mediawiki2drupal", "username") and config.has_option("mediawiki2drupal", "password"):
-        fortraininglib = ForTrainingLib(config.get("mediawiki", "baseurl"), config.get("mediawiki", "scriptpath"))
+        fortraininglib = ForTrainingLib(Family().base_url(config.get("mediawiki2drupal", "site"), ''))
         mediawiki2drupal = Mediawiki2Drupal(fortraininglib, config.get("mediawiki2drupal", "endpoint"),
                                             config.get("mediawiki2drupal", "username"),
                                             config.get("mediawiki2drupal", "password"))

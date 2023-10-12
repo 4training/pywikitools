@@ -16,7 +16,7 @@ class TestFortrainingLib(unittest.TestCase):
     def setUp(self):
         # use this to see logging messages (can be increased to logging.DEBUG)
         # logging.basicConfig(level=logging.INFO)
-        self.lib = ForTrainingLib("https://www.4training.net")
+        self.lib = ForTrainingLib("https://test.4training.net")
 
     def tearDown(self):
         # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
@@ -128,7 +128,7 @@ class TestFortrainingLib(unittest.TestCase):
     def test_get_file_url(self):
         test_file = 'Forgiving_Step_by_Step.pdf'
         self.assertIsNone(self.lib.get_file_url('NotExisting'))
-        self.assertTrue(self.lib.get_file_url(test_file).startswith('https://www.4training.net'))
+        self.assertTrue(self.lib.get_file_url(test_file).startswith('https://test.4training.net'))
         self.assertTrue(self.lib.get_file_url(test_file).endswith(test_file))
 
     def test_get_translation_units(self):

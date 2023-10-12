@@ -45,7 +45,7 @@ class TestBeautifyHTML(unittest.TestCase):
         # We're not going through all of fortraininglib.get_worksheet_list() because that takes some extra time
 
         # There should be no empty <span> sections anymore
-        fortraininglib = ForTrainingLib("https://www.4training.net")
+        fortraininglib = ForTrainingLib("https://test.4training.net")
         soup = BeautifulSoup(BeautifyHTML().process_html(fortraininglib.get_page_html("Church/en")), 'html.parser')
         fortraininglib.session.close()      # workaround to remove annoying ResourceWarnings on unclosed SSLSockets
         self.assertEqual(len(soup.find_all("div", class_="mw-parser-output")), 0)

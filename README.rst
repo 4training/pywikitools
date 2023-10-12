@@ -46,24 +46,11 @@ Setup:
     * This is not necessary for all scripts, only for our LibreOffice module and scripts using it (``translateodt.py``)
     * Running the complete test suite requires it, though
 
-#. Request a user-config.py (not in the repository) and place it in the base directory
-   (same directory where the python scripts you want to run are located).
-
-#. Alternatively you can generate it yourself by using a "full" pywikibot installation:
-
-    * Go to official pywikibot website: https://www.mediawiki.org/wiki/Manual:Pywikibot/Installation and either download tar.gz / zip file or clone the git repository.
-    * Change your current directory into pywikibot (can be found from the git repos you cloned into your working space) and unpack the downloaded zip folder here (``core_stable``).
-    * Copy the file ``4training_family.py`` from ``~/pywikitools/pywikibot/families`` into ``~/pywikitools/pywikibot/core_stable/pywikibot/families``.
-    * Change into the ``~/pywikitools/pywikibot/core_stable`` directory, where you can also find the file ``pwb.py``.
-    * Run this command from the terminal: ``python3 pwb.py generate_user_files``
-
-        * select 1: 4training family
-        * enter the bot user name (Request the username from Samuel)
-        * don't enter a new password here
-    * Set up configuration in ``config.ini``:
+#. Set up configuration in ``config.ini``:
 
         * ``cp config.example.ini config.ini``
-        * Change the base path ini ``config.ini`` to the directory, where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
+        * Change the base path ini ``config.ini`` to the directory where you cloned the pywikitools base folder, for example:  ``base = /YOUR_HOME_PATH/pywikitools/``
+        * Configure all other necessary options like user names and site (connect to ``4training.net`` / ``test.4training.net``)
 
 #. You're ready to go! Look at the different scripts and how to invoke them and try them out! To get to know everything and to understand what is going on, set the logging level to INFO (default is WARN) by adding ``-l info``.
 
@@ -72,9 +59,7 @@ Run scripts
 -----------
 ``python3 path/to/script args``
 
-(*more cumbersome alternative using a full pywikibot installation:* ``python3 /path/to/pwb.py path/to/script.py args``)
-
-If you're not yet logged in, pywikibot will ask you for the password for the user you defined in ``user-config.py``. After successful login, the login cookie is stored in ``pywikibot.lwp`` so you don't have to log in every time again.
+If you're not yet logged in, pywikibot will ask you for the password for the user you defined in ``config.ini``. After successful login, the login cookie is stored in ``pywikibot-[UserName].lwp`` so you don't have to log in every time again.
 
 Testing and ensuring good code quality
 --------------------------------------
@@ -90,31 +75,41 @@ We use codecov to calculate the coverage ratio. You can see it in the codecov ba
 check out the details on `codecov.io`_
 
 
-File overview
--------------
+File overview: Configuration and main entry scripts
+---------------------------------------------------
 
+autotranslate.py
+    Create a first translation draft by using machine translation by DeepL or Google translate
+    Introduction for users: https://www.youtube.com/watch?v=czsqgA6Ua7s
 config.example.ini
     Example for all configuration settings
 config.ini
-    Not in repository, needs to be created by you
+    Not in repository, needs to be created by you. Configure here for each script:
+    Which system should we connect to? (www.4training.net / test.4training.net)
+    Which user name does it use?
+correct_bot.py
+    Automatically correct simple mistakes in texts of different languages
+resources_bot.py
+    Automatically scan through all available translations, gather information on each language
+    and do many useful things with this information, like
+    filling out the “Available training resources in...” for each language and
+    exporting the worksheets into HTML
+translateodt.py
+    Processes English ODT file and replaces it with the translation into another language
+    Introduction for users: https://www.youtube.com/watch?v=g9lZbLaXma0
+pywikitools/fortraininglib.py
+    Our central library with important functions and API calls
+
+
+More tools:
+
 downloadalltranslations.py
     Download all translated worksheets of a given worksheet
 dropboxupload.py
     Upload files into dropbox
-fortraininglib.py
-    Our central library with important functions and API calls
-generateodtbot.py
-    Wrapper script for translateodt.py (requires pywikibot)
-resources_bot.py
-    Automatically fill out the “Available training resources in...” for each language (requires pywikibot)
-translateodt.py
-    Processes English ODT file and replaces it with the translation into another language
-    Introduction for users: https://www.youtube.com/watch?v=g9lZbLaXma0
-cgi-bin/generateodt.py
-    CGI-Handler that receives the request (coming from outside like https://www.example.net/cgi-bin/generateodt.py)
-    and calls generateodtbot.py
-correctbot/
-    Can automatically correct simple mistakes in texts of different languages (not yet operational)
+mediawiki2drupal.py
+    Export content from mediawiki into Drupal
+
 
 License
 -------
@@ -141,10 +136,6 @@ We use github issues for specific tasks, wishes, bugs etc.
 Please don’t hesitate to open a new one! Assign yourself on the issues that
 you plan to work on.
 
-Features
---------
-
-* TODO
 
 Credits
 -------

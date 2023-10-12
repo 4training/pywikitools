@@ -1,27 +1,12 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-"""
-Bot that replaces common typos for different languages.
-
-All correction rules for different languages are in the correctors/ folder in separate classes.
-
-Run with dummy page:
-    python3 correct_bot.py Test de
-    python3 correct_bot.py CorrectTestpage fr
-
-"""
-
-import argparse
 from collections import Counter
 from configparser import ConfigParser
 import logging
 import importlib
-from os.path import abspath, dirname, join
 import subprocess
 import pywikibot
 import re
-import sys
 from typing import Callable, List, Optional
+from pywikitools.family import Family
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.correctbot.correctors.base import CorrectionResult, CorrectorBase
@@ -32,13 +17,19 @@ class CorrectBot:
     """Main class for doing corrections"""
     def __init__(self, config: ConfigParser, simulate: bool = False):
         self._config = config
-        if not self._config.has_option('mediawiki', 'baseurl') or \
-           not self._config.has_option('mediawiki', 'scriptpath'):
-            raise RuntimeError("Missing settings for mediawiki connection in config.ini")
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(self._config.get('mediawiki', 'baseurl'),
-                                                             self._config.get('mediawiki', 'scriptpath'))
+        if not self._config.has_option('correctbot', 'site') or \
+           not self._config.has_option('correctbot', 'username'):
+            raise RuntimeError("Missing connection settings for correctbot in config.ini")
+
+        code = self._config.get('correctbot', 'site')
+        family = Family()
+        self.site = pywikibot.Site(code=code, fam=family, user=self._config.get('correctbot', 'username'))
+        # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
+        self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
+                                                             family.scriptpath(code))
+
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
-        self.site: pywikibot.site.APISite = pywikibot.Site()
         self._simulate: bool = simulate
         self._translated_title: Optional[str] = None
         self._correction_diff: str = ""
@@ -350,7 +341,7 @@ class CorrectBot:
         saved_report = False
         if not self._simulate:
             # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
-            # "No user is logged in on site 4training:en" -> better check and try to log in if necessary
+            # "No user is logged in on site 4training:4training" -> better check and try to log in if necessary
             if not self.site.logged_in():
                 self.logger.info("We're not logged in. Trying to log in...")
                 self.site.login()
@@ -380,47 +371,3 @@ class CorrectBot:
         if self._suggestion_counter > 0:
             print(self.get_suggestion_diff())
         print(self.get_warnings())
-
-
-def parse_arguments() -> argparse.Namespace:
-    """
-    Parse command-line arguments
-
-    Returns:
-        CorrectBot instance
-    """
-    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("page", help="Name of the mediawiki page")
-    parser.add_argument("language_code", help="Language code")
-    parser.add_argument("-s", "--simulate", action="store_true",
-                        help="Simulates the corrections but does not apply them to the webpage.")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
-    parser.add_argument("--only", help="Only apply the correction rule with the specified method name")
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = parse_arguments()
-
-    # Set up logging
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    sh = logging.StreamHandler(sys.stdout)
-    fformatter = logging.Formatter('%(levelname)s: %(message)s')
-    sh.setFormatter(fformatter)
-    numeric_level = getattr(logging, args.loglevel.upper(), None)
-    assert isinstance(numeric_level, int)
-    sh.setLevel(numeric_level)
-    root.addHandler(sh)
-
-    config = ConfigParser()
-    config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
-
-    correctbot = CorrectBot(config, args.simulate)
-    apply_only_rule = None
-    if args.only is not None:
-        apply_only_rule = str(args.only)
-
-    correctbot.run(args.page, args.language_code, apply_only_rule)

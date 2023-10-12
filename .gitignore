@@ -13,9 +13,6 @@ throttle.ctrl
 # pywikibot caching
 apicache-py3
 
-# pywikibot family file for correctbot
-pywikitools/correctbot/families/
-
 # worksheet files
 worksheets/
 *.pdf

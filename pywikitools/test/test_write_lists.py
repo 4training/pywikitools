@@ -14,7 +14,7 @@ class TestWriteList(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            self.write_list = WriteList(ForTrainingLib("https://www.4training.net"), None, "", "")
+            self.write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "")
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
         # Create a pseudo English LanguageInfo - enough for our testing purposes (version is always the same)
@@ -27,7 +27,7 @@ class TestWriteList(unittest.TestCase):
 
     def test_force_rewrite(self):
         with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
-            write_list = WriteList(ForTrainingLib("https://www.4training.net"), None, "", "", force_rewrite=True)
+            write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "", force_rewrite=True)
         self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
         self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
 

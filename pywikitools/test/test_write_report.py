@@ -17,7 +17,7 @@ class TestWriteReport(unittest.TestCase):
             self.language_info = json.load(f, object_hook=json_decode)
         with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
             self.english_info = json.load(f, object_hook=json_decode)
-        self.fortraininglib = ForTrainingLib("https://www.4training.net")
+        self.fortraininglib = ForTrainingLib("https://test.4training.net")
 
     @staticmethod
     def mock_pywikibot_pages(site, page: str):

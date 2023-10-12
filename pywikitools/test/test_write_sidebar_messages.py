@@ -15,7 +15,7 @@ class TestWriteSidebarMessages(unittest.TestCase):
         self.language_info = LanguageInfo("de", "German")
         self.language_info.add_worksheet_info("Hearing_from_God", self.worksheet)
 
-        self.write_sidebar_messages = WriteSidebarMessages(ForTrainingLib("https://www.4training.net"), None)
+        self.write_sidebar_messages = WriteSidebarMessages(ForTrainingLib("https://test.4training.net"), None)
 
     @patch("pywikibot.Page")
     def test_save_worksheet_title(self, mock_page):

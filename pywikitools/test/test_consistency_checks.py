@@ -8,7 +8,7 @@ from pywikitools.resourcesbot.data_structures import LanguageInfo
 
 class TestConsistencyCheck(unittest.TestCase):
     def setUp(self):
-        self.fortraininglib = ForTrainingLib("https://www.4training.net")
+        self.fortraininglib = ForTrainingLib("https://test.4training.net")
 
     def tearDown(self):
         # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...

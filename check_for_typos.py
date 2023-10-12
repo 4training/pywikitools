@@ -13,7 +13,7 @@ from os.path import abspath, dirname, join
 import sys
 from typing import List
 
-from pywikitools.correctbot.correct_bot import CorrectBot
+from pywikitools.correctbot.bot import CorrectBot
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     root.addHandler(sh)
 
     config = ConfigParser()
-    config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
+    config.read(join(dirname(abspath(__file__)), "config.ini"))
     correctbot = CorrectBot(config, simulate=True)
 
     apply_only_rule = None
