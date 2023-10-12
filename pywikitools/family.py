@@ -37,7 +37,7 @@ class Family(pywikibot.family.SubdomainFamily):
         'test': 'test.4training.net'
     }
 
-    # this must  have the same value as $wgScriptPath in LocalSettings.php of the mediawiki installation
+    # this must have the same value as $wgScriptPath in LocalSettings.php of the mediawiki installation
     def scriptpath(self, code):
         return '/mediawiki'
 

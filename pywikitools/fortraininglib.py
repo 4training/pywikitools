@@ -25,7 +25,8 @@ class ForTrainingLib():
     def __init__(self, base_url: str, script_path: str = "/mediawiki"):
         """
         @param base_url: Domain of the mediawiki system we want to query (example: "https://www.example.com")
-        @param api_path: path of the mediawiki API endpoint (relative to base_url)
+        @param script_path: Equivalent to $wgScriptPath of the mediawiki system
+        We expect to find the mediawiki API endpoint at f"{base_url}{script_path}/api.php"
         """
         self.base_url: Final[str] = base_url
         self.script_path: Final[str] = script_path

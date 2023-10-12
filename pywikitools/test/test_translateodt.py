@@ -11,7 +11,8 @@ from pywikitools.translateodt import TranslateODT, TranslateOdtConfig
 
 class DummyTranslateODT(TranslateODT):
     def __init__(self):
-        super().__init__(keep_english_file=True, config={"translateodt": {"site": "4training"}})
+        super().__init__(keep_english_file=True, config={"translateodt": {"site": "4training"},
+                                                         "correctbot": {"site": "4training", "username": "Test"}})
         self._loffice = Mock(spec=LibreOffice)
 
 
