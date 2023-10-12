@@ -1,6 +1,6 @@
 flake8>=6.1.0
 coverage>=7.3.2
-Sphinx>=7.2.6
+Sphinx>=7.0.0
 setuptools>=68.2.2
 wikitextparser>=0.54.0
 pywikibot>=8.4.0
