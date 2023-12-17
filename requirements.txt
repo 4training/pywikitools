@@ -9,4 +9,4 @@ dropbox>=11.36.2
 beautifulsoup4>=4.12.2
 GitPython>=3.1.37
 pikepdf>=8.5.1
-googletrans>=3.0.0
+googletrans>=4.0.0rc1
