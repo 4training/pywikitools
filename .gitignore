@@ -11,6 +11,7 @@ pywikibot*.lwp
 # pywikibot throttle control
 throttle.ctrl
 # pywikibot caching
+apicache
 apicache-py3
 
 # worksheet files

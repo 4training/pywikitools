@@ -110,7 +110,6 @@ class ResourcesBot:
             self.logger.info("We're not logged in. Trying to log in...")
             self.site.login()
             if not self.site.logged_in():
-                self.site.getuserinfo()
                 self.logger.warning(f"userinfo: {self.site.userinfo}")
                 raise RuntimeError("Login with pywikibot failed.")
 
