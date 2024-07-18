@@ -2,6 +2,7 @@ config.ini
 logs/
 temp/
 htmlexport/
+pdfexport/
 generateodtbot.lock
 
 # Contains (potentially sensitive) details to log into a specific mediawiki instance

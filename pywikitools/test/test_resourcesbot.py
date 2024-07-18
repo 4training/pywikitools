@@ -125,8 +125,9 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportPDF", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
-    def test_run_with_cache(self, mock_consistency_check, mock_export_html, mock_export_repository,
+    def test_run_with_cache(self, mock_consistency_check, mock_export_pdf, mock_export_html, mock_export_repository,
                             mock_write_sidebar_messages, mock_write_list, mock_write_report, mock_write_summary,
                             mock_pywikibot_page, mock_pywikibot_site):
         mock_pywikibot_page.side_effect = self.json_test_loader
@@ -136,6 +137,7 @@ class TestResourcesBot(unittest.TestCase):
 
         # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
         self.assertEqual(mock_consistency_check.return_value.run.call_count, 2)
+        self.assertEqual(mock_export_pdf.return_value.run.call_count, 2)
         self.assertEqual(mock_export_html.return_value.run.call_count, 2)
         self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
         self.assertEqual(mock_write_sidebar_messages.return_value.run.call_count, 2)
@@ -158,8 +160,9 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
+    @patch("pywikitools.resourcesbot.bot.ExportPDF", autospec=True)
     @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
-    def test_rewrite_options(self, mock_consistency_check, mock_export_html, mock_export_repository,
+    def test_rewrite_options(self, mock_consistency_check, mock_export_pdf, mock_export_html, mock_export_repository,
                              mock_write_sidebar_messages, mock_write_list, mock_write_report, mock_write_summary,
                              mock_pywikibot_page, mock_pywikibot_site):
         mock_pywikibot_page.side_effect = self.json_test_loader

@@ -72,7 +72,7 @@ def parse_arguments() -> ResourcesBot:
     description = 'Update list of available training resources in the language information pages'
     epilog = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
-    rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'sidebar']
+    rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'pdf', 'sidebar']
 
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=description, epilog=epilog)
     parser.add_argument('--lang', help='run script for only one language')

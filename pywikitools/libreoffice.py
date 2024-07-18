@@ -89,7 +89,7 @@ class LibreOffice:
             sleep(2)
 
         if not search_ready:
-            raise ConnectionError("Error trying to access the LibreOffice document {file_name}."
+            raise ConnectionError(f"Error trying to access the LibreOffice document {file_name}."
                                   f"Tried {retries} times, giving up now.")
 
     def get_page_count(self) -> int:

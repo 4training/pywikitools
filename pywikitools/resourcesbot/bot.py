@@ -12,6 +12,7 @@ from pywikitools.pdftools.metadata import check_metadata
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.export_html import ExportHTML
+from pywikitools.resourcesbot.export_pdf import ExportPDF
 from pywikitools.resourcesbot.export_repository import ExportRepository
 from pywikitools.resourcesbot.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
@@ -132,6 +133,8 @@ class ResourcesBot:
         consistency_check = ConsistencyCheck(self.fortraininglib)
         export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
                                  force_rewrite=(self._rewrite == "all") or (self._rewrite == "html"))
+        export_pdf = ExportPDF(self.fortraininglib, self._config.get("Paths", "pdfexport", fallback=""),
+                               force_rewrite=(self._rewrite == "all") or (self._rewrite == "pdf"))
         export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
         assert "en" in self._result
         assert "en" in self._changelog
@@ -139,6 +142,7 @@ class ResourcesBot:
         for lang in self._result:
             consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
             export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+            export_pdf.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
             export_repository.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
             write_list.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
             write_report.run(self._result[lang], self._result["en"], self._changelog[lang], self._changelog["en"])
