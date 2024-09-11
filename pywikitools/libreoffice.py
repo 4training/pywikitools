@@ -42,6 +42,7 @@ class LibreOffice:
         self._desktop: Optional[Any] = None     # LibreOffice central desktop element (com.sun.star.frame.Desktop)
         self._model: Optional[Any] = None       # LibreOffice current component
         self._proc: Optional[Any] = None        # LibreOffice process handle
+        self._document: Optional[Any] = None
 
     def open_file(self, file_name: str):
         """Opens an existing LibreOffice document
@@ -51,7 +52,7 @@ class LibreOffice:
         """
         self.logger.info(f"Opening file {file_name}")
 
-        command = 'soffice ' + shlex.quote(file_name)
+        command = 'soffice '  # + shlex.quote(file_name)
         if self._headless:
             command += " --headless"
         command += f' --accept="socket,host=localhost,port={self.PORT};urp;StarOffice.ServiceManager"'
@@ -76,7 +77,15 @@ class LibreOffice:
             else:
                 self._desktop = ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
                 self._model = self._desktop.getCurrentComponent()
+
                 if self._model:
+                    if not self._document:
+                        # Prepare the file URL (convert path to URL format)
+                        file_url = uno.systemPathToFileUrl(file_name)
+
+                        # Open the document (asynchronously)
+                        self._document = self._desktop.loadComponentFromURL(file_url, "_blank", 0, ())
+                        sleep(2)
                     try:
                         self._model.createSearchDescriptor()
                     except AttributeError as error:
