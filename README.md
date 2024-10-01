@@ -37,40 +37,40 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 > `README.md`, `CONTRIBUTING.md`, and `requirements.txt`.
 
 1. Install required libraries:
-   ```bash
-   pip install -r requirements.txt
+   ```shell
+   $ pip install -r requirements.txt
    ```
     * Follow these steps if you are using a virtual environment on a Linux
       machine:
         * To install `virtualenv`:
-        ```bash
-        sudo python3 -m pip install virtualenv
+        ```shell
+        $ sudo python3 -m pip install virtualenv
         ```
         * To create a new virtual environment:
-        ```bash
-        virtualenv --system-site-packages new_venv_name
+        ```shell
+        $ virtualenv --system-site-packages new_venv_name
         ```
       > It is important to include the tag `--system-site-packages`,
       else the virtual environment will not be able to import the uno package
       into your working environment.
         * To activate the virtual environment:
-        ```bash
-        source new_venv_name/bin/activate
+        ```shell
+        $ source new_venv_name/bin/activate
         ```
         * Change into pywikitools base path and run
-        ```bash
-        pip install -r requirements.txt
+        ```shell
+        $ pip install -r requirements.txt
         ```
 2. Install LibreOffice UNO (python bridge - on linux)
-   ```bash
-   sudo apt-get install python3-uno
+   ```shell
+   $ sudo apt-get install python3-uno
    ``` 
    > This is not necessary for all scripts, only for our LibreOffice module and
    scripts using it (`translateodt.py`). Running the complete test suite
    > requires it, though.
 3. Set up configuration in `config.ini`:
-   ```bash
-   cp config.example.ini config.ini
+   ```shell
+   $ cp config.example.ini config.ini
    ```
     * Change the base path in `config.ini` to the directory where you cloned the
       pywikitools base directory, for example:
@@ -85,8 +85,8 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 
 ## Run scripts
 
-```bash
-python3 path/to/script args
+```shell
+$ python3 path/to/script args
 ```
 
 If you're not yet logged in, `pywikibot` will ask you for the password for the
@@ -98,14 +98,14 @@ stored in `pywikibot-[UserName].lwp` so you don't have to log in every time.
 From your base pywikitools path, use the following command to run the test
 suite.
 
-```bash
-python3 -m unittest discover -s pywikitools/test
+```shell
+$ python3 -m unittest discover -s pywikitools/test
 ``` 
 
 Also, run the next command to check for linting issues
 
-```bash
-flake8
+```shell
+$ flake8
 ```
 
 With `GitHub Actions` these two commands are automatically run also on every
