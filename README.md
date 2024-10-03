@@ -9,9 +9,10 @@ Python tools for mediawiki with the Translate plugin (some based on pywikibot).
 This is used for [4training](https://www.4training.net) to remove some
 bottlenecks of the project, providing different automation and reports (TODO:
 document the outcomes of these scripts). Hopefully, others can benefit from some
- scripts as well!
+scripts as well!
 
-* Free software: [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html)
+* Free
+  software: [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 The tools use the [MediaWiki API](https://www.4training.net/mediawiki/api.php).
 
@@ -36,38 +37,42 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 > **Note**: pywikitools base path refers to the directory where you can find
 > `README.md`, `CONTRIBUTING.md`, and `requirements.txt`.
 
-1. Install required libraries:
-   ```shell
-   $ pip install -r requirements.txt
-   ```
-    * Follow these steps if you are using a virtual environment on a Linux
-      machine:
-        * To install `virtualenv`:
-        ```shell
-        $ sudo python3 -m pip install virtualenv
-        ```
-        * To create a new virtual environment:
-        ```shell
-        $ virtualenv --system-site-packages new_venv_name
-        ```
-      > It is important to include the tag `--system-site-packages`,
-      else the virtual environment will not be able to import the uno package
-      into your working environment.
-        * To activate the virtual environment:
-        ```shell
-        $ source new_venv_name/bin/activate
-        ```
-        * Change into pywikitools base path and run
-        ```shell
-        $ pip install -r requirements.txt
-        ```
-2. Install LibreOffice UNO (python bridge - on linux)
+1. Install required libraries within a `virtualenv`:
+
+    > We strongly recommend you to use a virtual environment to manage your  
+      Python dependencies.
+
+    * Install `virtualenv`:
+
+       ```shell
+       $ sudo python -m pip install virtualenv
+       ```
+
+    * Create a new virtual environment:
+
+       ```shell
+       $ virtualenv new_venv_name
+       ```
+
+    * Activate the virtual environment:
+
+       ```shell
+       $ source new_venv_name/bin/activate
+       ```
+
+    * At the root directory of `pywikitools`, run:
+
+       ```shell
+       $ pip install -r requirements.txt
+       ```
+
+2. Install LibreOffice UNO (python bridge, on linux)
    ```shell
    $ sudo apt-get install python3-uno
    ``` 
-   > This is not necessary for all scripts, only for our LibreOffice module and
-   scripts using it (`translateodt.py`). Running the complete test suite
-   > requires it, though.
+   > This is required for our LibreOffice module and scripts using it
+   > (`translateodt.py`), and to run the complete test suite.
+
 3. Set up configuration in `config.ini`:
    ```shell
    $ cp config.example.ini config.ini
@@ -79,6 +84,7 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
       ```
     * Configure all other necessary options like usernames and site (connect to
       `4training.net` / `test.4training.net`)
+
 4. You're ready to go! Look at the different scripts and how to invoke them and
    try them out! To get to know everything and to understand what is going on,
    set the logging level to INFO (default is WARN) by adding `-l info`.
