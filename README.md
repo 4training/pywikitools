@@ -39,7 +39,7 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 
 1. Install required libraries within a `virtualenv`:
 
-    > We strongly recommend you to use a virtual environment to manage your  
+    > We strongly recommend you to use a virtual environment to manage your
       Python dependencies.
 
     * Install `virtualenv`:
@@ -69,7 +69,7 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 2. Install LibreOffice UNO (python bridge, on linux)
    ```shell
    $ sudo apt-get install python3-uno
-   ``` 
+   ```
    > This is required for our LibreOffice module and scripts using it
    > (`translateodt.py`), and to run the complete test suite.
 
@@ -83,7 +83,7 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
       base = /YOUR_HOME_PATH/pywikitools/
       ```
     * Configure all other necessary options like usernames and site (connect to
-      `4training.net` / `test.4training.net`)
+      `4training.net` / `test.4training.net` / [local docker-based server](https://github.com/4training/docker) `localhost:8082`)
 
 4. You're ready to go! Look at the different scripts and how to invoke them and
    try them out! To get to know everything and to understand what is going on,
@@ -106,7 +106,7 @@ suite.
 
 ```shell
 $ python3 -m unittest discover -s pywikitools/test
-``` 
+```
 
 Also, run the next command to check for linting issues
 
@@ -140,7 +140,7 @@ config.example.ini
 config.ini
 : Not in repository, needs to be created by you.
 This is where you set up your configuration for each script, e.g.:
-Which system should it connect to? `4training.net` || `test.4training.net`
+Which system should it connect to? `4training.net` || `test.4training.net` || `localhost:8082`
 Which username should it use?
 
 correct_bot.py

@@ -34,7 +34,8 @@ class Family(pywikibot.family.SubdomainFamily):
     # Our live and test environments
     langs = {
         '4training': 'www.4training.net',
-        'test': 'test.4training.net'
+        'test': 'test.4training.net',
+        'local': 'localhost:8082'
     }
 
     # this must have the same value as $wgScriptPath in LocalSettings.php of the mediawiki installation
@@ -43,4 +44,6 @@ class Family(pywikibot.family.SubdomainFamily):
 
     # TODO can be removed when upgrading to pywikibot ^8.2
     def protocol(self, code):
+        if code == 'local':
+            return 'http'
         return 'https'
