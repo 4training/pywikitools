@@ -148,6 +148,14 @@ class ConsistencyCheck(LanguagePostProcessor):
         t26.set_translation(t26.get_translation()[3:])
         return self.should_be_equal(t24, t26)
 
+    def check_three_thirds_process(self, language_info: LanguageInfo) -> bool:
+        """
+        File names for PNG, PDF and ODG files should all be the same except the ending.
+        """
+        # TODO: Implement test!
+        return 1
+        
+
     def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
         checks_passed: int = 0
         checks_passed += int(self.check_bible_reading_hints_titles(language_info))
@@ -155,7 +163,8 @@ class ConsistencyCheck(LanguagePostProcessor):
         checks_passed += int(self.check_who_do_i_need_to_forgive(language_info))
         checks_passed += int(self.check_bible_reading_hints_links(language_info))
         checks_passed += int(self.check_book_of_acts(language_info))
-        self.logger.info(f"Consistency checks for {language_info.english_name}: {checks_passed}/5 passed")
+        checks_passed += int(self.check_three_thirds_process(language_info))
+        self.logger.info(f"Consistency checks for {language_info.english_name}: {checks_passed}/6 passed")
 
 
 """

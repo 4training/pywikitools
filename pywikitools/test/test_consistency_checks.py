@@ -30,7 +30,7 @@ class TestConsistencyCheck(unittest.TestCase):
         language_info = LanguageInfo("en", "English")
         with self.assertLogs("pywikitools.resourcesbot.consistency_checks", level="INFO") as logs:
             cc.run(language_info, LanguageInfo("en", "English"), ChangeLog(), ChangeLog())
-        self.assertIn("Consistency checks for English: 5/5 passed", logs.output[0])
+        self.assertIn("Consistency checks for English: 6/6 passed", logs.output[0])
 
 
 if __name__ == '__main__':
