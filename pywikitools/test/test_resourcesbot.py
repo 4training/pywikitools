@@ -94,6 +94,13 @@ class TestResourcesBot(unittest.TestCase):
             self.bot._add_file_type(worksheet_info, "pdf", "Hearing_from_God.pdf")
         self.assertFalse(worksheet_info.has_file_type("pdf"))
 
+        mock_filepage.side_effect = ValueError("Invalid extension")
+        progress = TranslationProgress(**TEST_PROGRESS)
+        worksheet_info = WorksheetInfo("Hearing_from_God", "en", "Hearing from God", progress, "1.2")
+        with self.assertLogs("pywikitools.resourcesbot", level="WARNING"):
+            self.bot._add_file_type(worksheet_info, "pdf", "Hearing_from_God")
+        self.assertFalse(worksheet_info.has_file_type("pdf"))
+
     def test_get_english_version(self):
         version, version_unit = self.bot.get_english_version(HEARING_FROM_GOD)
         self.assertEqual(version, "1.2")

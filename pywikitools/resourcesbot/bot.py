@@ -214,7 +214,7 @@ class ResourcesBot:
                                         unit=unit, metadata=metadata)
             else:
                 self.logger.warning(f"Page {worksheet.page}/{worksheet.language_code}: Couldn't find {file_name}.")
-        except pywikibot.exceptions.Error as err:
+        except (ValueError, pywikibot.exceptions.Error) as err:
             self.logger.warning(f"Exception thrown for {file_type} file: {err}")
 
     def _add_english_file_infos(self, page_source: str, worksheet: WorksheetInfo) -> None:
