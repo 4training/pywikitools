@@ -152,9 +152,21 @@ class ConsistencyCheck(LanguagePostProcessor):
         """
         File names for PNG, PDF and ODG files should all be the same except the ending.
         """
-        # TODO: Implement test!
-        return 1
-        
+        png = self.load_translation_unit(language_info, "The Three-Thirds Process", 12).get_translation()
+        odg = self.load_translation_unit(language_info, "The Three-Thirds Process", 10).get_translation()
+        pdf = self.load_translation_unit(language_info, "The Three-Thirds Process", 9).get_translation()
+
+        try:
+            assert png[-3:] == 'png'
+            assert odg[-3:] == 'odg'
+            assert pdf[-3:] == 'pdf'
+
+            assert png.replace('png','') == odg.replace('odg','') == pdf.replace('pdf', '')
+
+            return 1
+
+        except AssertionError:
+            return 0
 
     def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
         checks_passed: int = 0
