@@ -92,6 +92,28 @@ class ConsistencyCheck(LanguagePostProcessor):
                             f"{base.get_translation()}. Check {base.get_name()} and {other.get_name()}")
         return False
 
+    def should_start_with_str(self, base: str, other: Optional[TranslationUnit]) -> bool:
+        "returns True if checks pass: other starts with base str (or not existing)"
+        if base is None or other is None:
+            return True
+        if other.get_translation().startswith(base):
+            self.logger.debug(f"Consistency check passed: "
+                f"{other.get_translation()} starts with {base}")
+            return True
+        self.logger.warning(f"Consistency check failed: {other.get_translation()} does not start with"
+            f"{base}. Check {base} and {other.get_name()}")
+
+    def should_end_with_str(self, base: str, other: Optional[TranslationUnit]) -> bool:
+        "returns True if checks pass: other ends with base str (or not existing)"
+        if base is None or other is None:
+            return True
+        if other.get_translation().endswith(base):
+            self.logger.debug(f"Consistency check passed: "
+            f"{other.get_translation()} starts with {base}")
+            return True
+        self.logger.warning(f"Consistency check failed: {other.get_translation()} does not end with"
+            f"{base}. Check {base} and {other.get_name()}")
+
     def check_bible_reading_hints_titles(self, language_info: LanguageInfo) -> bool:
         """Titles of the different Bible Reading Hints variants should start the same"""
         ret1 = self.should_start_with(
@@ -152,17 +174,19 @@ class ConsistencyCheck(LanguagePostProcessor):
         """
         File names for PNG, PDF and ODG files should all be the same except the ending.
         """
-        png = self.load_translation_unit(language_info, "The Three-Thirds Process", 12).get_translation()
-        odg = self.load_translation_unit(language_info, "The Three-Thirds Process", 10).get_translation()
-        pdf = self.load_translation_unit(language_info, "The Three-Thirds Process", 9).get_translation()
+
+        png = self.load_translation_unit(language_info, "The Three-Thirds Process", 12)
+        odg = self.load_translation_unit(language_info, "The Three-Thirds Process", 10)
+        pdf = self.load_translation_unit(language_info, "The Three-Thirds Process", 9)
 
         try:
-            assert png[-3:] == 'png'
-            assert odg[-3:] == 'odg'
-            assert pdf[-3:] == 'pdf'
-
-            assert png.replace('png','') == odg.replace('odg','') == pdf.replace('pdf', '')
-
+            
+            assert self.should_end_with_str('png', png)
+            assert self.should_end_with_str('odg', odg)
+            assert self.should_end_with_str('pdf', pdf)
+            
+            for unit in (png, odg, pdf):
+                assert self.should_start_with_str("The Three-Thirds Process", unit)
             return 1
 
         except AssertionError:
