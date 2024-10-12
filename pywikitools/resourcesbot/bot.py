@@ -26,7 +26,7 @@ class ResourcesBot:
     """Contains all the logic of our bot"""
 
     def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite: Optional[str] = None,
-                 read_from_cache: bool = False):
+            read_from_cache: bool = False, module: Optional[str] = None):
         """
         Args:
             limit_to_lang: limit processing to one language (string with a language code)
@@ -60,14 +60,18 @@ class ResourcesBot:
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
         self._rewrite: str = rewrite if rewrite is not None else ""     # "" instead of None makes life a bit easier
+        self._module: str = module
         if self._limit_to_lang is not None:
             self.logger.info(f"Parameter lang is set, limiting processing to language {limit_to_lang}")
         if self._read_from_cache:
             self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
         if self._rewrite != "":
             self.logger.info(f"Parameter rewrite is set to {rewrite}")
+        if self._module:
+            self.logger.info(f"Limiting processing to module {module}")
 
         # Stores details on all languages: language code -> information about all worksheets in that language
+
         self._result: Dict[str, LanguageInfo] = {}
 
         # Changes since the last run (will be filled after gathering of all information is done)
@@ -140,13 +144,16 @@ class ResourcesBot:
         assert "en" in self._changelog
         self.logger.info(f"Starting post-processing for languages {list(self._result.keys())}")
         for lang in self._result:
-            consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
-            export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            export_pdf.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            export_repository.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            write_list.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            write_report.run(self._result[lang], self._result["en"], self._changelog[lang], self._changelog["en"])
-            write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+            if self._module == 'consistency':
+                consistency_check.run(self._result[lang], self._result['en'], ChangeLog(), ChangeLog())
+            else:
+                consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
+                export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+                export_pdf.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+                export_repository.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+                write_list.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+                write_report.run(self._result[lang], self._result["en"], self._changelog[lang], self._changelog["en"])
+                write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:

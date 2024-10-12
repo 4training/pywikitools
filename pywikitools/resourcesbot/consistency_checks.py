@@ -92,6 +92,28 @@ class ConsistencyCheck(LanguagePostProcessor):
                             f"{base.get_translation()}. Check {base.get_name()} and {other.get_name()}")
         return False
 
+    def should_start_with_str(self, base: str, other: Optional[TranslationUnit]) -> bool:
+        "returns True if checks pass: other starts with base str (or not existing)"
+        if base is None or other is None:
+            return True
+        if other.get_translation().startswith(base):
+            self.logger.debug(f"Consistency check passed: "
+                f"{other.get_translation()} starts with {base}")
+            return True
+        self.logger.warning(f"Consistency check failed: {other.get_translation()} does not start with"
+            f"{base}. Check {base} and {other.get_name()}")
+
+    def should_end_with_str(self, base: str, other: Optional[TranslationUnit]) -> bool:
+        "returns True if checks pass: other ends with base str (or not existing)"
+        if base is None or other is None:
+            return True
+        if other.get_translation().endswith(base):
+            self.logger.debug(f"Consistency check passed: "
+            f"{other.get_translation()} starts with {base}")
+            return True
+        self.logger.warning(f"Consistency check failed: {other.get_translation()} does not end with"
+            f"{base}. Check {base} and {other.get_name()}")
+
     def check_bible_reading_hints_titles(self, language_info: LanguageInfo) -> bool:
         """Titles of the different Bible Reading Hints variants should start the same"""
         ret1 = self.should_start_with(
@@ -148,6 +170,28 @@ class ConsistencyCheck(LanguagePostProcessor):
         t26.set_translation(t26.get_translation()[3:])
         return self.should_be_equal(t24, t26)
 
+    def check_three_thirds_process(self, language_info: LanguageInfo) -> bool:
+        """
+        File names for PNG, PDF and ODG files should all be the same except the ending.
+        """
+
+        png = self.load_translation_unit(language_info, "The Three-Thirds Process", 12)
+        odg = self.load_translation_unit(language_info, "The Three-Thirds Process", 10)
+        pdf = self.load_translation_unit(language_info, "The Three-Thirds Process", 9)
+
+        try:
+            
+            assert self.should_end_with_str('png', png)
+            assert self.should_end_with_str('odg', odg)
+            assert self.should_end_with_str('pdf', pdf)
+            
+            for unit in (png, odg, pdf):
+                assert self.should_start_with_str("The Three-Thirds Process", unit)
+            return 1
+
+        except AssertionError:
+            return 0
+
     def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
         checks_passed: int = 0
         checks_passed += int(self.check_bible_reading_hints_titles(language_info))
@@ -155,7 +199,8 @@ class ConsistencyCheck(LanguagePostProcessor):
         checks_passed += int(self.check_who_do_i_need_to_forgive(language_info))
         checks_passed += int(self.check_bible_reading_hints_links(language_info))
         checks_passed += int(self.check_book_of_acts(language_info))
-        self.logger.info(f"Consistency checks for {language_info.english_name}: {checks_passed}/5 passed")
+        checks_passed += int(self.check_three_thirds_process(language_info))
+        self.logger.info(f"Consistency checks for {language_info.english_name}: {checks_passed}/6 passed")
 
 
 """

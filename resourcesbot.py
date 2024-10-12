@@ -72,13 +72,16 @@ def parse_arguments() -> ResourcesBot:
     description = 'Update list of available training resources in the language information pages'
     epilog = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
-    rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'pdf', 'sidebar']
+    module: List[str] = ['consistency']
+    rewrite_options: List[str] = ['all', 'json', 'list', 'report',
+            'summary', 'html', 'pdf', 'sidebar',]
 
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=description, epilog=epilog)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
     parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
     parser.add_argument('--rewrite', choices=rewrite_options, help='Force rewriting of one component or all')
+    parser.add_argument('--module', choices=module, help='Select which module to run')
 
     args = parser.parse_args()
     limit_to_lang = None
@@ -90,7 +93,8 @@ def parse_arguments() -> ResourcesBot:
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
     return ResourcesBot(config, limit_to_lang=limit_to_lang, rewrite=args.rewrite,
-                        read_from_cache=args.read_from_cache)
+                        read_from_cache=args.read_from_cache,
+                        module=args.module)
 
 
 def set_loglevel(config: ConfigParser, loglevel: int):
