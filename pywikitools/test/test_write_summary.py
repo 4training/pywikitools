@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
-from pywikitools.resourcesbot.write_summary import WriteSummary
+from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 
 
 class TestWriteSummary(unittest.TestCase):

@@ -3,7 +3,7 @@ from typing import Final
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.fortraininglib import ForTrainingLib
 

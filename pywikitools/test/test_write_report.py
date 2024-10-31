@@ -8,7 +8,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
-from pywikitools.resourcesbot.write_report import WriteReport
+from pywikitools.resourcesbot.modules.write_report import WriteReport
 
 
 class TestWriteReport(unittest.TestCase):

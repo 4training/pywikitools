@@ -8,7 +8,7 @@ from typing import Final, Optional, Tuple, Union
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslationUnit
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 
 
 class ConsistencyCheck(LanguagePostProcessor):

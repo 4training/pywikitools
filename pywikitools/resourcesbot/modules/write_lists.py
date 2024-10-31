@@ -4,7 +4,7 @@ from typing import Final, Optional, Tuple
 
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools.fortraininglib import ForTrainingLib
 

@@ -6,7 +6,7 @@ import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 
 
 class Color(Enum):

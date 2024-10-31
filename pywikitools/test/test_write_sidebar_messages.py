@@ -4,7 +4,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, TranslationProgress, WorksheetInfo
-from pywikitools.resourcesbot.write_sidebar_messages import WriteSidebarMessages
+from pywikitools.resourcesbot.modules.write_sidebar_messages import WriteSidebarMessages
 from pywikitools.test.test_data_structures import TEST_PROGRESS
 
 

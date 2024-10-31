@@ -5,7 +5,7 @@ from git import Actor, Repo
 from git.exc import GitError
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 
 
 class ExportRepository(LanguagePostProcessor):

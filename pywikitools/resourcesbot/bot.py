@@ -10,16 +10,16 @@ from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.pdftools.metadata import check_metadata
 from pywikitools.resourcesbot.changes import ChangeLog
-from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
-from pywikitools.resourcesbot.export_html import ExportHTML
-from pywikitools.resourcesbot.export_pdf import ExportPDF
-from pywikitools.resourcesbot.export_repository import ExportRepository
-from pywikitools.resourcesbot.write_lists import WriteList
+from pywikitools.resourcesbot.modules.consistency_checks import ConsistencyCheck
+from pywikitools.resourcesbot.modules.export_html import ExportHTML
+from pywikitools.resourcesbot.modules.export_pdf import ExportPDF
+from pywikitools.resourcesbot.modules.export_repository import ExportRepository
+from pywikitools.resourcesbot.modules.write_lists import WriteList
 from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
                                                      DataStructureEncoder, json_decode
-from pywikitools.resourcesbot.write_report import WriteReport
-from pywikitools.resourcesbot.write_sidebar_messages import WriteSidebarMessages
-from pywikitools.resourcesbot.write_summary import WriteSummary
+from pywikitools.resourcesbot.modules.write_report import WriteReport
+from pywikitools.resourcesbot.modules.write_sidebar_messages import WriteSidebarMessages
+from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 
 
 class ResourcesBot:

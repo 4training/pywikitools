@@ -2,7 +2,7 @@ import unittest
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 
-from pywikitools.resourcesbot.consistency_checks import ConsistencyCheck
+from pywikitools.resourcesbot.modules.consistency_checks import ConsistencyCheck
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 
 

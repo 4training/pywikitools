@@ -6,7 +6,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo, json_decode
-from pywikitools.resourcesbot.write_lists import WriteList
+from pywikitools.resourcesbot.modules.write_lists import WriteList
 from pywikitools.test.test_data_structures import TEST_URL
 
 

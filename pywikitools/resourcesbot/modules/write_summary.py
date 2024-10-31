@@ -4,7 +4,7 @@ from typing import Dict, Final
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
-from pywikitools.resourcesbot.post_processing import GlobalPostProcessor
+from pywikitools.resourcesbot.modules.post_processing import GlobalPostProcessor
 
 
 class WriteSummary(GlobalPostProcessor):
