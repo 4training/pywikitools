@@ -67,12 +67,29 @@ from pywikitools.resourcesbot.bot import ResourcesBot
 def parse_arguments() -> ResourcesBot:
     """
     Parses command-line arguments.
+
     @return: ResourcesBot instance
     """
-    description = 'Update list of available training resources in the language information pages'
-    epilog = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
+    parser = argparse.ArgumentParser(
+        prog='python | python3 resourcesbot.py',
+        description='Update list of available training resources in the'
+                    ' language information pages.',
+        epilog='Refer to https://datahub.io/core/language-codes/r/0.html'
+                ' for language codes.',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
-    rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'pdf', 'sidebar']
+    rewrite_options: List[str] = [
+        'all',
+        'json',
+        'list',
+        'report',
+        'summary',
+        'html',
+        'pdf',
+        'sidebar'
+    ]
     modules: List[str] = [
         'consistency',
         'export_html',
@@ -83,11 +100,6 @@ def parse_arguments() -> ResourcesBot:
         'write_sidebar'
     ]
 
-    parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=description, epilog=epilog)
-    parser.add_argument('--lang', help='run script for only one language')
-    parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
-    parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
-    parser.add_argument('--rewrite', choices=rewrite_options, help='Force rewriting of one component or all')
     modules_help_message=\
     '''Select the postprocessor modules to be executed. Available options are:
     - consistency_check (Verify translation consistency across units with the
@@ -103,6 +115,26 @@ def parse_arguments() -> ResourcesBot:
     '''
 
     parser.add_argument(
+        '--lang',
+        help='Run script for only one language.'
+    )
+    parser.add_argument(
+        '-l', '--loglevel',
+        choices=log_levels,
+        default='warning',
+        help='Set loglevel for the script.'
+    )
+    parser.add_argument(
+        '--read-from-cache',
+        action='store_true',
+        help='Read results from json cache from the server.'
+    )
+    parser.add_argument(
+        '--rewrite',
+        choices=rewrite_options,
+        help='Force rewriting of one component or all.'
+    )
+    parser.add_argument(
         '-m',
         choices=modules,
         help=modules_help_message
@@ -117,8 +149,13 @@ def parse_arguments() -> ResourcesBot:
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
-    return ResourcesBot(config, limit_to_lang=limit_to_lang, rewrite=args.rewrite,
-                        read_from_cache=args.read_from_cache)
+
+    return ResourcesBot(
+        config,
+        limit_to_lang=limit_to_lang,
+        rewrite=args.rewrite,
+        read_from_cache=args.read_from_cache
+    )
 
 
 def set_loglevel(config: ConfigParser, loglevel: int):
