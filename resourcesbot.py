@@ -73,12 +73,40 @@ def parse_arguments() -> ResourcesBot:
     epilog = 'Refer to https://datahub.io/core/language-codes/r/0.html for language codes.'
     log_levels: List[str] = ['debug', 'info', 'warning', 'error']
     rewrite_options: List[str] = ['all', 'json', 'list', 'report', 'summary', 'html', 'pdf', 'sidebar']
+    modules: List[str] = [
+        'consistency',
+        'export_html',
+        'export_pdf',
+        'export_repository',
+        'write_lists',
+        'write_report',
+        'write_sidebar'
+    ]
 
     parser = argparse.ArgumentParser(prog='python3 resourcesbot.py', description=description, epilog=epilog)
     parser.add_argument('--lang', help='run script for only one language')
     parser.add_argument('-l', '--loglevel', choices=log_levels, default="warning", help='set loglevel for the script')
     parser.add_argument('--read-from-cache', action='store_true', help='Read results from json cache from the server')
     parser.add_argument('--rewrite', choices=rewrite_options, help='Force rewriting of one component or all')
+    modules_help_message=\
+    '''Select the postprocessor modules to be executed. Available options are:
+    - consistency_check (Verify translation consistency across units with the
+        same English definition.)
+    - export_html (Exports finished worksheets of a language to HTML.)
+    - export_pdf (Export PDF files of a language.)
+    - export_repository (After export_html exports the HTML files into a
+        git repo.)
+    - write_list (Write list of available training resources for languages.)
+    - write_report (Write status report for all languages.)
+    - write_sidebar (Write the system messages for sidebar with translated
+        titles.)
+    '''
+
+    parser.add_argument(
+        '-m',
+        choices=modules,
+        help=modules_help_message
+    )
 
     args = parser.parse_args()
     limit_to_lang = None
