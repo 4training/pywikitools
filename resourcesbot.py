@@ -54,11 +54,11 @@ Best for understanding what the script does, but requires running via pywikibot 
 This is only the wrapper script, all main logic is in resourcesbot/bot.py
 """
 import argparse
-from configparser import ConfigParser
 import logging
 import os
 import sys
 import traceback
+from configparser import ConfigParser
 from typing import List
 
 from pywikitools.resourcesbot.bot import ResourcesBot
@@ -162,36 +162,50 @@ def set_loglevel(config: ConfigParser, loglevel: int):
     """
     Setting up logging to three log files and to stdout.
 
-    The file paths for the three log files (for each log level WARNING, INFO and DEBUG) are
-    configured in the config.ini
-    @param loglevel: logging.WARNING is standard, logging.INFO for more details, logging.DEBUG for a lot of output
+    The file paths for the three log files (for each log level
+    WARNING, INFO and DEBUG) are configured in the config.ini.
+
+    @param loglevel: logging.WARNING is standard, logging.INFO for details,
+    logging.DEBUG for a lot of output.
+
+    @param config: A config set of parameters to be used in this function.
     """
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
+
     # The following is necessary so that debug messages go to debuglogfile
     logging.getLogger('pywikitools.resourcesbot').setLevel(logging.DEBUG)
     sh = logging.StreamHandler(sys.stdout)
     sh.setLevel(loglevel)
-    fformatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s: %(message)s')
+    fformatter = logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s: %(message)s'
+    )
     sh.setFormatter(fformatter)
     root.addHandler(sh)
 
     log_path = config.get('Paths', 'logs', fallback='')
     if log_path == '':
-        root.warning('No log directory specified in configuration. Using current working directory')
+        root.warning('No log directory specified in configuration.'
+                        ' Using current working directory')
     # Logging output to files with different verbosity
     if config.has_option("resourcesbot", "logfile"):
-        fh = logging.FileHandler(f"{log_path}{config['resourcesbot']['logfile']}")
+        fh = logging.FileHandler(
+            f"{log_path}{config['resourcesbot']['logfile']}"
+        )
         fh.setLevel(logging.WARNING)
         fh.setFormatter(fformatter)
         root.addHandler(fh)
     if config.has_option("resourcesbot", "infologfile"):
-        fh_info = logging.FileHandler(f"{log_path}{config['resourcesbot']['infologfile']}")
+        fh_info = logging.FileHandler(
+            f"{log_path}{config['resourcesbot']['infologfile']}"
+        )
         fh_info.setLevel(logging.INFO)
         fh_info.setFormatter(fformatter)
         root.addHandler(fh_info)
     if config.has_option("resourcesbot", "debuglogfile"):
-        fh_debug = logging.FileHandler(f"{log_path}{config['resourcesbot']['debuglogfile']}")
+        fh_debug = logging.FileHandler(
+            f"{log_path}{config['resourcesbot']['debuglogfile']}"
+        )
         fh_debug.setLevel(logging.DEBUG)
         fh_debug.setFormatter(fformatter)
         root.addHandler(fh_debug)
