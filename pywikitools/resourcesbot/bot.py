@@ -78,66 +78,99 @@ class ResourcesBot:
             "path_exists": os.path.isdir(self._config.get("Paths", "temp")),
         }
 
-        if not mandatory_config_parameters["site"] or not mandatory_config_parameters["username"]:
-            raise RuntimeError("Missing connection settings for resourcesbot in config.ini")
+        if (not mandatory_config_parameters["site"]
+                or not mandatory_config_parameters["username"]):
+            raise RuntimeError("Missing connection settings "
+                                "for resourcesbot in config.ini")
 
         if not mandatory_config_parameters["path"]:
-            self.logger.warning("Missing path for temporary files in config.ini")
-            self._config.set("Paths", "temp", os.path.abspath(os.getcwd()) + "/temp/")
+            self.logger.warning(
+                "Missing path for temporary files in config.ini"
+            )
+            self._config.set(
+                "Paths", "temp", os.path.abspath(os.getcwd()) + "/temp/")
 
         if not mandatory_config_parameters["path_exists"]:
             os.makedirs(self._config.get("Paths", "temp"))
 
         family = Family()
         code = self._config.get('resourcesbot', 'site')
-        self.site: pywikibot.site.APISite = pywikibot.Site(code=code, fam=family,
-                                                           user=self._config.get('resourcesbot', 'username'))
-        # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
+        self.site: pywikibot.site.APISite = pywikibot.Site(
+            code=code,
+            fam=family,
+            user=self._config.get('resourcesbot', 'username')
+        )
+
+        # Set throttle to 0 to speed up write operations
+        # (otherwise pywikibot would wait up to 10s after each writing)
         self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
-                                                             family.scriptpath(code))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(
+            family.base_url(code, ''),
+            family.scriptpath(code)
+        )
 
         self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
         self._rewrite: str = rewrite if rewrite is not None else ""     # "" instead of None makes life a bit easier
         if self._limit_to_lang is not None:
-            self.logger.info(f"Parameter lang is set, limiting processing to language {limit_to_lang}")
+            self.logger.info(f"Parameter lang is set, limiting processing "
+                            f"to language {limit_to_lang}")
         if self._read_from_cache:
-            self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
+            self.logger.info("Parameter --read-from-cache is set, "
+                            "reading from JSON...")
         if self._rewrite != "":
             self.logger.info(f"Parameter rewrite is set to {rewrite}")
 
-        # Stores details on all languages: language code -> information about all worksheets in that language
+        # Stores details on all languages:
+        # language code -> information about all worksheets
+        # in that language
         self._result: Dict[str, LanguageInfo] = {}
 
-        # Changes since the last run (will be filled after gathering of all information is done)
+        # Changes since the last run (will be filled after
+        # gathering of all information is done)
         self._changelog: Dict[str, ChangeLog] = {}
 
     def run(self):
         if self._read_from_cache:
             try:
-                language_list: List[str] = []   # List of languages to be read from cache
+                # List of languages to be read from cache
+                language_list: List[str] = []
                 if self._limit_to_lang is None:
-                    page = pywikibot.Page(self.site, "4training:languages.json")
+                    page = pywikibot.Page(
+                        self.site,
+                        "4training:languages.json"
+                    )
                     if not page.exists():
-                        raise RuntimeError("Couldn't load list of languages from 4training:languages.json")
+                        raise RuntimeError(
+                            "Couldn't load list of languages "
+                            "from 4training:languages.json")
                     language_list = json.loads(page.text)
                     assert isinstance(language_list, list)
                 else:
                     language_list.append(self._limit_to_lang)
-                    language_list.append("en")  # We need the English infos for LanguagePostProcessors
+                    # We need the English infos for LanguagePostProcessors
+                    language_list.append("en")
 
-                for lang in language_list:      # Now we read the details for each language
-                    self.logger.info(f"Reading details for language {lang} from cache...")
+                # Now we read the details for each language
+                for lang in language_list:
+                    self.logger.info(f"Reading details for "
+                                    f"language {lang} from cache...")
                     page = pywikibot.Page(self.site, f"4training:{lang}.json")
                     if not page.exists():
-                        raise RuntimeError(f"Couldn't load from cache for language {lang}")
-                    language_info = json.loads(page.text, object_hook=json_decode)
+                        raise RuntimeError(
+                            f"Couldn't load from cache for language {lang}"
+                        )
+                    language_info = json.loads(
+                        page.text,
+                        object_hook=json_decode
+                    )
                     assert isinstance(language_info, LanguageInfo)
                     assert language_info.language_code == lang
                     self._result[lang] = language_info
             except AssertionError:
-                raise RuntimeError("Unexpected error while parsing JSON data from cache.")
+                raise RuntimeError(
+                    "Unexpected error while parsing JSON data from cache."
+                )
 
         else:
             self._result["en"] = LanguageInfo("en", "English")
@@ -145,8 +178,10 @@ class ResourcesBot:
                 # Gather all data (this takes quite some time!)
                 self._query_translations(worksheet)
 
-        # That shouldn't be necessary but for some reasons the script sometimes failed with WARNING from pywikibot:
-        # "No user is logged in on site 4training:en" -> better check and try to log in if necessary
+        # That shouldn't be necessary, but for some reason the script sometimes
+        # failed with a WARNING from pywikibot:
+        # "No user is logged in on site 4training:en"-> better check and try
+        # to log in if necessary
         if not self.site.logged_in():
             self.logger.info("We're not logged in. Trying to log in...")
             self.site.login()
@@ -155,11 +190,18 @@ class ResourcesBot:
                 raise RuntimeError("Login with pywikibot failed.")
 
         # Find out what has been changed since our last run
-        for lang, language_info in self._result.items():
-            self._changelog[lang] = self._sync_and_compare(language_info) if not self._read_from_cache else ChangeLog()
+        if not self._read_from_cache:
+            for lang, language_info in self._result.items():
+                self._changelog[lang] = self._sync_and_compare(language_info)
+        else:
+            for lang, language_info in self._result.items():
+                self._changelog[lang] = ChangeLog()
+
         if not self._read_from_cache and self._limit_to_lang is None:
             self._save_languages_list()
-            self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
+            # TODO: move _save_number_of_languages
+            #  to a GlobalPostProcessor
+            self._save_number_of_languages()
 
         # Run all LanguagePostProcessors
         post_processor_modules = {
@@ -239,8 +281,11 @@ class ResourcesBot:
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site,
-                                         force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"))
+            write_summary = WriteSummary(
+                self.site,
+                force_rewrite=(self._rewrite == "all") or
+                            (self._rewrite == "summary")
+            )
             write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
