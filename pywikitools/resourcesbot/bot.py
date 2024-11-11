@@ -35,14 +35,26 @@ from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    def __init__(self, config: ConfigParser, limit_to_lang: Optional[str] = None, rewrite: Optional[str] = None,
-                 read_from_cache: bool = False):
+    def __init__(
+            self,
+            config: ConfigParser,
+            limit_to_lang: Optional[str] = None,
+            rewrite: Optional[str] = None,
+            read_from_cache: bool = False,
+        ):
         """
         Args:
-            limit_to_lang: limit processing to one language (string with a language code)
-            rewrite: force rewriting of selected component (even if there are no changes)
-                Possible values e.g. "json", "list", "report" - or "all" to rewrite everything
-            read_from_cache: Read from json cache from the mediawiki system (don't query individual worksheets)
+            limit_to_lang:
+                limit processing to one language
+                (string with a language code)
+            rewrite:
+                force rewriting of a selected component
+                (even if there are no changes).
+                Possible values e.g. "json", "list",
+                "report" - or "all" to rewrite everything
+            read_from_cache:
+                Read from JSON cache from the mediawiki system
+                (don't query individual worksheets)
         """
         # read-only list of download file types
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
