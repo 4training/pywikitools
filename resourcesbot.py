@@ -91,7 +91,7 @@ def parse_arguments() -> ResourcesBot:
         'sidebar'
     ]
     modules: List[str] = [
-        'consistency',
+        'consistency_check',
         'export_html',
         'export_pdf',
         'export_repository',
@@ -136,6 +136,7 @@ def parse_arguments() -> ResourcesBot:
     )
     parser.add_argument(
         '-m',
+        nargs='+',
         choices=modules,
         help=modules_help_message
     )
@@ -151,10 +152,11 @@ def parse_arguments() -> ResourcesBot:
     set_loglevel(config, numeric_level)
 
     return ResourcesBot(
-        config,
+        modules=args.m,
+        config=config,
         limit_to_lang=limit_to_lang,
         rewrite=args.rewrite,
-        read_from_cache=args.read_from_cache
+        read_from_cache=args.read_from_cache,
     )
 
 
