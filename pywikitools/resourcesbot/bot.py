@@ -37,6 +37,7 @@ class ResourcesBot:
 
     def __init__(
             self,
+            modules,
             config: ConfigParser,
             limit_to_lang: Optional[str] = None,
             rewrite: Optional[str] = None,
@@ -47,6 +48,13 @@ class ResourcesBot:
             limit_to_lang:
                 limit processing to one language
                 (string with a language code)
+            modules:
+                specify which post-processing modules
+                should be executed.
+                Possible values include: "consistency_check",
+                "export_html", "export_pdf",
+                "export_repository", "write_lists",
+                "write_report", "write_sidebar".
             rewrite:
                 force rewriting of a selected component
                 (even if there are no changes).
@@ -57,6 +65,7 @@ class ResourcesBot:
                 (don't query individual worksheets)
         """
         # read-only list of download file types
+        self.modules = modules
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
         self._config = config
         self.logger = logging.getLogger('pywikitools.resourcesbot')
@@ -153,31 +162,80 @@ class ResourcesBot:
             self._save_number_of_languages()        # TODO move this to a GlobalPostProcessor
 
         # Run all LanguagePostProcessors
-        write_list = WriteList(self.fortraininglib, self.site,
-                               self._config.get("resourcesbot", "username", fallback=""),
-                               self._config.get("resourcesbot", "password", fallback=""),
-                               force_rewrite=(self._rewrite == "all") or (self._rewrite == "list"))
-        write_report = WriteReport(self.fortraininglib, self.site,
-                                   force_rewrite=(self._rewrite == "all") or (self._rewrite == "report"))
-        write_sidebar = WriteSidebarMessages(self.fortraininglib, self.site,
-                                             force_rewrite=(self._rewrite == "all") or (self._rewrite == "sidebar"))
-        consistency_check = ConsistencyCheck(self.fortraininglib)
-        export_html = ExportHTML(self.fortraininglib, self._config.get("Paths", "htmlexport", fallback=""),
-                                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "html"))
-        export_pdf = ExportPDF(self.fortraininglib, self._config.get("Paths", "pdfexport", fallback=""),
-                               force_rewrite=(self._rewrite == "all") or (self._rewrite == "pdf"))
-        export_repository = ExportRepository(self._config.get("Paths", "htmlexport", fallback=""))
+        post_processor_modules = {
+            "write_lists": WriteList(
+                self.fortraininglib,
+                self.site,
+                self._config.get("resourcesbot", "username", fallback=""),
+                self._config.get("resourcesbot", "password", fallback=""),
+                force_rewrite=(self._rewrite == "all") or
+                                (self._rewrite == "list")
+            ),
+            "write_report": WriteReport(
+                self.fortraininglib,
+                self.site,
+                force_rewrite=(self._rewrite == "all") or
+                                (self._rewrite == "report")
+            ),
+            "write_sidebar": WriteSidebarMessages(
+                self.fortraininglib,
+                self.site,
+                force_rewrite=(self._rewrite == "all") or
+                                (self._rewrite == "sidebar")
+            ),
+            "consistency_check": ConsistencyCheck(
+                self.fortraininglib
+            ),
+            "export_html": ExportHTML(
+                self.fortraininglib,
+                self._config.get("Paths", "htmlexport", fallback=""),
+                force_rewrite=(self._rewrite == "all") or
+                                (self._rewrite == "html")
+            ),
+            "export_pdf": ExportPDF(
+                self.fortraininglib,
+                self._config.get("Paths", "pdfexport", fallback=""),
+                force_rewrite=(self._rewrite == "all") or
+                                (self._rewrite == "pdf")
+            ),
+            "export_repository": ExportRepository(
+                self._config.get("Paths", "htmlexport", fallback="")
+            ),
+        }
+
         assert "en" in self._result
         assert "en" in self._changelog
-        self.logger.info(f"Starting post-processing for languages {list(self._result.keys())}")
-        for lang in self._result:
-            consistency_check.run(self._result[lang], self._result["en"], ChangeLog(), ChangeLog())
-            export_html.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            export_pdf.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            export_repository.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            write_list.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
-            write_report.run(self._result[lang], self._result["en"], self._changelog[lang], self._changelog["en"])
-            write_sidebar.run(self._result[lang], self._result["en"], self._changelog[lang], ChangeLog())
+
+        self.logger.info(f"Starting post-processing for languages "
+                        f"{list(self._result.keys())}")
+
+        self.logger.info(f"Modules specified for execution: "
+                        f"{self.modules}")
+
+        if self.modules is not None:
+            for lang in self._result:
+                for selected_module in self.modules:
+                    if selected_module == "consistency_check":
+                        post_processor_modules[selected_module].run(
+                            self._result[lang],
+                            self._result["en"],
+                            ChangeLog(),
+                            ChangeLog()
+                        )
+                    elif selected_module == "write_report":
+                        post_processor_modules[selected_module].run(
+                            self._result[lang],
+                            self._result["en"],
+                            self._changelog[lang],
+                            self._changelog["en"]
+                        )
+                    else:
+                        post_processor_modules[selected_module].run(
+                            self._result[lang],
+                            self._result["en"],
+                            self._changelog[lang],
+                            ChangeLog()
+                        )
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
