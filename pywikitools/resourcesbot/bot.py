@@ -1,24 +1,34 @@
+import json
+import logging
 import os
 import re
-import logging
-import json
 from configparser import ConfigParser
-from typing import Final, List, Optional, Dict, Tuple
-import pywikibot
-from pywikitools.family import Family
+from typing import Dict, Final, List, Optional, Tuple
 
+import pywikibot
+
+from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.pdftools.metadata import check_metadata
 from pywikitools.resourcesbot.changes import ChangeLog
-from pywikitools.resourcesbot.modules.consistency_checks import ConsistencyCheck
+from pywikitools.resourcesbot.data_structures import (
+    DataStructureEncoder,
+    FileInfo,
+    LanguageInfo,
+    WorksheetInfo,
+    json_decode,
+)
+from pywikitools.resourcesbot.modules.consistency_checks import (
+    ConsistencyCheck
+)
 from pywikitools.resourcesbot.modules.export_html import ExportHTML
 from pywikitools.resourcesbot.modules.export_pdf import ExportPDF
 from pywikitools.resourcesbot.modules.export_repository import ExportRepository
 from pywikitools.resourcesbot.modules.write_lists import WriteList
-from pywikitools.resourcesbot.data_structures import FileInfo, WorksheetInfo, LanguageInfo, \
-                                                     DataStructureEncoder, json_decode
 from pywikitools.resourcesbot.modules.write_report import WriteReport
-from pywikitools.resourcesbot.modules.write_sidebar_messages import WriteSidebarMessages
+from pywikitools.resourcesbot.modules.write_sidebar_messages import (
+    WriteSidebarMessages
+)
 from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 
 
