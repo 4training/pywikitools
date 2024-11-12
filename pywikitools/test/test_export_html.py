@@ -1,8 +1,8 @@
 """
 Test all the functionalities of export_html.py
 - creating folders if necessary
-TODO get html contents for worksheets from API
-TODO Export htmls into local directory
+- get html contents for worksheets from API
+- Export htmls into local directory
 TODO download image files into local directory
 TODO export content.json (with current content)
 
@@ -11,6 +11,7 @@ Run tests:
 """
 
 import os
+import json
 import unittest
 from unittest.mock import MagicMock, patch, mock_open, call
 
@@ -132,12 +133,15 @@ class TestExportHTML(unittest.TestCase):
         # Check that all required directories were attempted to be created
         self.assertEqual(mock_makedirs.call_count, 4)  # Three calls should have been made
 
+    @patch("pywikitools.resourcesbot.export_html.ExportHTML.download_file",
+           return_value=True)  # Mock für die download_file-Methode
     @patch("builtins.open", new_callable=mock_open)
     @patch("os.makedirs")  # Mock directory creation if needed
     @patch("pywikitools.resourcesbot.export_html.ExportHTML.has_relevant_change")
     @patch("pywikitools.resourcesbot.export_html.CustomBeautifyHTML")
     @patch("pywikitools.resourcesbot.export_html.StructureEncoder.encode", return_value="{}")
-    def test_download_and_save_transformed_html(self, mock_encode, MockBeautifyHTML, mock_has_relevant_change, mock_makedirs, mock_open):
+    def test_download_and_save_transformed_html_and_images(self, mock_encode, MockBeautifyHTML, mock_has_relevant_change,
+                                                mock_makedirs, mock_open, mock_download_file):
         # Set up mock objects
         fortraininglib_mock = MagicMock()
         language_info_mock = MagicMock()
@@ -163,11 +167,19 @@ class TestExportHTML(unittest.TestCase):
 
         # Set up get_page_html behavior: None for "worksheet_with_changes_2" to simulate no content
         fortraininglib_mock.get_page_html.side_effect = lambda ws: None if "worksheet_with_changes_2" in ws \
-                                                                        else "<html>Some content</html>"
+            else "<html>Some content</html>"
+
+        # Add files to the file collector (would normally be found by BeautifyHTML)
+        def sideeffect(change_hrefs, file_collector):
+            file_collector.add("image1.png")
+            file_collector.add("image2.png")
+            return MockBeautifyHTML.return_value
+
 
         # Configure mock for CustomBeautifyHTML's process_html method
         beautifyhtml_instance = MockBeautifyHTML.return_value
         beautifyhtml_instance.process_html.return_value = "<p>Processed HTML content</p>"
+        MockBeautifyHTML.side_effect = sideeffect
 
         # Initialize ExportHTML with valid folder and force_rewrite = False
         export_html = ExportHTML(fortraininglib_mock, "/mocked/path", force_rewrite=False)
@@ -182,7 +194,8 @@ class TestExportHTML(unittest.TestCase):
         self.assertEqual(fortraininglib_mock.get_page_html.call_count, 2)
 
         # Verify warning was logged for the worksheet with no content
-        self.assertTrue(any("Couldn't get content of worksheet_with_changes_2/de. Skipping" in message for message in log.output))
+        self.assertTrue(
+            any("Couldn't get content of worksheet_with_changes_2/de. Skipping" in message for message in log.output))
 
         # Check that content was written for the first worksheet and contents.json
         self.assertEqual(mock_open().write.call_count, 2)
@@ -194,11 +207,51 @@ class TestExportHTML(unittest.TestCase):
         mock_open().write.assert_any_call("{}")
 
         # Verify that the html_counter was incremented correctly
-        expected_log_message = "pywikitools.resourcesbot.export_html:ExportHTML de: Downloaded 1 HTML files, 0 images"
+        expected_log_message = "pywikitools.resourcesbot.export_html:ExportHTML de: Downloaded 1 HTML files, 2 images"
         self.assertTrue(
             any(expected_log_message in message for message in log.output),
             f"Expected log message not found. Log output: {log.output}"
         )
+
+        # Check that download_file was called for both image1.png and image2.png
+        mock_download_file.assert_any_call("/mocked/path/de/files/", "image1.png")
+        mock_download_file.assert_any_call("/mocked/path/de/files/", "image2.png")
+        self.assertEqual(mock_download_file.call_count, 2)
+
+    @patch("pywikitools.resourcesbot.export_html.StructureEncoder.encode", return_value='{"key": "value"}')
+    @patch("builtins.open", new_callable=mock_open)  # Mock the open function
+    @patch("os.makedirs")  # Mock directory creation
+    def test_writes_contents_json(self, mock_makedirs, mock_open, mock_encode):
+        # Test if the contents json is being created
+
+        # Create mock objects for required parameters
+        fortraininglib_mock = MagicMock()
+        lang_info_mock = MagicMock()
+        english_info_mock = MagicMock()
+        changes_mock = MagicMock()
+        english_changes_mock = MagicMock()
+
+        # Set the language_code and worksheets so the flow proceeds as expected
+        lang_info_mock.language_code = "de"
+        lang_info_mock.worksheets = {
+            "worksheet_with_changes_1": MagicMock(title="Worksheet 1")  # Set a title as a string
+        }
+
+        # Mock the `get_page_html` method to return valid HTML content for testing
+        fortraininglib_mock.get_page_html.return_value = "<html><div class='mw-parser-output'>Some content</div></html>"
+
+        # Create the ExportHTML instance and set _force_rewrite=True to ensure contents.json is written
+        export_html = ExportHTML(fortraininglib_mock, "/mocked/path", force_rewrite=True)
+
+        # Run the `run` method
+        export_html.run(lang_info_mock, english_info_mock, changes_mock, english_changes_mock)
+
+        # Verify StructureEncoder.encode was called
+        mock_encode.assert_called_once_with(lang_info_mock)
+
+        # Verify the contents.json file was written with the correct JSON content
+        mock_open.assert_any_call("/mocked/path/de/structure/contents.json", "w")
+        mock_open().write.assert_any_call(json.dumps({"key": "value"}, indent=4))
 
 
 if __name__ == '__main__':
