@@ -13,7 +13,7 @@ Run tests:
 import os
 import json
 import unittest
-from unittest.mock import MagicMock, patch, mock_open, call
+from unittest.mock import MagicMock, patch, mock_open
 
 from pywikitools.resourcesbot.export_html import ExportHTML
 
@@ -30,7 +30,8 @@ class TestExportHTML(unittest.TestCase):
         # Initialize ExportHTML with empty _base_folder
         with self.assertLogs('pywikitools.resourcesbot.export_html', level='WARNING') as log:
             export_html = ExportHTML(fortraininglib_mock, "", force_rewrite=False)
-            self.assertTrue(any("Missing htmlexport path in config.ini. Won't export HTML files." in message for message in log.output))
+            self.assertTrue(any("Missing htmlexport path in config.ini. Won't export HTML files."
+                                in message for message in log.output))
 
         # Execute "run" method - should return without doing anything because of empty base folder
         export_html.run(language_info_mock, english_info_mock, changes_mock, english_changes_mock)
@@ -91,7 +92,6 @@ class TestExportHTML(unittest.TestCase):
         # Ensure that fortraininglib_mock.get_page_html is not called
         fortraininglib_mock.get_page_html.assert_not_called()
 
-
     @patch("os.makedirs")  # Mock os.makedirs to prevent actual directory creation
     @patch("os.path.isdir", return_value=False)  # Mock os.path.isdir to simulate directory absence
     def test_directory_structure_creation(self, mock_isdir, mock_makedirs):
@@ -124,7 +124,6 @@ class TestExportHTML(unittest.TestCase):
         # Run the method under test
         export_html.run(language_info_mock, english_info_mock, changes_mock, english_changes_mock)
 
-
         # Assert that os.makedirs was called with the correct arguments
         mock_makedirs.assert_any_call(main_folder, exist_ok=True)
         mock_makedirs.assert_any_call(files_folder)
@@ -140,8 +139,10 @@ class TestExportHTML(unittest.TestCase):
     @patch("pywikitools.resourcesbot.export_html.ExportHTML.has_relevant_change")
     @patch("pywikitools.resourcesbot.export_html.CustomBeautifyHTML")
     @patch("pywikitools.resourcesbot.export_html.StructureEncoder.encode", return_value="{}")
-    def test_download_and_save_transformed_html_and_images(self, mock_encode, MockBeautifyHTML, mock_has_relevant_change,
-                                                mock_makedirs, mock_open, mock_download_file):
+    def test_download_and_save_transformed_html_and_images(self, mock_encode, MockBeautifyHTML,
+                                                           mock_has_relevant_change, mock_makedirs, mock_open,
+                                                           mock_download_file):
+
         # Set up mock objects
         fortraininglib_mock = MagicMock()
         language_info_mock = MagicMock()
@@ -174,7 +175,6 @@ class TestExportHTML(unittest.TestCase):
             file_collector.add("image1.png")
             file_collector.add("image2.png")
             return MockBeautifyHTML.return_value
-
 
         # Configure mock for CustomBeautifyHTML's process_html method
         beautifyhtml_instance = MockBeautifyHTML.return_value
