@@ -34,7 +34,18 @@ class TestResourcesBot(unittest.TestCase):
         self.config = ConfigParser()
         self.config.read_dict({"resourcesbot": {"site": "test", "username": "TestBotName"},
                                "Paths": {"logs": "~/", "temp": "~/temp/"}})    # Fill this to prevent warnings
-        self.bot = ResourcesBot(self.config)
+        self.bot = ResourcesBot(
+            [
+                "consistency_check",
+                "export_html",
+                "export_pdf",
+                "export_repository",
+                "write_lists",
+                "write_report",
+                "write_sidebar"
+            ],
+            self.config
+        )
 
     def tearDown(self):
         # workaround to remove annoying ResourceWarning: unclosed <ssl.SSLSocket ...
@@ -139,7 +150,19 @@ class TestResourcesBot(unittest.TestCase):
                             mock_pywikibot_page, mock_pywikibot_site):
         mock_pywikibot_page.side_effect = self.json_test_loader
         mock_pywikibot_site.return_value.logged_in.return_value = True
-        bot = ResourcesBot(self.config, read_from_cache=True)
+        bot = ResourcesBot(
+            [
+                "consistency_check",
+                "export_html",
+                "export_pdf",
+                "export_repository",
+                "write_lists",
+                "write_report",
+                "write_sidebar"
+            ],
+            self.config,
+            read_from_cache=True
+        )
         bot.run()
 
         # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
@@ -184,7 +207,20 @@ class TestResourcesBot(unittest.TestCase):
         }
         for rewrite_option, mocked_component in rewrite_check.items():
             # Component selected with rewrite option should have force_rewrite=True, the others not
-            bot = ResourcesBot(self.config, read_from_cache=True, rewrite=rewrite_option)
+            bot = ResourcesBot(
+                [
+                    "consistency_check",
+                    "export_html",
+                    "export_pdf",
+                    "export_repository",
+                    "write_lists",
+                    "write_report",
+                    "write_sidebar"
+                ],
+                self.config,
+                read_from_cache=True,
+                rewrite=rewrite_option
+            )
             bot.run()
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
             for other_mock in rewrite_check.values():
@@ -192,13 +228,39 @@ class TestResourcesBot(unittest.TestCase):
                     self.assertFalse(other_mock.call_args.kwargs.get("force_rewrite"))
 
         # "all" components should get called with force_rewrite=True
-        bot = ResourcesBot(self.config, read_from_cache=True, rewrite="all")
+        bot = ResourcesBot(
+            [
+                "consistency_check",
+                "export_html",
+                "export_pdf",
+                "export_repository",
+                "write_lists",
+                "write_report",
+                "write_sidebar"
+            ],
+            self.config,
+            read_from_cache=True,
+            rewrite="all"
+        )
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
 
         # No rewrite specified, so no component should get called with force_rewrite
-        bot = ResourcesBot(self.config, read_from_cache=True, rewrite=None)
+        bot = ResourcesBot(
+            [
+                "consistency_check",
+                "export_html",
+                "export_pdf",
+                "export_repository",
+                "write_lists",
+                "write_report",
+                "write_sidebar"
+            ],
+            self.config,
+            read_from_cache=True,
+            rewrite=None
+        )
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))
