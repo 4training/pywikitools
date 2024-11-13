@@ -21,7 +21,9 @@ class ExportRepository(LanguagePostProcessor):
                 Currently we assume that origin is correctly set up in the folder and we just need to push
         """
         self._base_folder: Final[str] = base_folder
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_repository')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.export_repository'
+        )
         if self._base_folder == "":
             self.logger.warning("Missing htmlexport path in config.ini. Won't export to repository")
         self._author: Final[Actor] = Actor("ExportRepository", "samuel@holydevelopers.net")
