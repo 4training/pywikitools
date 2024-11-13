@@ -26,7 +26,9 @@ class WriteSummary(GlobalPostProcessor):
         """
         self._site: Final[pywikibot.site.APISite] = site
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_summary')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.write_summary'
+        )
         self.total_stats: Counter = Counter()   # Summing up statistics for all languages
 
     def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
