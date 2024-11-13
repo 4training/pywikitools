@@ -56,23 +56,28 @@ class TestWriteReport(unittest.TestCase):
 
         with open(join(dirname(abspath(__file__)), "data", "ru_worksheet_overview.mediawiki"), 'r') as f:
             expected_mediawiki = f.read()
-            with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+            with self.assertLogs(
+                    "pywikitools.resourcesbot.modules.write_report",
+                    level="WARNING"):
                 self.assertEqual(write_report.create_worksheet_overview(self.language_info, self.english_info),
                                  expected_mediawiki)
                 self.assertIn(expected_mediawiki, write_report.create_mediawiki(self.language_info, self.english_info))
 
-    @patch("pywikitools.resourcesbot.write_report.WriteReport.create_mediawiki")    # don't go into create_mediawiki()
+    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport"
+           ".create_mediawiki")    # don't go into create_mediawiki()
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page, mock_create_mediawiki):
         write_report = WriteReport(self.fortraininglib, None)
         # When there is no proper language name, save_language_report() should directly exit
-        with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+        with self.assertLogs("pywikitools.resourcesbot.modules.write_report",
+                             level="WARNING"):
             write_report.save_language_report(LanguageInfo("de", ""), self.english_info)
         mock_page.return_value.exists.assert_not_called()
 
         # Language report should get created if it doesn't exist
         mock_page.return_value.exists.return_value = False
-        with self.assertLogs("pywikitools.resourcesbot.write_report", level="WARNING"):
+        with self.assertLogs("pywikitools.resourcesbot.modules.write_report",
+                             level="WARNING"):
             write_report.save_language_report(self.language_info, self.english_info)
         mock_page.return_value.save.assert_called_with("Created language report")
 
@@ -82,7 +87,8 @@ class TestWriteReport(unittest.TestCase):
         write_report.save_language_report(self.language_info, self.english_info)
         mock_page.return_value.save.assert_called_with("Updated language report")
 
-    @patch("pywikitools.resourcesbot.write_report.WriteReport.save_language_report")
+    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport"
+           ".save_language_report")
     def test_run(self, mock_save):
         write_report = WriteReport(self.fortraininglib, None)
         # save_language_report() shouldn't get called when we have a language variant

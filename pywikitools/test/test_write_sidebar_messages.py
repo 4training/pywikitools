@@ -45,7 +45,7 @@ class TestWriteSidebarMessages(unittest.TestCase):
         # Note: It's not MediaWiki:Sidebar-hearingfromgod/en as English is our source language
         mock_page.assert_called_with(None, "MediaWiki:Sidebar-hearingfromgod")
 
-    @patch("pywikitools.resourcesbot.write_sidebar_messages.WriteSidebarMessages.save_worksheet_title")
+    @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.save_worksheet_title")
     def test_run(self, mock_save):
         # save_worksheet_title() shouldn't get called when there are no changes
         self.write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog())

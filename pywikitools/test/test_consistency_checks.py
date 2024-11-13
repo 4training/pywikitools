@@ -28,7 +28,10 @@ class TestConsistencyCheck(unittest.TestCase):
         """All consistency checks should pass in English"""
         cc = ConsistencyCheck(self.fortraininglib)
         language_info = LanguageInfo("en", "English")
-        with self.assertLogs("pywikitools.resourcesbot.consistency_checks", level="INFO") as logs:
+        with self.assertLogs(
+                "pywikitools.resourcesbot.modules.consistency_checks",
+                level="INFO"
+        ) as logs:
             cc.run(language_info, LanguageInfo("en", "English"), ChangeLog(), ChangeLog())
         self.assertIn("Consistency checks for English: 5/5 passed", logs.output[0])
 

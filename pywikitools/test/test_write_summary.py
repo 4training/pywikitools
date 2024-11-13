@@ -31,13 +31,15 @@ class TestWriteSummary(unittest.TestCase):
     @patch("pywikibot.Page")
     def test_save_summary(self, mock_page):
         # When English LanguageInfo is missing, save_summary() should directly exit
-        with self.assertLogs("pywikitools.resourcesbot.write_summary", level="WARNING"):
+        with self.assertLogs("pywikitools.resourcesbot.modules.write_summary",
+                             level="WARNING"):
             self.write_summary.save_summary({})
         mock_page.return_value.exists.assert_not_called()
 
         # Summary report should get created if it doesn't exist
         mock_page.return_value.exists.return_value = False
-        with self.assertLogs("pywikitools.resourcesbot.write_summary", level="WARNING"):
+        with self.assertLogs("pywikitools.resourcesbot.modules.write_summary",
+                             level="WARNING"):
             self.write_summary.save_summary(self.language_data)
         mock_page.return_value.save.assert_called_with("Created summary report")
 
@@ -47,7 +49,8 @@ class TestWriteSummary(unittest.TestCase):
         self.write_summary.save_summary(self.language_data)
         mock_page.return_value.save.assert_called_with("Updated summary report")
 
-    @patch("pywikitools.resourcesbot.write_summary.WriteSummary.save_summary")
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary"
+           ".save_summary")
     def test_run(self, mock_save):
         # save_summary() shouldn't get called when there are no changes
         self.write_summary.run(self.language_data, self.empty_change_log)

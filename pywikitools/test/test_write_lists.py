@@ -13,7 +13,8 @@ from pywikitools.test.test_data_structures import TEST_URL
 class TestWriteList(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs('pywikitools.resourcesbot.modules.write_lists',
+                             level="WARNING"):
             self.write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "")
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
@@ -26,7 +27,10 @@ class TestWriteList(unittest.TestCase):
             self.expected_output: str = f.read()
 
     def test_force_rewrite(self):
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "", force_rewrite=True)
         self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
         self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
@@ -58,7 +62,10 @@ class TestWriteList(unittest.TestCase):
         self.assertEqual(self.write_list._create_file_mediawiki(file_info), pdf_mediawiki)
         # Test for robust handling if URL is just a filename
         file_info = FileInfo("pdf", "Gottes_Reden_wahrnehmen.pdf", "2018-12-23T13:11:23+00:00")
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             self.assertEqual(self.write_list._create_file_mediawiki(file_info), pdf_mediawiki)
 
     def test_create_mediawiki(self):
@@ -82,7 +89,10 @@ class TestWriteList(unittest.TestCase):
         self.assertEqual(page_content[pos_start:pos_end], resources_list)
 
         # If there is another list later in the page (with other lines in between), that other list should be ignored
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="INFO"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="INFO"
+        ):
             page_with_two_lists = page_content + "\n== Turkish (another variant) ==\n" + resources_list
             pos_start2, pos_end2 = self.write_list._find_resources_list(page_with_two_lists, "Turkish (secular)")
         self.assertEqual(pos_start, pos_start2)
@@ -98,7 +108,10 @@ class TestWriteList(unittest.TestCase):
         # run() should warn and directly return if the language name is missing in LanguageInfo
         problematic_language_info = LanguageInfo("de", "")
         changes.add_change("Prayer", ChangeType.NEW_WORKSHEET)   # we need a relevant change
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             self.write_list.run(problematic_language_info, self.english_info, changes, ChangeLog())
         mock_page.return_value.exists.assert_not_called()
 
@@ -106,7 +119,10 @@ class TestWriteList(unittest.TestCase):
         # (has the same name as LanguageInfo.english_name)
         not_existing_language_info = LanguageInfo("none", "NotExisting")
         mock_page.return_value.exists.return_value = False
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             self.write_list.run(not_existing_language_info, self.english_info, changes, ChangeLog())
         mock_page.return_value.exists.assert_called_once()
         mock_page.return_value.isRedirectPage.assert_not_called()
@@ -115,13 +131,19 @@ class TestWriteList(unittest.TestCase):
         mock_page.return_value.exists.return_value = True
         mock_page.return_value.isRedirectPage.return_value = True
         mock_page.return_value.getRedirectTarget.return_value.exists.return_value = False
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             self.write_list.run(not_existing_language_info, self.english_info, changes, ChangeLog())
         mock_page.return_value.text.assert_not_called()
 
         # run() should warn and return if we can't find section for available resources in that language
         mock_page.return_value.text = "== <translate>Available training resources in German</translate> ==\n* List"
-        with self.assertLogs('pywikitools.resourcesbot.write_lists', level="WARNING"):
+        with self.assertLogs(
+                'pywikitools.resourcesbot.modules.write_lists',
+                level="WARNING"
+        ):
             self.write_list.run(self.language_info, self.english_info, changes, ChangeLog())
         mock_page.return_value.save.assert_not_called()
 
