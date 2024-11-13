@@ -30,7 +30,9 @@ class WriteList(LanguagePostProcessor):
         self._user_name: Final[str] = user_name
         self._password: Final[str] = password
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_lists')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.write_lists'
+        )
         if user_name == "" or password == "":
             self.logger.warning("Missing user name and/or password in config. Won't mark pages for translation.")
 
