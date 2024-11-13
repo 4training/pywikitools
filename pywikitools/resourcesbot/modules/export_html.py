@@ -44,7 +44,9 @@ class ExportHTML(LanguagePostProcessor):
         self._base_folder: str = folder
         self._force_rewrite: Final[bool] = force_rewrite
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_html')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.export_html'
+        )
         if self._base_folder != "":
             try:
                 os.makedirs(folder, exist_ok=True)
