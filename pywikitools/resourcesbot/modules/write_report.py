@@ -36,7 +36,9 @@ class WriteReport(LanguagePostProcessor):
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_report')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.write_report'
+        )
 
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
             changes: ChangeLog, english_changes: ChangeLog):
