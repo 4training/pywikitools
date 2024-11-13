@@ -24,7 +24,9 @@ class ConsistencyCheck(LanguagePostProcessor):
 
     def __init__(self, fortraininglib: ForTrainingLib):
         self.fortraininglib = fortraininglib
-        self.logger = logging.getLogger("pywikitools.resourcesbot.consistency_checks")
+        self.logger = logging.getLogger(
+            "pywikitools.resourcesbot.modules.consistency_checks"
+        )
 
     def extract_link(self, text: str) -> Tuple[str, str]:
         """
