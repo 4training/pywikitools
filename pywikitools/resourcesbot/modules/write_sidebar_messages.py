@@ -29,7 +29,9 @@ class WriteSidebarMessages(LanguagePostProcessor):
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
         self._force_rewrite: Final[bool] = force_rewrite
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.write_sidebar_messages')
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            'pywikitools.resourcesbot.modules.write_sidebar_messages'
+        )
 
     def save_worksheet_title(self, worksheet: WorksheetInfo):
         """Save system message with the title of the given worksheet."""
