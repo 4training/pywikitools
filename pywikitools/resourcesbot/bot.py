@@ -37,7 +37,7 @@ class ResourcesBot:
 
     def __init__(
             self,
-            modules,
+            modules: list[str],
             config: ConfigParser,
             limit_to_lang: Optional[str] = None,
             rewrite: Optional[str] = None,
