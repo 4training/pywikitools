@@ -1,4 +1,5 @@
 import json
+from configparser import ConfigParser
 from os.path import abspath, dirname, join
 import unittest
 from unittest.mock import patch
@@ -13,9 +14,14 @@ from pywikitools.test.test_data_structures import TEST_URL
 class TestWriteList(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+        self.config = ConfigParser()
+        self.config["resourcesbot"] = {
+            "username": "",
+            "password": ""
+        }
         with self.assertLogs('pywikitools.resourcesbot.modules.write_lists',
                              level="WARNING"):
-            self.write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "")
+            self.write_list = WriteList(ForTrainingLib("https://test.4training.net"), self.config, None)
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
         # Create a pseudo English LanguageInfo - enough for our testing purposes (version is always the same)
@@ -31,7 +37,7 @@ class TestWriteList(unittest.TestCase):
                 'pywikitools.resourcesbot.modules.write_lists',
                 level="WARNING"
         ):
-            write_list = WriteList(ForTrainingLib("https://test.4training.net"), None, "", "", force_rewrite=True)
+            write_list = WriteList(ForTrainingLib("https://test.4training.net"), self.config, None, force_rewrite=True)
         self.assertTrue(write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
         self.assertFalse(self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog()))
 
