@@ -1,7 +1,7 @@
 """
-The ResourcesBot scans through the resources and all their translations, retrieving also information
-on PDF/ODT files. It checks if new translations were added and does many helpful things then
-like updating language overview pages where necessary.
+The ResourcesBot scans through the resources and all their translations, retrieving also
+information on PDF/ODT files. It checks if new translations were added and does many
+helpful things then like updating language overview pages where necessary.
 It is supposed to run daily as a cronjob.
 
 Main steps:
@@ -26,11 +26,12 @@ Command line options:
     --lang LANGUAGECODE: only look at this one language (significantly faster)
     -l, --loglevel: change logging level (standard: warning; other options: debug, info)
     --rewrite: Force rewriting of one component or all
-    --read-from-cache: Read from the JSON structure instead of querying the current status of all worksheets
+    --read-from-cache: Read from the JSON structure instead of querying the current
+    status of all worksheets
 
 Logging:
-    If configured in config.ini (see config.example.ini), output will be logged to three different files
-    in three different verbosity levels (WARNING, INFO, DEBUG)
+    If configured in config.ini (see config.example.ini), output will be logged to three
+    different files in three different verbosity levels (WARNING, INFO, DEBUG)
 
 Reports:
     We write language reports into the folder specified in config.ini
@@ -53,6 +54,7 @@ Best for understanding what the script does, but requires running via pywikibot 
 
 This is only the wrapper script, all main logic is in resourcesbot/bot.py
 """
+
 import argparse
 import logging
 import os
@@ -71,37 +73,36 @@ def parse_arguments() -> ResourcesBot:
     @return: ResourcesBot instance
     """
     parser = argparse.ArgumentParser(
-        prog='python | python3 resourcesbot.py',
-        description='Update list of available training resources in the'
-                    ' language information pages.',
-        epilog='Refer to https://datahub.io/core/language-codes/r/0.html'
-                ' for language codes.',
-        formatter_class=argparse.RawTextHelpFormatter
+        prog="python | python3 resourcesbot.py",
+        description="Update list of available training resources in the"
+        " language information pages.",
+        epilog="Refer to https://datahub.io/core/language-codes/r/0.html"
+        " for language codes.",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
+    log_levels: List[str] = ["debug", "info", "warning", "error"]
     rewrite_options: List[str] = [
-        'all',
-        'json',
-        'list',
-        'report',
-        'summary',
-        'html',
-        'pdf',
-        'sidebar'
+        "all",
+        "json",
+        "list",
+        "report",
+        "summary",
+        "html",
+        "pdf",
+        "sidebar",
     ]
     modules: List[str] = [
-        'consistency_check',
-        'export_html',
-        'export_pdf',
-        'export_repository',
-        'write_lists',
-        'write_report',
-        'write_sidebar'
+        "consistency_check",
+        "export_html",
+        "export_pdf",
+        "export_repository",
+        "write_lists",
+        "write_report",
+        "write_sidebar",
     ]
 
-    modules_help_message=\
-    '''Select the postprocessor modules to be executed. Available options are:
+    modules_help_message = """Select the postprocessor modules to be executed. Available options are:
     - consistency_check (Verify translation consistency across units with the
         same English definition.)
     - export_html (Exports finished worksheets of a language to HTML.)
@@ -112,41 +113,34 @@ def parse_arguments() -> ResourcesBot:
     - write_report (Write status report for all languages.)
     - write_sidebar (Write the system messages for sidebar with translated
         titles.)
-    '''
+    """
 
+    parser.add_argument("--lang", help="Run script for only one language.")
     parser.add_argument(
-        '--lang',
-        help='Run script for only one language.'
-    )
-    parser.add_argument(
-        '-l', '--loglevel',
+        "-l",
+        "--loglevel",
         choices=log_levels,
-        default='warning',
-        help='Set loglevel for the script.'
+        default="warning",
+        help="Set loglevel for the script.",
     )
     parser.add_argument(
-        '--read-from-cache',
-        action='store_true',
-        help='Read results from json cache from the server.'
+        "--read-from-cache",
+        action="store_true",
+        help="Read results from json cache from the server.",
     )
     parser.add_argument(
-        '--rewrite',
+        "--rewrite",
         choices=rewrite_options,
-        help='Force rewriting of one component or all.'
+        help="Force rewriting of one component or all.",
     )
-    parser.add_argument(
-        '-m',
-        nargs='+',
-        choices=modules,
-        help=modules_help_message
-    )
+    parser.add_argument("-m", nargs="+", choices=modules, help=modules_help_message)
 
     args = parser.parse_args()
     limit_to_lang = None
     if args.lang is not None:
         limit_to_lang = str(args.lang)
     config = ConfigParser()
-    config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+    config.read(os.path.dirname(os.path.abspath(__file__)) + "/config.ini")
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
@@ -176,24 +170,22 @@ def set_loglevel(config: ConfigParser, loglevel: int):
     root.setLevel(logging.DEBUG)
 
     # The following is necessary so that debug messages go to debuglogfile
-    logging.getLogger('pywikitools.resourcesbot').setLevel(logging.DEBUG)
+    logging.getLogger("pywikitools.resourcesbot").setLevel(logging.DEBUG)
     sh = logging.StreamHandler(sys.stdout)
     sh.setLevel(loglevel)
-    fformatter = logging.Formatter(
-        '%(asctime)s %(name)s %(levelname)s: %(message)s'
-    )
+    fformatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s: %(message)s")
     sh.setFormatter(fformatter)
     root.addHandler(sh)
 
-    log_path = config.get('Paths', 'logs', fallback='')
-    if log_path == '':
-        root.warning('No log directory specified in configuration.'
-                        ' Using current working directory')
+    log_path = config.get("Paths", "logs", fallback="")
+    if log_path == "":
+        root.warning(
+            "No log directory specified in configuration."
+            " Using current working directory"
+        )
     # Logging output to files with different verbosity
     if config.has_option("resourcesbot", "logfile"):
-        fh = logging.FileHandler(
-            f"{log_path}{config['resourcesbot']['logfile']}"
-        )
+        fh = logging.FileHandler(f"{log_path}{config['resourcesbot']['logfile']}")
         fh.setLevel(logging.WARNING)
         fh.setFormatter(fformatter)
         root.addHandler(fh)
