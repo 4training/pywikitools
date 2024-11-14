@@ -31,6 +31,16 @@ from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
+    AVAILABLE_MODULES: Final = [
+        "consistency_check",
+        "export_html",
+        "export_pdf",
+        "export_repository",
+        "write_lists",
+        "write_report",
+        "write_sidebar",
+    ]
+
     def __init__(
         self,
         config: ConfigParser,

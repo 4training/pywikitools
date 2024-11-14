@@ -152,8 +152,8 @@ def parse_arguments() -> ResourcesBot:
     set_loglevel(config, numeric_level)
 
     return ResourcesBot(
-        modules=args.m,
         config=config,
+        modules=args.m,
         limit_to_lang=limit_to_lang,
         rewrite=args.rewrite,
         read_from_cache=args.read_from_cache,
