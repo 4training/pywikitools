@@ -18,6 +18,20 @@ class LanguagePostProcessor(ABC):
     We include information on English as well because several post-processors need it as reference
     """
 
+    def __init__(
+        self,
+        fortraininglib: ForTrainingLib,
+        config: ConfigParser = None,
+        site: pywikibot.site.APISite = None,
+        *,
+        force_rewrite: bool = False,
+):
+        self.fortraininglib = fortraininglib
+        self._config = config
+        self._site = site
+        self._force_rewrite: Final[bool] = force_rewrite
+
+
     @abstractmethod
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
             changes: ChangeLog, english_changes: ChangeLog):
