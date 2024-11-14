@@ -4,7 +4,10 @@ Contains consistency checks specifically for 4training.net
 
 import logging
 import re
+from configparser import ConfigParser
 from typing import Final, Optional, Tuple, Union
+
+import pywikibot.site
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslationUnit
@@ -24,8 +27,15 @@ class ConsistencyCheck(LanguagePostProcessor):
 
     TITLE: Final[str] = "Page display title"
 
-    def __init__(self, fortraininglib: ForTrainingLib):
-        self.fortraininglib = fortraininglib
+    def __init__(
+        self,
+        fortraininglib: ForTrainingLib,
+        config: ConfigParser = None,
+        site: pywikibot.site.APISite = None,
+        *,
+        force_rewrite: bool = False,
+    ):
+        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
         self.logger = logging.getLogger(
             "pywikitools.resourcesbot.modules.consistency_checks"
         )
