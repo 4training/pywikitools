@@ -35,14 +35,16 @@ class WriteList(LanguagePostProcessor):
         Args:
             force_rewrite rewrite even if there were no (relevant) changes
         """
-        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
-        self._site: Final[pywikibot.site.APISite] = site
-        self._user_name: Final[str] = config.get("resourcesbot", "username", fallback="")
+        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+
+        self._user_name: Final[str] = config.get(
+            "resourcesbot", "username", fallback=""
+        )
         self._password: Final[str] = config.get("resourcesbot", "password", fallback="")
-        self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_lists"
         )
+
         if self._user_name == "" or self._password == "":
             self.logger.warning(
                 "Missing user name and/or password in config."
