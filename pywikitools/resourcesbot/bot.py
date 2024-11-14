@@ -73,9 +73,12 @@ class ResourcesBot:
         self.logger = logging.getLogger("pywikitools.resourcesbot")
 
         # Initial check for mandatory configuration parameters in config.ini
-        if not self._config.has_option('resourcesbot', 'site') or \
-                not self._config.has_option('resourcesbot', 'username'):
-            raise RuntimeError("Missing connection settings for resourcesbot in config.ini")
+        if not self._config.has_option(
+            "resourcesbot", "site"
+        ) or not self._config.has_option("resourcesbot", "username"):
+            raise RuntimeError(
+                "Missing connection settings for resourcesbot in config.ini"
+            )
         if not self._config.has_option("Paths", "temp"):
             self.logger.warning("Missing path for temporary files in config.ini")
             self._config.set("Paths", "temp", os.path.abspath(os.getcwd()) + "/temp/")
