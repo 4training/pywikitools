@@ -1,3 +1,4 @@
+from configparser import ConfigParser
 from datetime import datetime
 import json
 from os.path import abspath, dirname, join
@@ -13,6 +14,7 @@ from pywikitools.resourcesbot.modules.write_report import WriteReport
 
 class TestWriteReport(unittest.TestCase):
     def setUp(self):
+        self.config = ConfigParser()
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info = json.load(f, object_hook=json_decode)
         with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
@@ -51,7 +53,7 @@ class TestWriteReport(unittest.TestCase):
     @patch("pywikibot.Page", autospec=True)
     def test_created_mediawiki(self, mock_page):
         # Compare mediawiki output with the content in data/ru_worksheet_overview.mediawiki
-        write_report = WriteReport(self.fortraininglib, None)
+        write_report = WriteReport(self.fortraininglib, self.config, None)
         mock_page.side_effect = self.mock_pywikibot_pages
 
         with open(join(dirname(abspath(__file__)), "data", "ru_worksheet_overview.mediawiki"), 'r') as f:
@@ -67,7 +69,7 @@ class TestWriteReport(unittest.TestCase):
            ".create_mediawiki")    # don't go into create_mediawiki()
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page, mock_create_mediawiki):
-        write_report = WriteReport(self.fortraininglib, None)
+        write_report = WriteReport(self.fortraininglib, self.config, None)
         # When there is no proper language name, save_language_report() should directly exit
         with self.assertLogs("pywikitools.resourcesbot.modules.write_report",
                              level="WARNING"):
@@ -90,13 +92,13 @@ class TestWriteReport(unittest.TestCase):
     @patch("pywikitools.resourcesbot.modules.write_report.WriteReport"
            ".save_language_report")
     def test_run(self, mock_save):
-        write_report = WriteReport(self.fortraininglib, None)
+        write_report = WriteReport(self.fortraininglib,self.config, None)
         # save_language_report() shouldn't get called when we have a language variant
         write_report.run(LanguageInfo("de-test", "Deutsch (Test)"), self.english_info, ChangeLog(), ChangeLog())
         mock_save.assert_not_called()
 
         # save_language_report() should be called once (for Russian) and force_rewrite should be ignored
-        write_report = WriteReport(self.fortraininglib, None, force_rewrite=False)
+        write_report = WriteReport(self.fortraininglib, self.config, None, force_rewrite=False)
         write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
         mock_save.assert_called_once()
 
