@@ -7,7 +7,12 @@ The resourcesbot will first call any LanguagePostProcessors for each language an
 afterwards call any GlobalPostProcessor
 """
 from abc import ABC, abstractmethod
-from typing import Dict
+from configparser import ConfigParser
+from typing import Dict, Final
+
+from pywikibot.scripts.generate_user_files import pywikibot
+
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 
