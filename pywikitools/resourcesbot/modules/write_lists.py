@@ -1,5 +1,6 @@
 import logging
 import re
+from configparser import ConfigParser
 from typing import Final, Optional, Tuple
 
 import pywikibot
@@ -22,9 +23,8 @@ class WriteList(LanguagePostProcessor):
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
+        config: ConfigParser,
         site: pywikibot.site.APISite,
-        user_name: str,
-        password: str,
         *,
         force_rewrite: bool = False,
     ):
@@ -37,13 +37,13 @@ class WriteList(LanguagePostProcessor):
         """
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._site: Final[pywikibot.site.APISite] = site
-        self._user_name: Final[str] = user_name
-        self._password: Final[str] = password
+        self._user_name: Final[str] = config.get("resourcesbot", "username", fallback="")
+        self._password: Final[str] = config.get("resourcesbot", "password", fallback="")
         self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_lists"
         )
-        if user_name == "" or password == "":
+        if self._user_name == "" or self._password == "":
             self.logger.warning(
                 "Missing user name and/or password in config."
                 "Won't mark pages for translation."
