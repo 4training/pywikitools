@@ -1,4 +1,5 @@
 import logging
+from configparser import ConfigParser
 from typing import Final
 
 import pywikibot
@@ -20,15 +21,19 @@ class WriteSidebarMessages(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
-    def __init__(self, fortraininglib: ForTrainingLib, site: pywikibot.site.APISite, *,
-                 force_rewrite: bool = False):
+    def __init__(
+            self,
+            fortraininglib: ForTrainingLib,
+            config: ConfigParser,
+            site: pywikibot.site.APISite,
+            *,
+            force_rewrite: bool = False,
+    ):
         """
         Args:
             force_rewrite rewrite even if there were no (relevant) changes
         """
-        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
-        self._site: Final[pywikibot.site.APISite] = site
-        self._force_rewrite: Final[bool] = force_rewrite
+        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
         self.logger: Final[logging.Logger] = logging.getLogger(
             'pywikitools.resourcesbot.modules.write_sidebar_messages'
         )
