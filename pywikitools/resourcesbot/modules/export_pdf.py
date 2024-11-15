@@ -1,8 +1,12 @@
 import copy
 import logging
 import os
+from configparser import ConfigParser
+
 import requests
 from typing import Final, Optional
+
+from pywikibot.scripts.generate_user_files import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
@@ -15,21 +19,26 @@ class ExportPDF(LanguagePostProcessor):
     Export all PDF files of this language into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
-    def __init__(self, fortraininglib: ForTrainingLib, folder: str, *, force_rewrite: bool = False):
+    def __init__(
+            self,
+            fortraininglib: ForTrainingLib,
+            config: ConfigParser,
+            site: pywikibot.site.APISite = None,
+            *,
+            force_rewrite: bool = False,
+    ):
         """
         Args:
-            folder: base directory for export; subdirectories will be created for each language
             force_rewrite: rewrite even if there were no (relevant) changes
         """
-        self._base_folder: str = folder
-        self._force_rewrite: Final[bool] = force_rewrite
-        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
+        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             'pywikitools.resourcesbot.modules.export_pdf'
         )
         if self._base_folder != "":
             try:
-                os.makedirs(folder, exist_ok=True)
+                os.makedirs(self._base_folder, exist_ok=True)
             except OSError as err:
                 self.logger.warning(f"Error creating directories for PDF export: {err}. Won't export PDF files.")
                 self._base_folder = ""
