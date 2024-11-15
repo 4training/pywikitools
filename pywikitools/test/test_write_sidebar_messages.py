@@ -1,4 +1,5 @@
 import unittest
+from configparser import ConfigParser
 from unittest.mock import patch
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
@@ -10,12 +11,16 @@ from pywikitools.test.test_data_structures import TEST_PROGRESS
 
 class TestWriteSidebarMessages(unittest.TestCase):
     def setUp(self):
+        self.config = ConfigParser()
         self.worksheet = WorksheetInfo("Hearing_from_God", "de", "Gottes Reden wahrnehmen",
                                        TranslationProgress(**TEST_PROGRESS), "1.2")
         self.language_info = LanguageInfo("de", "German")
         self.language_info.add_worksheet_info("Hearing_from_God", self.worksheet)
 
-        self.write_sidebar_messages = WriteSidebarMessages(ForTrainingLib("https://test.4training.net"), None)
+        self.write_sidebar_messages = WriteSidebarMessages(
+            ForTrainingLib("https://test.4training.net"),
+            self.config,
+            None)
 
     @patch("pywikibot.Page")
     def test_save_worksheet_title(self, mock_page):
@@ -64,7 +69,12 @@ class TestWriteSidebarMessages(unittest.TestCase):
         mock_save.assert_called_once()
 
         # save_worksheet_title() should be called when we have force_rewrite (even if there are no changes)
-        write_sidebar_messages = WriteSidebarMessages(None, None, force_rewrite=True)
+        write_sidebar_messages = WriteSidebarMessages(
+            fortraininglib=None,
+            config=self.config,
+            site=None,
+            force_rewrite=True
+        )
         write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog())
         self.assertEqual(mock_save.call_count, 2)
 
