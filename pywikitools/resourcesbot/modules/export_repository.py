@@ -2,6 +2,7 @@ import logging
 import os
 from configparser import ConfigParser
 from typing import Final
+
 from git import Actor, Repo
 from git.exc import GitError
 from pywikibot.scripts.generate_user_files import pywikibot
@@ -13,35 +14,42 @@ from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcess
 
 class ExportRepository(LanguagePostProcessor):
     """
-    Export the html files (result of ExportHTML) to a git repository.
+    Export the HTML files (result of ExportHTML) to a git repository.
     Needs to run after ExportHTML.
     """
+
     def __init__(
-            self,
-            config: ConfigParser,
-            fortraininglib: ForTrainingLib=None,
-            site: pywikibot.site.APISite=None,
-            *,
-            force_rewrite: bool = False,
+        self,
+        config: ConfigParser,
+        fortraininglib: ForTrainingLib = None,
+        site: pywikibot.site.APISite = None,
+        *,
+        force_rewrite: bool = False,
     ):
-        """
-        Args:
-            repo: the address of the remote repository we're filling TODO
-                Currently we assume that origin is correctly set up in the folder and we just need to push
-        """
+        # TODO Currently we assume that origin is correctly set up in the folder,
+        #  and we just need to push
+
         super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
         self._base_folder: str = self._config.get("Paths", "htmlexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
-            'pywikitools.resourcesbot.modules.export_repository'
+            "pywikitools.resourcesbot.modules.export_repository"
         )
         if self._base_folder == "":
-            self.logger.warning("Missing htmlexport path in config.ini. Won't export to repository")
-        self._author: Final[Actor] = Actor("ExportRepository", "samuel@holydevelopers.net")
+            self.logger.warning(
+                "Missing htmlexport path in config.ini. Won't export to repository"
+            )
+        self._author: Final[Actor] = Actor(
+            "ExportRepository", "samuel@holydevelopers.net"
+        )
 
-    def run(self, language_info: LanguageInfo, _english_info, _changes, _english_changes):
-        """Pushing all changes in the local repository (created by ExportHTML) to the remote repository
+    def run(
+        self, language_info: LanguageInfo, _english_info, _changes, _english_changes
+    ):
+        """Pushing all changes in the local repository (created by ExportHTML) to the
+        remote repository.
 
-        Currently we're ignoring the changes parameter and just check for changes in the git repository
+        Currently, we're ignoring the change parameter and just check for changes
+        in the git repository
         """
         # Make sure we have a valid repository
         if self._base_folder == "":
@@ -73,15 +81,21 @@ class ExportRepository(LanguagePostProcessor):
                 repo.index.remove(item.a_path)
                 deleted += 1
             else:
-                self.logger.warning(f"Unsupported change_type {item.change_type} in git diff, ignoring.")
+                self.logger.warning(
+                    f"Unsupported change_type {item.change_type} in git diff, ignoring."
+                )
 
         if repo.is_dirty():
             # Commiting and pushing to remote
-            commit_message = f"Update: {untracked} new, {modified} modified, {deleted} deleted."
+            commit_message = (
+                f"Update: {untracked} new, {modified} modified, {deleted} deleted."
+            )
             self.logger.warning(f"Pushing to git repository. {commit_message}")
             # TODO add details to the commit message
             repo.index.commit(f"{commit_message}", author=self._author)
             result = repo.remotes.origin.push()
             self.logger.info(f"Pushed to remote, result: {result[0].summary}")
         else:
-            self.logger.info(f"ExportRepository {language_info.language_code}: No changes.")
+            self.logger.info(
+                f"ExportRepository {language_info.language_code}: No changes."
+            )
