@@ -1,9 +1,12 @@
 import logging
 import os
+from configparser import ConfigParser
 from typing import Final
 from git import Actor, Repo
 from git.exc import GitError
+from pywikibot.scripts.generate_user_files import pywikibot
 
+from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 
@@ -13,14 +16,21 @@ class ExportRepository(LanguagePostProcessor):
     Export the html files (result of ExportHTML) to a git repository.
     Needs to run after ExportHTML.
     """
-    def __init__(self, base_folder: str):
+    def __init__(
+            self,
+            config: ConfigParser,
+            fortraininglib: ForTrainingLib=None,
+            site: pywikibot.site.APISite=None,
+            *,
+            force_rewrite: bool = False,
+    ):
         """
         Args:
-            folder: export base directory (repositories will be in subdirectories for each language)
             repo: the address of the remote repository we're filling TODO
                 Currently we assume that origin is correctly set up in the folder and we just need to push
         """
-        self._base_folder: Final[str] = base_folder
+        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        self._base_folder: str = self._config.get("Paths", "htmlexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             'pywikitools.resourcesbot.modules.export_repository'
         )
