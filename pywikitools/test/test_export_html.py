@@ -49,7 +49,6 @@ class TestExportHTML(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             self.perm_temp_dir = temp_dir
 
-
     def mock_get_page_html(self, arg):
         return self.html_content
 
