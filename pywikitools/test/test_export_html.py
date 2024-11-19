@@ -46,6 +46,10 @@ class TestExportHTML(unittest.TestCase):
         with open(join(dirname(abspath(__file__)), "data", "Hand_1.png"), 'rb') as f:
             self.response._content = f.read()
 
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.perm_temp_dir = temp_dir
+
+
     def mock_get_page_html(self, arg):
         return self.html_content
 
@@ -60,7 +64,7 @@ class TestExportHTML(unittest.TestCase):
 
     def test_run_filters_unfinished_worksheets(self):
         fortraininglib_mock = Mock()
-        export_html = ExportHTML(fortraininglib_mock, "/mocked/path", force_rewrite=False)
+        export_html = ExportHTML(fortraininglib_mock, self.perm_temp_dir, force_rewrite=False)
         with patch.object(export_html, 'has_relevant_change', return_value=False) as mock_has_relevant_change:
             export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
             calls = [call[0][0] for call in mock_has_relevant_change.call_args_list]
@@ -96,7 +100,6 @@ class TestExportHTML(unittest.TestCase):
             # At object creation, the main folder should be created.
             export_html = ExportHTML(self.fortraininglib, folder, force_rewrite=False)
             self.assertTrue(os.path.exists(folder), f"Pfad existiert nicht: {folder}")
-            self.print_folder_structure(folder)
             export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
 
             # Assert that the right directories were created
