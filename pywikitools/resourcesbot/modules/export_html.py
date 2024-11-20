@@ -237,6 +237,6 @@ class StructureEncoder(json.JSONEncoder):
             if pdf_info:
                 pos: int = pdf_info.url.rfind("/")
                 if pos > -1:
-                    worksheet_json["pdf"] = pdf_info.url[pos + 1 :]
+                    worksheet_json["pdf"] = pdf_info.url[pos + 1:]
             return worksheet_json
         return super().default(o)

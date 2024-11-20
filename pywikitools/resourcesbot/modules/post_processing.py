@@ -8,7 +8,7 @@ afterwards call any GlobalPostProcessor
 """
 from abc import ABC, abstractmethod
 from configparser import ConfigParser
-from typing import Dict, Final
+from typing import Dict
 
 from pywikibot.scripts.generate_user_files import pywikibot
 
@@ -30,12 +30,11 @@ class LanguagePostProcessor(ABC):
         site: pywikibot.site.APISite = None,
         *,
         force_rewrite: bool = False,
-):
+    ):
         self.fortraininglib = fortraininglib
         self._config = config
         self._site = site
         self._force_rewrite: bool = force_rewrite
-
 
     @abstractmethod
     def run(self, language_info: LanguageInfo, english_info: LanguageInfo,

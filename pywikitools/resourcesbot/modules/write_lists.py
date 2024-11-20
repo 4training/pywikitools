@@ -96,7 +96,7 @@ class WriteList(LanguagePostProcessor):
         file_name: str = file_info.url
         pos: int = file_name.rfind("/")
         if pos > -1:
-            file_name = file_name[pos + 1 :]
+            file_name = file_name[pos + 1:]
         else:
             self.logger.warning(f"Couldn't find / in {file_name}")
         return (
@@ -237,7 +237,7 @@ class WriteList(LanguagePostProcessor):
         new_page_content = page.text[0:list_start] + self.create_mediawiki(
             language_info, english_info
         )
-        new_page_content += page.text[list_end + 1 :]
+        new_page_content += page.text[list_end + 1:]
         self.logger.debug(new_page_content)
 
         # Save page and mark it for translation if necessary
