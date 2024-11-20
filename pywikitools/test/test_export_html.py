@@ -46,8 +46,8 @@ class TestExportHTML(unittest.TestCase):
         with open(join(dirname(abspath(__file__)), "data", "Hand_1.png"), 'rb') as f:
             self.response._content = f.read()
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            self.perm_temp_dir = temp_dir
+        temp_dir = tempfile.TemporaryDirectory()
+        self.perm_temp_dir = temp_dir
 
     def mock_get_page_html(self, arg):
         return self.html_content
@@ -63,7 +63,7 @@ class TestExportHTML(unittest.TestCase):
 
     def test_run_filters_unfinished_worksheets(self):
         fortraininglib_mock = Mock()
-        export_html = ExportHTML(fortraininglib_mock, self.perm_temp_dir, force_rewrite=False)
+        export_html = ExportHTML(fortraininglib_mock, self.perm_temp_dir.name, force_rewrite=False)
         with patch.object(export_html, 'has_relevant_change', return_value=False) as mock_has_relevant_change:
             export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
             calls = [call[0][0] for call in mock_has_relevant_change.call_args_list]
@@ -145,6 +145,43 @@ class TestExportHTML(unittest.TestCase):
                     self.assertEqual(g.read(), f.read(), 'Wrong content in contents.json')
 
     # TODO create overall test with real objects, testing everything at once.
+    def test_complex_export_html(self):
+
+        # Setup complex Test-Objects
+        ar_changelog = ChangeLog()
+        ar_changelog.add_change('A_Daily_Prayer', 'updated worksheet')  # normal worksheet
+        ar_changelog.add_change('Time_with_God', 'updated worksheet')  # worksheet with images
+        ar_changelog.add_change("Church", 'new worksheet')  # unfinished -> shouldn't be exported
+
+        with open(join(dirname(abspath(__file__)), "data", "ar.json"), 'r') as f:
+            ar_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
+        with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
+            en_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
+
+        export_html = ExportHTML(self.fortraininglib, self.perm_temp_dir.name, force_rewrite=False)
+        try:
+            export_html.run(ar_language_info, en_language_info, ar_changelog, ChangeLog())
+        except Exception as e:
+            print(f"Connection error occurred: {e}")
+            raise AssertionError(f"Test failed due to connection error: {e}")
+
+        path_to_transformed_html1 = os.path.join(self.perm_temp_dir.name, 'ar', 'قضاء_وقت_مع_الله.html')
+        path_to_transformed_html2 = os.path.join(self.perm_temp_dir.name, 'ar', 'الصلاة_اليومية.html')
+        path_to_image = os.path.join(self.perm_temp_dir.name, 'ar', 'files', 'Head-32.png')
+        self.assertTrue(os.path.exists(path_to_image), 'Downloaded image missing.')
+        self.assertTrue(os.path.exists(path_to_transformed_html1), "The html is not in the expected location.")
+        self.assertTrue(os.path.exists(path_to_transformed_html2), "The html is not in the expected location.")
+
+        # run with force rewrite
+        export_html_fr = ExportHTML(self.fortraininglib, self.perm_temp_dir.name, force_rewrite=True)
+        try:
+            export_html_fr.run(ar_language_info, en_language_info, ar_changelog, ChangeLog())
+        except Exception as e:
+            print(f"Connection error occurred: {e}")
+            raise AssertionError(f"Test failed due to connection error: {e}")
+
+        path_to_transformed_html3 = os.path.join(self.perm_temp_dir.name, 'ar', 'الصلاة.html')
+        self.assertTrue(os.path.exists(path_to_transformed_html3), "The html is not in the expected location.")
 
 
 if __name__ == '__main__':
