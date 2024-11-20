@@ -139,8 +139,13 @@ def parse_arguments() -> ResourcesBot:
     limit_to_lang = None
     if args.lang is not None:
         limit_to_lang = str(args.lang)
+
     config = ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + "/config.ini")
+    if not config.has_section("Rewrite"):
+        config.add_section("Rewrite")
+    config.set("Rewrite", "rewrite", args.rewrite)
+
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
@@ -149,7 +154,6 @@ def parse_arguments() -> ResourcesBot:
         config=config,
         modules=args.m,
         limit_to_lang=limit_to_lang,
-        rewrite=args.rewrite,
         read_from_cache=args.read_from_cache,
     )
 

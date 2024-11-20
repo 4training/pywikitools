@@ -98,7 +98,7 @@ class TestWriteReport(unittest.TestCase):
         mock_save.assert_not_called()
 
         # save_language_report() should be called once (for Russian) and force_rewrite should be ignored
-        write_report = WriteReport(self.fortraininglib, self.config, None, force_rewrite=False)
+        write_report = WriteReport(self.fortraininglib, self.config, None)
         write_report.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
         mock_save.assert_called_once()
 

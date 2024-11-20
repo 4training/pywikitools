@@ -34,7 +34,7 @@ class LanguagePostProcessor(ABC):
         self.fortraininglib = fortraininglib
         self._config = config
         self._site = site
-        self._force_rewrite: Final[bool] = force_rewrite
+        self._force_rewrite: bool = force_rewrite
 
 
     @abstractmethod

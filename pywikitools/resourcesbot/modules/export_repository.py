@@ -23,13 +23,11 @@ class ExportRepository(LanguagePostProcessor):
         config: ConfigParser,
         fortraininglib: ForTrainingLib = None,
         site: pywikibot.site.APISite = None,
-        *,
-        force_rewrite: bool = False,
     ):
         # TODO Currently we assume that origin is correctly set up in the folder,
         #  and we just need to push
 
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
         self._base_folder: str = self._config.get("Paths", "htmlexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.export_repository"

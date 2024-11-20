@@ -42,11 +42,13 @@ class TestWriteList(unittest.TestCase):
         with self.assertLogs(
             "pywikitools.resourcesbot.modules.write_lists", level="WARNING"
         ):
+            config_with_rewrite = ConfigParser()
+            config_with_rewrite["resourcesbot"] = {"username": "", "password": ""}
+            config_with_rewrite["Rewrite"] = {"rewrite": "all"}
             write_list = WriteList(
                 ForTrainingLib("https://test.4training.net"),
-                self.config,
+                config_with_rewrite,
                 None,
-                force_rewrite=True,
             )
         self.assertTrue(
             write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog())

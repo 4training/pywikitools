@@ -31,26 +31,31 @@ from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    AVAILABLE_MODULES: Final = [
-        "consistency_check",
-        "export_html",
-        "export_pdf",
-        "export_repository",
-        "write_lists",
-        "write_report",
-        "write_sidebar",
-    ]
+    AVAILABLE_MODULES: Final = {
+        "consistency_check": ConsistencyCheck,
+        "export_html": ExportHTML,
+        "export_pdf": ExportPDF,
+        "export_repository": ExportRepository,
+        "write_lists": WriteList,
+        "write_report": WriteReport,
+        "write_sidebar": WriteSidebarMessages,
+    }
 
     def __init__(
         self,
         config: ConfigParser,
-        modules: list[str] = AVAILABLE_MODULES,
+        modules: list[str] = AVAILABLE_MODULES.keys(),
         limit_to_lang: Optional[str] = None,
-        rewrite: Optional[str] = None,
         read_from_cache: bool = False,
     ):
         """
         Args:
+            config (ConfigParser):
+                The configuration file which includes certain parameters, e.g.:
+                "rewrite", to force rewriting of a selected component (even when
+                there are no changes).
+                Possible options are: "json", "list", "report" - or "all" to rewrite
+                everything.
             limit_to_lang:
                 limit processing to one language (string with a language code)
             modules:
@@ -58,12 +63,9 @@ class ResourcesBot:
                 Possible values include: "consistency_check", "export_html",
                 "export_pdf", "export_repository", "write_lists", "write_report",
                 "write_sidebar".
-            rewrite:
-                force rewriting of a selected component (even if there are no changes).
-                Possible values e.g. "json", "list", "report" - or "all" to rewrite
-                everything.
             read_from_cache:
-                Read from JSON cache from the mediawiki system (don't query individual
+                Read from JSON cache from the mediawiki system
+                (don't query individual
                 worksheets).
         """
         # read-only list of download file types
@@ -102,6 +104,7 @@ class ResourcesBot:
         self._read_from_cache: bool = read_from_cache
 
         # "" instead of None makes life a bit easier
+        rewrite = config.get("Rewrite", "rewrite", fallback=None)
         self._rewrite: str = rewrite if rewrite is not None else ""
         if self._limit_to_lang is not None:
             self.logger.info(
@@ -194,40 +197,6 @@ class ResourcesBot:
             self._save_number_of_languages()
 
         # Run all LanguagePostProcessors
-        post_processor_modules = {
-            "write_lists": WriteList(
-                self.fortraininglib,
-                self.site,
-                self._config.get("resourcesbot", "username", fallback=""),
-                self._config.get("resourcesbot", "password", fallback=""),
-                force_rewrite=(self._rewrite == "all") or (self._rewrite == "list"),
-            ),
-            "write_report": WriteReport(
-                self.fortraininglib,
-                self.site,
-                force_rewrite=(self._rewrite == "all") or (self._rewrite == "report"),
-            ),
-            "write_sidebar": WriteSidebarMessages(
-                self.fortraininglib,
-                self.site,
-                force_rewrite=(self._rewrite == "all") or (self._rewrite == "sidebar"),
-            ),
-            "consistency_check": ConsistencyCheck(self.fortraininglib),
-            "export_html": ExportHTML(
-                self.fortraininglib,
-                self._config.get("Paths", "htmlexport", fallback=""),
-                force_rewrite=(self._rewrite == "all") or (self._rewrite == "html"),
-            ),
-            "export_pdf": ExportPDF(
-                self.fortraininglib,
-                self._config.get("Paths", "pdfexport", fallback=""),
-                force_rewrite=(self._rewrite == "all") or (self._rewrite == "pdf"),
-            ),
-            "export_repository": ExportRepository(
-                self._config.get("Paths", "htmlexport", fallback="")
-            ),
-        }
-
         assert "en" in self._result
         assert "en" in self._changelog
 
@@ -240,27 +209,16 @@ class ResourcesBot:
         if self.modules is not None:
             for lang in self._result:
                 for selected_module in self.modules:
-                    if selected_module == "consistency_check":
-                        post_processor_modules[selected_module].run(
-                            self._result[lang],
-                            self._result["en"],
-                            ChangeLog(),
-                            ChangeLog(),
-                        )
-                    elif selected_module == "write_report":
-                        post_processor_modules[selected_module].run(
-                            self._result[lang],
-                            self._result["en"],
-                            self._changelog[lang],
-                            self._changelog["en"],
-                        )
-                    else:
-                        post_processor_modules[selected_module].run(
-                            self._result[lang],
-                            self._result["en"],
-                            self._changelog[lang],
-                            ChangeLog(),
-                        )
+                    self.AVAILABLE_MODULES[selected_module](
+                        self.fortraininglib,
+                        self._config,
+                        self.site,
+                    ).run(
+                        self._result[lang],
+                        self._result["en"],
+                        ChangeLog(),
+                        ChangeLog(),
+                    )
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:

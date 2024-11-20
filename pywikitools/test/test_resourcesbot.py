@@ -38,6 +38,7 @@ class TestResourcesBot(unittest.TestCase):
             {
                 "resourcesbot": {"site": "test", "username": "TestBotName"},
                 "Paths": {"logs": "~/", "temp": "~/temp/"},
+                "Rewrite": {"rewrite": "all"},
             }
         )  # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
@@ -175,7 +176,7 @@ class TestResourcesBot(unittest.TestCase):
     ):
         mock_pywikibot_page.side_effect = self.json_test_loader
         mock_pywikibot_site.return_value.logged_in.return_value = True
-        bot = ResourcesBot(self.config, read_from_cache=True)
+        bot = ResourcesBot(config=self.config, read_from_cache=True)
         bot.run()
 
         # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
@@ -234,9 +235,7 @@ class TestResourcesBot(unittest.TestCase):
         for rewrite_option, mocked_component in rewrite_check.items():
             # Component selected with the rewrite option should have force_rewrite=True,
             # the others not
-            bot = ResourcesBot(
-                self.config, read_from_cache=True, rewrite=rewrite_option
-            )
+            bot = ResourcesBot(config=self.config, read_from_cache=True)
             bot.run()
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
             for other_mock in rewrite_check.values():
@@ -244,13 +243,14 @@ class TestResourcesBot(unittest.TestCase):
                     self.assertFalse(other_mock.call_args.kwargs.get("force_rewrite"))
 
         # "all" components should get called with force_rewrite=True
-        bot = ResourcesBot(self.config, read_from_cache=True, rewrite="all")
+        bot = ResourcesBot(config=self.config, read_from_cache=True)
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
 
         # No rewrite specified, so no component should get called with force_rewrite
-        bot = ResourcesBot(self.config, read_from_cache=True, rewrite=None)
+        self.config["Rewrite"] = {"rewrite": ""}
+        bot = ResourcesBot(self.config, read_from_cache=True)
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))

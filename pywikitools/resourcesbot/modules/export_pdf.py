@@ -24,14 +24,10 @@ class ExportPDF(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite = None,
-        *,
-        force_rewrite: bool = False,
     ):
-        """
-        Args:
-            force_rewrite: rewrite even if there were no (relevant) changes
-        """
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
+        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
+        self._force_rewrite = (rewrite == "all") or (rewrite == "pdf")
         self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.export_pdf"

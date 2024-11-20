@@ -91,8 +91,9 @@ class TestWriteSidebarMessages(unittest.TestCase):
 
         # save_worksheet_title() should be called when we have force_rewrite
         # (even if there are no changes)
+        self.config["Rewrite"] = {"rewrite": "sidebar"}
         write_sidebar_messages = WriteSidebarMessages(
-            fortraininglib=None, config=self.config, site=None, force_rewrite=True
+            fortraininglib=None, config=self.config, site=None
         )
         write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog())
         self.assertEqual(mock_save.call_count, 2)

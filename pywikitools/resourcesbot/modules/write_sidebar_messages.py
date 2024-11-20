@@ -31,14 +31,10 @@ class WriteSidebarMessages(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
-        *,
-        force_rewrite: bool = False,
     ):
-        """
-        Args:
-            force_rewrite rewrite even if there were no (relevant) changes
-        """
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
+        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
+        self._force_rewrite = (rewrite == "all") or (rewrite == "sidebar")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_sidebar_messages"
         )

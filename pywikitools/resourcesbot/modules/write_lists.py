@@ -25,8 +25,6 @@ class WriteList(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
-        *,
-        force_rewrite: bool = False,
     ):
         """
         Arguments user_name and password are necessary to mark page for translation
@@ -35,7 +33,9 @@ class WriteList(LanguagePostProcessor):
         Args:
             force_rewrite rewrite even if there were no (relevant) changes
         """
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
+        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
+        self._force_rewrite = (rewrite == "all") or (rewrite == "list")
 
         self._user_name: Final[str] = config.get(
             "resourcesbot", "username", fallback=""

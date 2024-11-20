@@ -32,10 +32,8 @@ class ConsistencyCheck(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser = None,
         site: pywikibot.site.APISite = None,
-        *,
-        force_rewrite: bool = False,
     ):
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
         self.logger = logging.getLogger(
             "pywikitools.resourcesbot.modules.consistency_checks"
         )

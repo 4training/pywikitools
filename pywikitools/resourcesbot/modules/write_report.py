@@ -40,15 +40,14 @@ class WriteReport(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
-        *,
-        force_rewrite: bool = False,
     ):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
-            force_rewrite: is ignored as we need to check CorrectBot reports anyway
         """
-        super().__init__(fortraininglib, config, site, force_rewrite=force_rewrite)
+        super().__init__(fortraininglib, config, site)
+        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
+        self._force_rewrite = (rewrite == "all") or (rewrite == "report")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_report"
         )
