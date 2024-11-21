@@ -27,11 +27,23 @@ class ConsistencyCheck(LanguagePostProcessor):
 
     TITLE: Final[str] = "Page display title"
 
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Check consistency of translations"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "check"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return False
+
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser = None,
-        site: pywikibot.site.APISite = None,
+        site: pywikibot.site.APISite = None
     ):
         super().__init__(fortraininglib, config, site)
         self.logger = logging.getLogger(
@@ -239,7 +251,8 @@ class ConsistencyCheck(LanguagePostProcessor):
         return self.should_be_equal(t24, t26)
 
     def run(
-        self, language_info: LanguageInfo, _english_info, _changes, _english_changes
+        self, language_info: LanguageInfo, _english_info, _changes, _english_changes,
+        *, force_rewrite: bool = False
     ):
         checks_passed: int = 0
         checks_passed += int(self.check_bible_reading_hints_titles(language_info))

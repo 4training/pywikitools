@@ -4,8 +4,8 @@ import os
 from configparser import ConfigParser
 from typing import Final, Optional
 
+import pywikibot
 import requests
-from pywikibot.scripts.generate_user_files import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
@@ -18,16 +18,25 @@ class ExportPDF(LanguagePostProcessor):
     Export all PDF files of this language into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Export PDF files of a language"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "pdf"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return True
 
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite = None,
+        site: pywikibot.site.APISite = None
     ):
         super().__init__(fortraininglib, config, site)
-        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
-        self._force_rewrite = (rewrite == "all") or (rewrite == "pdf")
         self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.export_pdf"
@@ -64,6 +73,8 @@ class ExportPDF(LanguagePostProcessor):
         english_info: LanguageInfo,
         changes: ChangeLog,
         _english_changes,
+        *,
+        force_rewrite: bool = False
     ):
         if self._base_folder == "":
             return
@@ -97,7 +108,7 @@ class ExportPDF(LanguagePostProcessor):
             if pdf_info is None:
                 continue
             # As elsewhere, we ignore outdated / unfinished translations
-            if self._force_rewrite or self.has_relevant_change(worksheet, changes):
+            if force_rewrite or self.has_relevant_change(worksheet, changes):
                 response = requests.get(pdf_info.url, allow_redirects=True)
                 file_path = os.path.join(folder, pdf_info.get_file_name())
                 with open(file_path, "wb") as fh:

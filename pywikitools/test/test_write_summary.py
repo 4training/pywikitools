@@ -64,8 +64,8 @@ class TestWriteSummary(unittest.TestCase):
         mock_save.assert_called_once()
 
         # save_summary() should be called when we have force_rewrite (even if there are no changes)
-        write_summary = WriteSummary(None, force_rewrite=True)
-        write_summary.run(self.language_data, self.empty_change_log)
+        write_summary = WriteSummary(None)
+        write_summary.run(self.language_data, self.empty_change_log, force_rewrite=True)
         self.assertEqual(mock_save.call_count, 2)
 
 

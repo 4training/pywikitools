@@ -38,24 +38,7 @@ class TestWriteList(unittest.TestCase):
         ) as f:
             self.expected_output: str = f.read()
 
-    def test_force_rewrite(self):
-        with self.assertLogs(
-            "pywikitools.resourcesbot.modules.write_lists", level="WARNING"
-        ):
-            config_with_rewrite = ConfigParser()
-            config_with_rewrite["resourcesbot"] = {"username": "", "password": ""}
-            config_with_rewrite["Rewrite"] = {"rewrite": "all"}
-            write_list = WriteList(
-                ForTrainingLib("https://test.4training.net"),
-                config_with_rewrite,
-                None,
-            )
-        self.assertTrue(
-            write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog())
-        )
-        self.assertFalse(
-            self.write_list.needs_rewrite(LanguageInfo("ru", "Russian"), ChangeLog())
-        )
+    # TODO def test_force_rewrite(self):
 
     def test_needs_rewrite(self):
         change_log = ChangeLog()

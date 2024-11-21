@@ -1,9 +1,11 @@
+import importlib
+import inspect
 import json
 import logging
 import os
 import re
 from configparser import ConfigParser
-from typing import Dict, Final, List, Optional, Tuple
+from typing import Callable, Dict, Final, List, Optional, Tuple
 
 import pywikibot
 
@@ -18,58 +20,61 @@ from pywikitools.resourcesbot.data_structures import (
     WorksheetInfo,
     json_decode,
 )
-from pywikitools.resourcesbot.modules.consistency_checks import ConsistencyCheck
-from pywikitools.resourcesbot.modules.export_html import ExportHTML
-from pywikitools.resourcesbot.modules.export_pdf import ExportPDF
-from pywikitools.resourcesbot.modules.export_repository import ExportRepository
-from pywikitools.resourcesbot.modules.write_lists import WriteList
-from pywikitools.resourcesbot.modules.write_report import WriteReport
-from pywikitools.resourcesbot.modules.write_sidebar_messages import WriteSidebarMessages
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.modules.write_summary import WriteSummary
+
+AVAILABLE_MODULES: Final[List[str]] = [
+    "consistency_checks",
+    "export_html",
+    "export_pdf",
+    "export_repository",
+    "write_lists",
+    "write_report",
+    "write_sidebar_messages",
+]
+
+
+def load_module(module_name: str) -> Callable:
+    """Load the post-processing module from modules/ and return it
+
+    Raises RuntimeError if module can't be found"""
+    module_name = f"pywikitools.resourcesbot.modules.{module_name}"
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        raise RuntimeError(f"Resourcesbot module {module_name} not found")
+
+    # Find the class that inherits from LanguagePostProcessor
+    for _, obj in inspect.getmembers(module, inspect.isclass):
+        if issubclass(obj, LanguagePostProcessor) and obj is not LanguagePostProcessor:
+            return obj
+
+    raise RuntimeError(f"Couldn't load module {module_name}. Giving up")
 
 
 class ResourcesBot:
     """Contains all the logic of our bot"""
 
-    AVAILABLE_MODULES: Final = {
-        "consistency_check": ConsistencyCheck,
-        "export_html": ExportHTML,
-        "export_pdf": ExportPDF,
-        "export_repository": ExportRepository,
-        "write_lists": WriteList,
-        "write_report": WriteReport,
-        "write_sidebar": WriteSidebarMessages,
-    }
-
     def __init__(
         self,
         config: ConfigParser,
-        modules: list[str] = AVAILABLE_MODULES.keys(),
-        limit_to_lang: Optional[str] = None,
         read_from_cache: bool = False,
+        limit_to_lang: Optional[str] = None,
+        modules: list[str] = AVAILABLE_MODULES,
+        rewrite: Optional[str] = None,
     ):
         """
         Args:
-            config (ConfigParser):
-                The configuration file which includes certain parameters, e.g.:
-                "rewrite", to force rewriting of a selected component (even when
-                there are no changes).
-                Possible options are: "json", "list", "report" - or "all" to rewrite
-                everything.
+            read_from_cache:
+                Read from JSON cache from the mediawiki system
+                (don't query individual worksheets).
             limit_to_lang:
                 limit processing to one language (string with a language code)
             modules:
-                specify which post-processing modules should be executed.
-                Possible values include: "consistency_check", "export_html",
-                "export_pdf", "export_repository", "write_lists", "write_report",
-                "write_sidebar".
-            read_from_cache:
-                Read from JSON cache from the mediawiki system
-                (don't query individual
-                worksheets).
+                specify which post-processing modules should be executed
         """
-        # read-only list of download file types
         self.modules = modules
+        # read-only list of download file types
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
         self._config = config
         self.logger = logging.getLogger("pywikitools.resourcesbot")
@@ -100,21 +105,16 @@ class ResourcesBot:
             family.base_url(code, ""), family.scriptpath(code)
         )
 
-        self._limit_to_lang: Optional[str] = limit_to_lang
         self._read_from_cache: bool = read_from_cache
-
-        # "" instead of None makes life a bit easier
-        rewrite = config.get("Rewrite", "rewrite", fallback=None)
-        self._rewrite: str = rewrite if rewrite is not None else ""
+        self._limit_to_lang: Optional[str] = limit_to_lang
+        self._rewrite: Optional[str] = rewrite
         if self._limit_to_lang is not None:
             self.logger.info(
                 f"Parameter lang is set, limiting processing "
                 f"to language {limit_to_lang}"
             )
         if self._read_from_cache:
-            self.logger.info(
-                "Parameter --read-from-cache is set, " "reading from JSON..."
-            )
+            self.logger.info("Parameter --read-from-cache is set, reading from JSON...")
         if self._rewrite != "":
             self.logger.info(f"Parameter rewrite is set to {rewrite}")
 
@@ -201,32 +201,33 @@ class ResourcesBot:
         assert "en" in self._changelog
 
         self.logger.info(
-            f"Starting post-processing for languages " f"{list(self._result.keys())}"
+            f"Starting post-processing for languages {list(self._result.keys())}"
         )
 
-        self.logger.info(f"Modules specified for execution: " f"{self.modules}")
+        self.logger.info(f"Modules specified for execution: {self.modules}")
 
-        if self.modules is not None:
+        for selected_module in self.modules:
+            module = load_module(selected_module)(
+                self.fortraininglib, self._config, self.site
+            )
             for lang in self._result:
-                for selected_module in self.modules:
-                    self.AVAILABLE_MODULES[selected_module](
-                        self.fortraininglib,
-                        self._config,
-                        self.site,
-                    ).run(
-                        self._result[lang],
-                        self._result["en"],
-                        ChangeLog(),
-                        ChangeLog(),
-                    )
+                module.run(
+                    self._result[lang],
+                    self._result["en"],
+                    ChangeLog(),
+                    ChangeLog(),
+                    force_rewrite=(self._rewrite == "all")
+                    or (self._rewrite == module.abbreviation()),
+                )
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(
-                self.site,
+            write_summary = WriteSummary(self.site)
+            write_summary.run(
+                self._result,
+                self._changelog,
                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"),
             )
-            write_summary.run(self._result, self._changelog)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """

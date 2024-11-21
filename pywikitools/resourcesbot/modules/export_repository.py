@@ -5,7 +5,7 @@ from typing import Final
 
 from git import Actor, Repo
 from git.exc import GitError
-from pywikibot.scripts.generate_user_files import pywikibot
+import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.data_structures import LanguageInfo
@@ -17,11 +17,22 @@ class ExportRepository(LanguagePostProcessor):
     Export the HTML files (result of ExportHTML) to a git repository.
     Needs to run after ExportHTML.
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Exports the HTML files into a git repo"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "repository"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return False
 
     def __init__(
         self,
+        fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        fortraininglib: ForTrainingLib = None,
         site: pywikibot.site.APISite = None,
     ):
         # TODO Currently we assume that origin is correctly set up in the folder,
@@ -41,7 +52,8 @@ class ExportRepository(LanguagePostProcessor):
         )
 
     def run(
-        self, language_info: LanguageInfo, _english_info, _changes, _english_changes
+        self, language_info: LanguageInfo, _english_info, _changes, _english_changes,
+        *, force_rewrite: bool = False
     ):
         """Pushing all changes in the local repository (created by ExportHTML) to the
         remote repository.

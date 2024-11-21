@@ -36,9 +36,12 @@ class TestResourcesBot(unittest.TestCase):
         self.config = ConfigParser()
         self.config.read_dict(
             {
-                "resourcesbot": {"site": "test", "username": "TestBotName"},
-                "Paths": {"logs": "~/", "temp": "~/temp/"},
-                "Rewrite": {"rewrite": "all"},
+                "resourcesbot": {"site": "test", "username": "TestBotName",
+                                 "password": "test"},
+                "Paths": {"logs": "~/", "temp": "~/temp/",
+                          "htmlexport": "~/htmlexport/",
+                          "pdfexport": "~/pdfexport/"
+                          },
             }
         )  # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
@@ -153,14 +156,14 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportPDF", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
     def test_run_with_cache(
         self,
         mock_consistency_check,
@@ -180,14 +183,14 @@ class TestResourcesBot(unittest.TestCase):
         bot.run()
 
         # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
-        self.assertEqual(mock_consistency_check.return_value.run.call_count, 2)
-        self.assertEqual(mock_export_pdf.return_value.run.call_count, 2)
-        self.assertEqual(mock_export_html.return_value.run.call_count, 2)
-        self.assertEqual(mock_export_repository.return_value.run.call_count, 2)
-        self.assertEqual(mock_write_sidebar_messages.return_value.run.call_count, 2)
-        self.assertEqual(mock_write_list.return_value.run.call_count, 2)
-        self.assertEqual(mock_write_report.return_value.run.call_count, 2)
-        mock_write_summary.return_value.run.assert_called_once()
+        self.assertEqual(mock_consistency_check.call_count, 2)
+        self.assertEqual(mock_export_pdf.call_count, 2)
+        self.assertEqual(mock_export_html.call_count, 2)
+        self.assertEqual(mock_export_repository.call_count, 2)
+        self.assertEqual(mock_write_sidebar_messages.call_count, 2)
+        self.assertEqual(mock_write_list.call_count, 2)
+        self.assertEqual(mock_write_report.call_count, 2)
+        mock_write_summary.assert_called_once()
 
         self.assertIn("en", bot._result)
         self.assertIn("ru", bot._result)
@@ -249,13 +252,10 @@ class TestResourcesBot(unittest.TestCase):
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
 
         # No rewrite specified, so no component should get called with force_rewrite
-        self.config["Rewrite"] = {"rewrite": ""}
         bot = ResourcesBot(self.config, read_from_cache=True)
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))
-
-        # TODO: Check correctness of rewrite="json" as well
 
     # TODO: test_run_with_limit_lang
 

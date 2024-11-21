@@ -18,26 +18,29 @@ class WriteSummary(GlobalPostProcessor):
     This is a summary of all the language reports written by WriteReport.
     It will be written to https://www.4training.net/4training:Summary - see also there for more explanations
     """
-    def __init__(self, site: pywikibot.site.APISite, *, force_rewrite: bool = False):
+    def __init__(self, site: pywikibot.site.APISite):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
-            force_rewrite: rewrite report even if there were no (relevant) changes
         """
         self._site: Final[pywikibot.site.APISite] = site
-        self._force_rewrite: Final[bool] = force_rewrite
         self.logger: Final[logging.Logger] = logging.getLogger(
             'pywikitools.resourcesbot.modules.write_summary'
         )
         self.total_stats: Counter = Counter()   # Summing up statistics for all languages
 
-    def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
-        """Entry function"""
+    def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog],
+            *, force_rewrite: bool = False) -> None:
+        """Entry function
+
+        Args:
+            force_rewrite: rewrite report even if there were no (relevant) changes
+        """
         has_changes = False
         for change_log in changes.values():
             if not change_log.is_empty():
                 has_changes = True
-        if self._force_rewrite or has_changes:
+        if force_rewrite or has_changes:
             self.save_summary(language_data)
 
     def save_summary(self, language_data: Dict[str, LanguageInfo]):

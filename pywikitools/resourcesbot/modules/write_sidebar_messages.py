@@ -25,16 +25,25 @@ class WriteSidebarMessages(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Write the system messages for sidebar with translated titles"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "sidebar"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return True
 
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite,
+        site: pywikibot.site.APISite
     ):
         super().__init__(fortraininglib, config, site)
-        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
-        self._force_rewrite = (rewrite == "all") or (rewrite == "sidebar")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_sidebar_messages"
         )
@@ -80,10 +89,12 @@ class WriteSidebarMessages(LanguagePostProcessor):
         _english_info,
         changes: ChangeLog,
         _english_changes,
+        *,
+        force_rewrite: bool = False
     ) -> None:
         """Our entry function"""
         for worksheet in language_info.worksheets.values():
             if worksheet.title == "":
                 continue
-            if self._force_rewrite or self.has_relevant_change(worksheet.page, changes):
+            if force_rewrite or self.has_relevant_change(worksheet.page, changes):
                 self.save_worksheet_title(worksheet)

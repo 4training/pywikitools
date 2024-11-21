@@ -61,9 +61,9 @@ import os
 import sys
 import traceback
 from configparser import ConfigParser
-from typing import List
+from typing import Dict, List
 
-from pywikitools.resourcesbot.bot import ResourcesBot
+from pywikitools.resourcesbot.bot import AVAILABLE_MODULES, ResourcesBot, load_module
 
 
 def parse_arguments() -> ResourcesBot:
@@ -76,64 +76,41 @@ def parse_arguments() -> ResourcesBot:
         prog="python | python3 resourcesbot.py",
         description="Update list of available training resources in the"
         " language information pages.",
-        epilog="Refer to https://datahub.io/core/language-codes/r/0.html"
-        " for language codes.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
     log_levels: List[str] = ["debug", "info", "warning", "error"]
-    rewrite_options: List[str] = [
-        "all",
-        "json",
-        "list",
-        "report",
-        "summary",
-        "html",
-        "pdf",
-        "sidebar",
-    ]
-    modules: List[str] = [
-        "consistency_check",
-        "export_html",
-        "export_pdf",
-        "export_repository",
-        "write_lists",
-        "write_report",
-        "write_sidebar",
-    ]
+    rewrite_options: List[str] = ["all", "json", "summary"]
+    modules: Dict[str, str] = {}    # abbreviation -> full name
+    modules_help = "Select the modules to be run. Available options are:\n"
+    # Read module information from the module classes
+    for selected_module in AVAILABLE_MODULES:
+        module = load_module(selected_module)
+        modules_help += f" - {module.abbreviation()}: {module.help_summary()}\n"
+        modules[module.abbreviation()] = selected_module
+        if module.can_be_rewritten():
+            rewrite_options.append(module.abbreviation())
+    modules_help += "Default: run all modules"
 
-    modules_help_message = """Select the postprocessor modules to be executed. Available options are:
-    - consistency_check (Verify translation consistency across units with the
-        same English definition.)
-    - export_html (Exports finished worksheets of a language to HTML.)
-    - export_pdf (Export PDF files of a language.)
-    - export_repository (After export_html exports the HTML files into a
-        git repo.)
-    - write_list (Write list of available training resources for languages.)
-    - write_report (Write status report for all languages.)
-    - write_sidebar (Write the system messages for sidebar with translated
-        titles.)
-    """
-
-    parser.add_argument("--lang", help="Run script for only one language.")
-    parser.add_argument(
-        "-l",
-        "--loglevel",
-        choices=log_levels,
-        default="warning",
-        help="Set loglevel for the script.",
-    )
     parser.add_argument(
         "--read-from-cache",
         action="store_true",
-        help="Read results from json cache from the server.",
+        help="Read results from json cache from the server",
     )
+    parser.add_argument("--lang", help="Process only one language (ISO 639-1 code)")
+    parser.add_argument("-m", nargs="+", choices=modules.keys(), help=modules_help)
     parser.add_argument(
         "--rewrite",
         choices=rewrite_options,
         help="Force rewriting of one component or all.",
     )
-    parser.add_argument("-m", nargs="+", choices=modules, help=modules_help_message)
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        choices=log_levels,
+        default="warning",
+        help="Set loglevel for the script",
+    )
 
     args = parser.parse_args()
     limit_to_lang = None
@@ -142,19 +119,23 @@ def parse_arguments() -> ResourcesBot:
 
     config = ConfigParser()
     config.read(os.path.dirname(os.path.abspath(__file__)) + "/config.ini")
-    if not config.has_section("Rewrite"):
-        config.add_section("Rewrite")
-    config.set("Rewrite", "rewrite", args.rewrite)
 
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
 
+    # Map abbreviations to full module names
+    if args.m is None:
+        run_modules = AVAILABLE_MODULES
+    else:
+        run_modules = [modules[abbr] for abbr in args.m]
+
     return ResourcesBot(
         config=config,
-        modules=args.m,
-        limit_to_lang=limit_to_lang,
         read_from_cache=args.read_from_cache,
+        limit_to_lang=limit_to_lang,
+        modules=run_modules,
+        rewrite=args.rewrite
     )
 
 

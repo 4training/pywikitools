@@ -34,20 +34,29 @@ class WriteReport(LanguagePostProcessor):
     Do we have ODT and PDF files for download?
     To help interpret the results, we use colors (green / orange / red) for each cell.
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Write status report for a language"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "report"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return False
 
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite,
+        site: pywikibot.site.APISite
     ):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
         """
         super().__init__(fortraininglib, config, site)
-        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
-        self._force_rewrite = (rewrite == "all") or (rewrite == "report")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_report"
         )
@@ -58,6 +67,8 @@ class WriteReport(LanguagePostProcessor):
         english_info: LanguageInfo,
         changes: ChangeLog,
         english_changes: ChangeLog,
+        *,
+        force_rewrite: bool = False
     ):
         """Entry function
 

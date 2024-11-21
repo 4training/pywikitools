@@ -5,8 +5,8 @@ import os
 from configparser import ConfigParser
 from typing import Any, Dict, Final, Optional, Set
 
+import pywikibot
 import requests
-from pywikibot.scripts.generate_user_files import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.htmltools.beautify_html import BeautifyHTML
@@ -43,16 +43,25 @@ class ExportHTML(LanguagePostProcessor):
     Export all finished worksheets of this language as HTML into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Exports finished worksheets of a language to HTML"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "html"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return True
 
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite,
+        site: pywikibot.site.APISite
     ):
         super().__init__(fortraininglib, config, site)
-        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
-        self._force_rewrite = (rewrite == "all") or (rewrite == "html")
         self._base_folder: str = self._config.get("Paths", "htmlexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.export_html"
@@ -123,6 +132,8 @@ class ExportHTML(LanguagePostProcessor):
         english_info: LanguageInfo,
         changes: ChangeLog,
         _english_changes,
+        *,
+        force_rewrite: bool = False
     ):
         if self._base_folder == "":
             return
@@ -175,7 +186,7 @@ class ExportHTML(LanguagePostProcessor):
         # Download all worksheets and save the transformed HTML
         for worksheet, info in lang_info.worksheets.items():
             # As elsewhere, we ignore outdated / unfinished translations
-            if self._force_rewrite or self.has_relevant_change(worksheet, changes):
+            if force_rewrite or self.has_relevant_change(worksheet, changes):
                 content = self.fortraininglib.get_page_html(f"{worksheet}/{lang_code}")
                 if content is None:
                     self.logger.warning(
@@ -199,7 +210,7 @@ class ExportHTML(LanguagePostProcessor):
         # Write contents.json
         # TODO define specifications for contents.json
         #   (similar to language jsons?) - for now just a simple structure
-        if self._force_rewrite or html_counter > 0:
+        if force_rewrite or html_counter > 0:
             encoded_json = StructureEncoder().encode(lang_info)
             pretty_printed_json = json.dumps(json.loads(encoded_json), indent=4)
             with open(os.path.join(structure_folder, "contents.json"), "w") as f:

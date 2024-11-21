@@ -19,33 +19,32 @@ class WriteList(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Write list of available training resources for languages"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "list"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return True
 
     def __init__(
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite,
+        site: pywikibot.site.APISite
     ):
-        """
-        Arguments user_name and password are necessary to mark page for translation
-        in case of changes.
-        In case they're empty we won't try to mark pages for translation
-        Args:
-            force_rewrite rewrite even if there were no (relevant) changes
-        """
         super().__init__(fortraininglib, config, site)
-        rewrite = self._config.get("Rewrite", "rewrite", fallback=None)
-        self._force_rewrite = (rewrite == "all") or (rewrite == "list")
-
-        self._user_name: Final[str] = config.get(
-            "resourcesbot", "username", fallback=""
-        )
+        self._username: Final[str] = config.get("resourcesbot", "username", fallback="")
         self._password: Final[str] = config.get("resourcesbot", "password", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_lists"
         )
 
-        if self._user_name == "" or self._password == "":
+        if self._username == "" or self._password == "":
             self.logger.warning(
                 "Missing user name and/or password in config."
                 "Won't mark pages for translation."
@@ -56,7 +55,7 @@ class WriteList(LanguagePostProcessor):
         to be rewritten.
         """
         lang = language_info.language_code
-        needs_rewrite = self._force_rewrite
+        needs_rewrite = False
         for change_item in changes:
             if change_item.change_type in [
                 ChangeType.UPDATED_PDF,
@@ -125,9 +124,7 @@ class WriteList(LanguagePostProcessor):
                 content += (
                     "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
                 )
-                content += self._create_file_mediawiki(
-                    worksheet_info.get_file_type_info("pdf")
-                )
+                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
                 content += self._create_file_mediawiki(
                     worksheet_info.get_file_type_info("printPdf")
                 )
@@ -192,8 +189,10 @@ class WriteList(LanguagePostProcessor):
         english_info: LanguageInfo,
         changes: ChangeLog,
         _english_changes,
+        *,
+        force_rewrite: bool = False
     ) -> None:
-        if not self.needs_rewrite(language_info, changes):
+        if not force_rewrite and not self.needs_rewrite(language_info, changes):
             return
 
         # Saving this to the language information page, e.g. https://www.4training.net/German
@@ -247,9 +246,9 @@ class WriteList(LanguagePostProcessor):
         page.save(
             "Updated list of available training resources"
         )  # TODO write list of changes here in the save message
-        if self._user_name != "" and self._password != "":
+        if self._username != "" and self._password != "":
             self.fortraininglib.mark_for_translation(
-                page.title(), self._user_name, self._password
+                page.title(), self._username, self._password
             )
             self.logger.info(
                 f"Updated language information page {language} and marked it "
