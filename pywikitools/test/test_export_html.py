@@ -11,9 +11,10 @@ Run tests:
 """
 
 import os
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, join, exists
 import tempfile
 import json
+import time
 import unittest
 
 import requests
@@ -49,9 +50,6 @@ class TestExportHTML(unittest.TestCase):
         temp_dir = tempfile.TemporaryDirectory()
         self.perm_temp_dir = temp_dir
 
-    def mock_get_page_html(self, arg):
-        return self.html_content
-
     @patch("os.makedirs")
     def test_run_with_empty_base_folder(self, mock_makedirs):
         with self.assertLogs('pywikitools.resourcesbot.export_html', level='WARNING'):
@@ -86,63 +84,54 @@ class TestExportHTML(unittest.TestCase):
                 print(f"{sub_indent_str}- {file}")
 
     def test_directory_structure_creation(self):
-
         # Initialize the ExportHTML class with a valid base folder
         with tempfile.TemporaryDirectory() as temp_dir:
-
             # Create target paths to check later
-            folder = os.path.join(temp_dir, "base")
-            main_folder = os.path.join(folder, "ru")
-            files_folder = os.path.join(main_folder, "files/")
-            structure_folder = os.path.join(main_folder, "structure/")
+            base_folder = join(temp_dir, "not_existing_yet")
 
-            # At object creation, the main folder should be created.
-            export_html = ExportHTML(self.fortraininglib, folder, force_rewrite=False)
-            self.assertTrue(os.path.exists(folder), f"Pfad existiert nicht: {folder}")
+            # Base folder should be created directly when initializing the class
+            export_html = ExportHTML(self.fortraininglib, base_folder, force_rewrite=False)
+            self.assertTrue(exists(base_folder))
             export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
 
             # Assert that the right directories were created
-            self.assertTrue(os.path.exists(main_folder), f"Pfad existiert nicht: {main_folder}")
-            self.assertTrue(os.path.exists(files_folder), f"Pfad existiert nicht: {files_folder}")
-            self.assertTrue(os.path.exists(structure_folder), f"Pfad existiert nicht: {structure_folder}")
+            self.assertTrue(exists(join(base_folder, "ru")))
+            self.assertTrue(exists(join(base_folder, "ru", "files/")))
+            self.assertTrue(exists(join(base_folder, "ru", "structure/")))
 
             # assert that the method still works if the folders are already there
-            # currently errors are captured directly in the run methods and therefore dont show in this test
-            export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
+            with self.assertNoLogs(level='WARNING'):
+                export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
 
-    def test_download_and_save_transformed_html_and_images(self):
-
-        fortraininglib_mock = Mock()
-        fortraininglib_mock.get_page_html.side_effect = self.mock_get_page_html
+    @patch('pywikitools.fortraininglib.ForTrainingLib.get_page_html')
+    def test_download_and_save_transformed_html_and_images(self, mock_get_page_html):
+        mock_get_page_html.return_value = self.html_content
 
         # Initialize the ExportHTML class with a valid base folder
         with tempfile.TemporaryDirectory() as temp_dir:
-            export_html = ExportHTML(fortraininglib_mock, temp_dir, force_rewrite=False)
+            export_html = ExportHTML(self.fortraininglib, temp_dir, force_rewrite=False)
 
             with patch('requests.get', return_value=self.response):
                 export_html.run(self.language_info, self.english_info, self.changelog, ChangeLog())
 
             # Assert the file was created correctly
-            path_to_transformed_html = os.path.join(temp_dir, 'ru', 'Исцеление.html')
-            self.assertTrue(os.path.exists(path_to_transformed_html), "The html is not in the expected location.")
+            path_to_transformed_html = join(temp_dir, 'ru', 'Исцеление.html')
+            self.assertTrue(exists(path_to_transformed_html))
 
             # Assert the content is correct
+            expected_html = join(dirname(abspath(__file__)), "data", "htmlexport", "ru", "files", "Исцеление.html")
             with open(path_to_transformed_html, 'r', encoding='utf-8') as test_file:
-                test_content = test_file.read()
-            path_to_template_html = os.path.join(dirname(abspath(__file__)), "data", "correct_transformed_html.html")
-            with open(path_to_template_html, 'r', encoding='utf-8') as template_file:
-                template_content = template_file.read()
-            self.assertEqual(template_content, test_content,
-                             "The content of the saved html is different than expected.")
+                with open(expected_html, 'r', encoding='utf-8') as expected_file:
+                    self.assertEqual(test_file.read(), expected_file.read())
 
-            path_to_image = os.path.join(temp_dir, 'ru', 'files', 'Hand_1.png')
-            self.assertTrue(os.path.exists(path_to_image), 'Downloaded image missing.')
+            self.assertTrue(exists(join(temp_dir, 'ru', 'files', 'Hand_1.png')))
 
-            path_to_contents = os.path.join(temp_dir, 'ru', 'structure', 'contents.json')
-            self.assertTrue(os.path.exists(path_to_contents), 'Contents.json not found.')
-            with open(path_to_contents, 'r') as f:
-                with open(os.path.join(dirname(abspath(__file__)), "data", 'template_content.json'), 'r') as g:
-                    self.assertEqual(g.read(), f.read(), 'Wrong content in contents.json')
+            path_to_contents = join(temp_dir, 'ru', 'structure', 'contents.json')
+            self.assertTrue(exists(path_to_contents))
+            with open(path_to_contents, 'r') as test_file:
+                with open(join(dirname(abspath(__file__)),
+                               "data", "htmlexport", "ru", "structure", "content.json"), 'r') as expected_file:
+                    self.assertEqual(expected_file.read(), test_file.read())
 
     # TODO create overall test with real objects, testing everything at once.
     def test_complex_export_html(self):
