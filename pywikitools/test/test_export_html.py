@@ -7,21 +7,19 @@ Test all the functionalities of export_html.py
 - export content.json (with current content)
 
 Run tests:
-    python3  python3 -m unittest pywikitools/test/test_export_html.py
+    python3 pywikitools/test/test_export_html.py
 """
 
-import os
 from os.path import abspath, dirname, join, exists
 import tempfile
 import json
-import time
 import unittest
 
 import requests
 from unittest.mock import Mock, patch
 
 from pywikitools.fortraininglib import ForTrainingLib
-from pywikitools.resourcesbot.changes import ChangeLog
+from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
 from pywikitools.resourcesbot.export_html import ExportHTML
 
@@ -36,19 +34,6 @@ class TestExportHTML(unittest.TestCase):
         for worksheet, info in self.language_info.worksheets.items():
             self.english_info.add_worksheet_info(worksheet, info)
         self.fortraininglib = ForTrainingLib("https://test.4training.net")
-        self.changelog = ChangeLog()
-        self.changelog.add_change('Healing', 'updated worksheet')
-        self.changelog.add_change("Church", 'new worksheet')
-        with open(join(dirname(abspath(__file__)), "data", "example.html"), 'r') as f:
-            self.html_content = f.read()
-
-        self.response = requests.Response()
-        self.response.status_code = 200  # Setze einen Statuscode
-        with open(join(dirname(abspath(__file__)), "data", "Heart-32.png"), 'rb') as f:
-            self.response._content = f.read()
-
-        temp_dir = tempfile.TemporaryDirectory()
-        self.perm_temp_dir = temp_dir
 
     @patch("os.makedirs")
     def test_run_with_empty_base_folder(self, mock_makedirs):
@@ -61,30 +46,20 @@ class TestExportHTML(unittest.TestCase):
 
     def test_run_filters_unfinished_worksheets(self):
         fortraininglib_mock = Mock()
-        export_html = ExportHTML(fortraininglib_mock, self.perm_temp_dir.name, force_rewrite=False)
-        with patch.object(export_html, 'has_relevant_change', return_value=False) as mock_has_relevant_change:
-            export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
-            calls = [call[0][0] for call in mock_has_relevant_change.call_args_list]
-            # Healing is finished, Church is an unfinished worksheet
-            self.assertIn('Healing', calls)
-            self.assertNotIn('Church', calls)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            export_html = ExportHTML(fortraininglib_mock, temp_dir, force_rewrite=False)
+            with patch.object(export_html, 'has_relevant_change', return_value=False) as mock_has_relevant_change:
+                export_html.run(self.language_info, self.english_info, ChangeLog(), ChangeLog())
+                calls = [call[0][0] for call in mock_has_relevant_change.call_args_list]
+                # Healing is finished, Church is an unfinished worksheet
+                self.assertIn('Healing', calls)
+                self.assertNotIn('Church', calls)
 
-        fortraininglib_mock.get_page_html.assert_not_called()
-        # Verify that `language_info` remains unchanged
-        self.assertIsNotNone(self.language_info.get_worksheet('Church'))
-
-    # Just for debugging-purposes...
-    def print_folder_structure(self, start_path, indent=0):
-        for root, dirs, files in os.walk(start_path):
-            level = root.replace(start_path, "").count(os.sep) + indent
-            indent_str = " " * (level * 4)
-            print(f"{indent_str}- {os.path.basename(root)}/")
-            sub_indent_str = " " * ((level + 1) * 4)
-            for file in files:
-                print(f"{sub_indent_str}- {file}")
+            fortraininglib_mock.get_page_html.assert_not_called()
+            # Verify that `language_info` remains unchanged
+            self.assertIsNotNone(self.language_info.get_worksheet('Church'))
 
     def test_directory_structure_creation(self):
-        # Initialize the ExportHTML class with a valid base folder
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create target paths to check later
             base_folder = join(temp_dir, "not_existing_yet")
@@ -105,14 +80,24 @@ class TestExportHTML(unittest.TestCase):
 
     @patch('pywikitools.fortraininglib.ForTrainingLib.get_page_html')
     def test_download_and_save_transformed_html_and_images(self, mock_get_page_html):
-        mock_get_page_html.return_value = self.html_content
+        with open(join(dirname(abspath(__file__)), "data", "example.html"), 'r') as f:
+            mock_get_page_html.return_value = f.read()
+        changelog = ChangeLog()
+        changelog.add_change('Healing', ChangeType.UPDATED_WORKSHEET)
+        changelog.add_change("Church", ChangeType.NEW_WORKSHEET)
+
+        # Mock the response for the image download
+        response = requests.Response()
+        response.status_code = 200
+        with open(join(dirname(abspath(__file__)), "data", "Heart-32.png"), 'rb') as f:
+            response._content = f.read()
 
         # Initialize the ExportHTML class with a valid base folder
         with tempfile.TemporaryDirectory() as temp_dir:
             export_html = ExportHTML(self.fortraininglib, temp_dir, force_rewrite=False)
 
-            with patch('requests.get', return_value=self.response):
-                export_html.run(self.language_info, self.english_info, self.changelog, ChangeLog())
+            with patch('requests.get', return_value=response):
+                export_html.run(self.language_info, self.english_info, changelog, ChangeLog())
 
             # Assert the file was created correctly
             path_to_transformed_html = join(temp_dir, 'ru', 'Исцеление.html')
@@ -133,44 +118,40 @@ class TestExportHTML(unittest.TestCase):
                                "data", "htmlexport", "ru", "structure", "content.json"), 'r') as expected_file:
                     self.assertEqual(expected_file.read(), test_file.read())
 
-    # TODO create overall test with real objects, testing everything at once.
     def test_complex_export_html(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ar_changelog = ChangeLog()
+            # normal worksheet
+            ar_changelog.add_change('Hearing_from_God', ChangeType.UPDATED_WORKSHEET)
+            expected_path_hearing = join(temp_dir, 'ar', 'الاستماع_من_الله.html')
+            # worksheet with images
+            ar_changelog.add_change('Time_with_God', ChangeType.UPDATED_WORKSHEET)
+            expected_path_time = join(temp_dir, 'ar', 'قضاء_وقت_مع_الله.html')
+            # unfinished worksheet -> shouldn't be exported
+            ar_changelog.add_change("Church", ChangeType.NEW_WORKSHEET)
+            expected_path_church = join(temp_dir, 'ar', 'كنيسة.html')
+            # normal worksheet -> will only be created with force rewrite
+            expected_path_prayer = join(temp_dir, 'ar', 'الصلاة.html')
 
-        # Setup complex Test-Objects
-        ar_changelog = ChangeLog()
-        ar_changelog.add_change('A_Daily_Prayer', 'updated worksheet')  # normal worksheet
-        ar_changelog.add_change('Time_with_God', 'updated worksheet')  # worksheet with images
-        ar_changelog.add_change("Church", 'new worksheet')  # unfinished -> shouldn't be exported
+            with open(join(dirname(abspath(__file__)), "data", "ar.json"), 'r') as f:
+                ar_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
+            with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
+                en_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
 
-        with open(join(dirname(abspath(__file__)), "data", "ar.json"), 'r') as f:
-            ar_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
-        with open(join(dirname(abspath(__file__)), "data", "en.json"), 'r') as f:
-            en_language_info: LanguageInfo = json.load(f, object_hook=json_decode)
-
-        export_html = ExportHTML(self.fortraininglib, self.perm_temp_dir.name, force_rewrite=False)
-        try:
+            export_html = ExportHTML(self.fortraininglib, temp_dir, force_rewrite=False)
             export_html.run(ar_language_info, en_language_info, ar_changelog, ChangeLog())
-        except Exception as e:
-            print(f"Connection error occurred: {e}")
-            raise AssertionError(f"Test failed due to connection error: {e}")
 
-        path_to_transformed_html1 = os.path.join(self.perm_temp_dir.name, 'ar', 'قضاء_وقت_مع_الله.html')
-        path_to_transformed_html2 = os.path.join(self.perm_temp_dir.name, 'ar', 'الصلاة_اليومية.html')
-        path_to_image = os.path.join(self.perm_temp_dir.name, 'ar', 'files', 'Head-32.png')
-        self.assertTrue(os.path.exists(path_to_image), 'Downloaded image missing.')
-        self.assertTrue(os.path.exists(path_to_transformed_html1), "The html is not in the expected location.")
-        self.assertTrue(os.path.exists(path_to_transformed_html2), "The html is not in the expected location.")
+            self.assertTrue(exists(join(temp_dir, 'ar', 'files', 'Head-32.png')))
+            self.assertTrue(exists(expected_path_hearing))
+            self.assertTrue(exists(expected_path_time))
+            self.assertFalse(exists(expected_path_church))
 
-        # run with force rewrite
-        export_html_fr = ExportHTML(self.fortraininglib, self.perm_temp_dir.name, force_rewrite=True)
-        try:
-            export_html_fr.run(ar_language_info, en_language_info, ar_changelog, ChangeLog())
-        except Exception as e:
-            print(f"Connection error occurred: {e}")
-            raise AssertionError(f"Test failed due to connection error: {e}")
-
-        path_to_transformed_html3 = os.path.join(self.perm_temp_dir.name, 'ar', 'الصلاة.html')
-        self.assertTrue(os.path.exists(path_to_transformed_html3), "The html is not in the expected location.")
+            # run with force rewrite
+            self.assertFalse(exists(expected_path_prayer))
+            export_html = ExportHTML(self.fortraininglib, temp_dir, force_rewrite=True)
+            with self.assertLogs():
+                export_html.run(ar_language_info, en_language_info, ar_changelog, ChangeLog())
+            self.assertTrue(exists(expected_path_prayer))
 
 
 if __name__ == '__main__':
