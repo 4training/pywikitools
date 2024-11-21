@@ -44,7 +44,7 @@ class TestExportHTML(unittest.TestCase):
 
         self.response = requests.Response()
         self.response.status_code = 200  # Setze einen Statuscode
-        with open(join(dirname(abspath(__file__)), "data", "Hand_1.png"), 'rb') as f:
+        with open(join(dirname(abspath(__file__)), "data", "Heart-32.png"), 'rb') as f:
             self.response._content = f.read()
 
         temp_dir = tempfile.TemporaryDirectory()
@@ -124,7 +124,7 @@ class TestExportHTML(unittest.TestCase):
                 with open(expected_html, 'r', encoding='utf-8') as expected_file:
                     self.assertEqual(test_file.read(), expected_file.read())
 
-            self.assertTrue(exists(join(temp_dir, 'ru', 'files', 'Hand_1.png')))
+            self.assertTrue(exists(join(temp_dir, 'ru', 'files', 'Heart-32.png')))
 
             path_to_contents = join(temp_dir, 'ru', 'structure', 'contents.json')
             self.assertTrue(exists(path_to_contents))
