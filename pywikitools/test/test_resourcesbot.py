@@ -203,14 +203,14 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteSummary", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteReport", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteList", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.WriteSidebarMessages", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportRepository", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportHTML", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ExportPDF", autospec=True)
-    @patch("pywikitools.resourcesbot.bot.ConsistencyCheck", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
     def test_rewrite_options(
         self,
         mock_consistency_check,
@@ -238,7 +238,7 @@ class TestResourcesBot(unittest.TestCase):
         for rewrite_option, mocked_component in rewrite_check.items():
             # Component selected with the rewrite option should have force_rewrite=True,
             # the others not
-            bot = ResourcesBot(config=self.config, read_from_cache=True)
+            bot = ResourcesBot(config=self.config, read_from_cache=True, rewrite=rewrite_option)
             bot.run()
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
             for other_mock in rewrite_check.values():
@@ -246,13 +246,13 @@ class TestResourcesBot(unittest.TestCase):
                     self.assertFalse(other_mock.call_args.kwargs.get("force_rewrite"))
 
         # "all" components should get called with force_rewrite=True
-        bot = ResourcesBot(config=self.config, read_from_cache=True)
+        bot = ResourcesBot(config=self.config, read_from_cache=True, rewrite='all')
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
 
         # No rewrite specified, so no component should get called with force_rewrite
-        bot = ResourcesBot(self.config, read_from_cache=True)
+        bot = ResourcesBot(self.config, read_from_cache=True, rewrite=None)
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))
