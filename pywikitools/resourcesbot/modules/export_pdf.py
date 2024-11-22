@@ -1,13 +1,16 @@
 import copy
 import logging
 import os
-import requests
+from configparser import ConfigParser
 from typing import Final, Optional
+
+import pywikibot
+import requests
 
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
-from pywikitools.resourcesbot.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 
 
 class ExportPDF(LanguagePostProcessor):
@@ -15,24 +18,42 @@ class ExportPDF(LanguagePostProcessor):
     Export all PDF files of this language into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
-    def __init__(self, fortraininglib: ForTrainingLib, folder: str, *, force_rewrite: bool = False):
-        """
-        Args:
-            folder: base directory for export; subdirectories will be created for each language
-            force_rewrite: rewrite even if there were no (relevant) changes
-        """
-        self._base_folder: str = folder
-        self._force_rewrite: Final[bool] = force_rewrite
-        self.fortraininglib: Final[ForTrainingLib] = fortraininglib
-        self.logger: Final[logging.Logger] = logging.getLogger('pywikitools.resourcesbot.export_pdf')
+    @classmethod
+    def help_summary(cls) -> str:
+        return "Export PDF files of a language"
+
+    @classmethod
+    def abbreviation(cls) -> str:
+        return "pdf"
+
+    @classmethod
+    def can_be_rewritten(cls) -> bool:
+        return True
+
+    def __init__(
+        self,
+        fortraininglib: ForTrainingLib,
+        config: ConfigParser,
+        site: pywikibot.site.APISite = None
+    ):
+        super().__init__(fortraininglib, config, site)
+        self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
+        self.logger: Final[logging.Logger] = logging.getLogger(
+            "pywikitools.resourcesbot.modules.export_pdf"
+        )
         if self._base_folder != "":
             try:
-                os.makedirs(folder, exist_ok=True)
+                os.makedirs(self._base_folder, exist_ok=True)
             except OSError as err:
-                self.logger.warning(f"Error creating directories for PDF export: {err}. Won't export PDF files.")
+                self.logger.warning(
+                    f"Error creating directories for PDF export: {err}."
+                    f" Won't export PDF files."
+                )
                 self._base_folder = ""
         else:
-            self.logger.warning("Missing pdfexport path in config.ini. Won't export PDF files.")
+            self.logger.warning(
+                "Missing pdfexport path in config.ini. Won't export PDF files."
+            )
 
     def has_relevant_change(self, worksheet: str, changes: ChangeLog) -> bool:
         """
@@ -46,14 +67,25 @@ class ExportPDF(LanguagePostProcessor):
                 return True
         return False
 
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo, changes: ChangeLog, _english_changes):
+    def run(
+        self,
+        language_info: LanguageInfo,
+        english_info: LanguageInfo,
+        changes: ChangeLog,
+        _english_changes,
+        *,
+        force_rewrite: bool = False
+    ):
         if self._base_folder == "":
             return
-        # Remove worksheets that aren't finished - don't change the language_info object we got
+        # Remove worksheets that aren't finished - don't change the language_info
+        # object we got
         lang_info: LanguageInfo = copy.deepcopy(language_info)
-        del language_info   # prevent accidental usage of the wrong object
+        del language_info  # prevent accidental usage of the wrong object
         for worksheet in list(lang_info.worksheets.keys()):
-            if not lang_info.worksheets[worksheet].show_in_list(english_info.worksheets[worksheet]):
+            if not lang_info.worksheets[worksheet].show_in_list(
+                english_info.worksheets[worksheet]
+            ):
                 del lang_info.worksheets[worksheet]
 
         lang_code = lang_info.language_code
@@ -62,22 +94,24 @@ class ExportPDF(LanguagePostProcessor):
         try:
             os.makedirs(folder, exist_ok=True)
         except OSError as err:
-            self.logger.warning(f"Error creating directories for PDF export: {err}. "
-                                f"Won't export PDF files for language {lang_code}.")
+            self.logger.warning(
+                f"Error creating directories for PDF export: {err}. "
+                f"Won't export PDF files for language {lang_code}."
+            )
             return
 
-        file_counter: int = 0   # Counting downloaded PDF files
+        file_counter: int = 0  # Counting downloaded PDF files
 
         # Download and save all PDF files
         for worksheet, info in lang_info.worksheets.items():
-            pdf_info: Optional[FileInfo] = info.get_file_type_info('pdf')
+            pdf_info: Optional[FileInfo] = info.get_file_type_info("pdf")
             if pdf_info is None:
                 continue
             # As elsewhere, we ignore outdated / unfinished translations
-            if self._force_rewrite or self.has_relevant_change(worksheet, changes):
+            if force_rewrite or self.has_relevant_change(worksheet, changes):
                 response = requests.get(pdf_info.url, allow_redirects=True)
                 file_path = os.path.join(folder, pdf_info.get_file_name())
-                with open(file_path, 'wb') as fh:
+                with open(file_path, "wb") as fh:
                     fh.write(response.content)
                 file_counter += 1
                 self.logger.info(f"Successfully downloaded and saved {file_path}")
