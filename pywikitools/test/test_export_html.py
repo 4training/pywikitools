@@ -4,11 +4,10 @@ Test all the functionalities of export_html.py
 - get html contents for worksheets from API
 - Export htmls into local directory
 - download image files into local directory
-- export content.json (with current content)wi
-
+- export content.json (with current content)
 
 Run tests:
-    
+python3 pywikitools/test/test_export_html.py
 """
 
 from os.path import abspath, dirname, join, exists
@@ -29,8 +28,6 @@ from pywikitools.resourcesbot.modules.export_html import ExportHTML
 class TestExportHTML(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.config = ConfigParser()
-        self.config["resourcesbot"] = {"username": "", "password": "", "htmlexport": ""}
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), 'r') as f:
             self.language_info: LanguageInfo = json.load(f, object_hook=json_decode)
         # Create a pseudo English LanguageInfo - enough for our testing purposes (version is always the same)
