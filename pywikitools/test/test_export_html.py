@@ -59,6 +59,7 @@ class TestExportHTML(unittest.TestCase):
                 # Healing is finished, Church is an unfinished worksheet
                 self.assertIn('Healing', calls)
                 self.assertNotIn('Church', calls)
+                fortraininglib_mock.get_page_html.assert_not_called()
 
             # Verify that `language_info` remains unchanged
             self.assertIsNotNone(self.language_info.get_worksheet('Church'))
