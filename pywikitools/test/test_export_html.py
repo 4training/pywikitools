@@ -59,8 +59,8 @@ class TestExportHTML(unittest.TestCase):
                 # Healing is finished, Church is an unfinished worksheet
                 self.assertIn('Healing', calls)
                 self.assertNotIn('Church', calls)
+                fortraininglib_mock.get_page_html.assert_not_called()
 
-            fortraininglib_mock.get_page_html.assert_not_called()
             # Verify that `language_info` remains unchanged
             self.assertIsNotNone(self.language_info.get_worksheet('Church'))
 
@@ -164,7 +164,6 @@ class TestExportHTML(unittest.TestCase):
 
             # run with force rewrite
             self.assertFalse(exists(expected_path_prayer))
-            export_html = ExportHTML(self.fortraininglib, config, None)
             with self.assertLogs():
                 export_html.run(ar_language_info, en_language_info, ar_changelog, ChangeLog(), force_rewrite=True)
             self.assertTrue(exists(expected_path_prayer))
