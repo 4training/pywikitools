@@ -236,6 +236,7 @@ class ResourcesBot:
             )
 
         reporting.print_summaries(module_reports)
+        reporting.save_report(self.site, module_reports)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """

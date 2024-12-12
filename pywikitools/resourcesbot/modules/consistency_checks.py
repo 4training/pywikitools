@@ -322,6 +322,6 @@ class ConsistencyLanguageReport(LanguageReport):
         total_checks_passed = sum(report.checks_passed for report in lang_reports)
         consistent_reports = [report for report in lang_reports if report.consistent()]
 
-        return (f"Ran Consistency checks for {len(lang_reports)} languages.\n"
+        return (f"Ran Consistency checks for {len(lang_reports)} languages. "
                 f"Consistent languages: {len(consistent_reports)}/{len(lang_reports)}, "
                 f"Overall: {total_checks_passed}/{len(lang_reports) * 5} checks passed.")

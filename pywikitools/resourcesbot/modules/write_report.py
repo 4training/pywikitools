@@ -178,6 +178,7 @@ class WriteReport(LanguagePostProcessor):
             )
             page.text = report
             page.save("Created language report")
+            self.lang_report.updated_language_report = True
         else:
             if page.text.strip() != report.strip():
                 page.text = report
