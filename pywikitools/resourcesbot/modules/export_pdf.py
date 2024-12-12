@@ -11,6 +11,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import LanguageReport
 
 
 class ExportPDF(LanguagePostProcessor):
@@ -117,3 +118,33 @@ class ExportPDF(LanguagePostProcessor):
                 self.logger.info(f"Successfully downloaded and saved {file_path}")
 
         self.logger.info(f"ExportPDF {lang_code}: Downloaded {file_counter} PDF files")
+        lang_report = PdfLanguageReport(lang_info.language_code, file_counter)
+        return lang_report
+
+
+class PdfLanguageReport(LanguageReport):
+    """
+    A specialized report for export_pdf,
+    containing information about saved pdfs
+    """
+
+    def __init__(self, language_code: str, pdf_counter: int):
+        super().__init__(language_code)
+
+        self.pdf_counter = pdf_counter
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "export_pdf"
+
+    def get_summary(self) -> str:
+        return (f"Ran ExportHTML for {self.language}: Downloaded {self.pdf_counter} pdfs.")
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        total_pdfs = sum(report.pdf_counter for report in lang_reports)
+
+        return (f"Ran export_pdf for {len(lang_reports)} languages: Downloaded {total_pdfs} pdfs.")

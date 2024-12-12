@@ -13,6 +13,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslationUnit
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import LanguageReport
 
 
 class ConsistencyCheck(LanguagePostProcessor):
@@ -263,6 +264,9 @@ class ConsistencyCheck(LanguagePostProcessor):
         self.logger.info(
             f"Consistency checks for {language_info.english_name}: {checks_passed}/5 passed"
         )
+        lang_report = ConsistencyLanguageReport(language_info.language_code)
+        lang_report.checks_passed = checks_passed
+        return lang_report
 
 
 """
@@ -284,3 +288,40 @@ Many title from the Three-Thirds-Process and from Template:BibleReadingHints sho
 be the same
 -> needs to be checked manually
 """
+
+
+class ConsistencyLanguageReport(LanguageReport):
+    """
+    A specialized report for export_pdf,
+    containing information about saved pdfs
+    """
+
+    def __init__(self, language_code: str):
+        super().__init__(language_code)
+
+        self.checks_passed = 0
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "export_pdf"
+
+    def consistent(self):
+        if self.checks_passed == 5:
+            return True
+        else:
+            return False
+
+    def get_summary(self) -> str:
+        return (f"Ran Consistency checks for: {self.language}: {self.checks_passed}/5 checks passed.")
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        total_checks_passed = sum(report.checks_passed for report in lang_reports)
+        consistent_reports = [report for report in lang_reports if report.consistent()]
+
+        return (f"Ran Consistency checks for {len(lang_reports)} languages.\n"
+                f"Consistent languages: {len(consistent_reports)}/{len(lang_reports)}, "
+                f"Overall: {total_checks_passed}/{len(lang_reports) * 5} checks passed.")

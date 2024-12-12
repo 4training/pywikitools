@@ -164,8 +164,10 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.print_summaries", autospec=True)
     def test_run_with_cache(
         self,
+        mock_reporting_summary,
         mock_consistency_check,
         mock_export_pdf,
         mock_export_html,
@@ -175,13 +177,12 @@ class TestResourcesBot(unittest.TestCase):
         mock_write_report,
         mock_write_summary,
         mock_pywikibot_page,
-        mock_pywikibot_site,
+        mock_pywikibot_site
     ):
         mock_pywikibot_page.side_effect = self.json_test_loader
         mock_pywikibot_site.return_value.logged_in.return_value = True
         bot = ResourcesBot(config=self.config, read_from_cache=True)
         bot.run()
-
         # run() function of each LanguagePostProcessor should get called 2x (for English and Russian)
         self.assertEqual(mock_consistency_check.call_count, 2)
         self.assertEqual(mock_export_pdf.call_count, 2)
@@ -211,8 +212,10 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.print_summaries", autospec=True)
     def test_rewrite_options(
         self,
+        mock_reporting_summary,
         mock_consistency_check,
         mock_export_pdf,
         mock_export_html,

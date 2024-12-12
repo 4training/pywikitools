@@ -10,6 +10,7 @@ import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import LanguageReport
 
 
 class ExportRepository(LanguagePostProcessor):
@@ -61,18 +62,19 @@ class ExportRepository(LanguagePostProcessor):
         Currently, we're ignoring the change parameter and just check for changes
         in the git repository
         """
+        lang_report = ExportRepoLanguageReport(language_info.language_code)
         # Make sure we have a valid repository
         if self._base_folder == "":
-            return
+            return lang_report
         folder: str = os.path.join(self._base_folder, language_info.language_code)
         try:
             repo = Repo(folder)
         except GitError:
             self.logger.warning(f"No valid repository found in {folder}, skipping.")
-            return
+            return lang_report
         if "origin" not in repo.remotes:
             self.logger.warning(f"Git remote origin missing in {folder}, skipping.")
-            return
+            return lang_report
 
         # Staging all changes
         untracked: int = len(repo.untracked_files)
@@ -105,7 +107,39 @@ class ExportRepository(LanguagePostProcessor):
             repo.index.commit(f"{commit_message}", author=self._author)
             result = repo.remotes.origin.push()
             self.logger.info(f"Pushed to remote, result: {result[0].summary}")
+            lang_report.pushed = True
         else:
             self.logger.info(
                 f"ExportRepository {language_info.language_code}: No changes."
             )
+
+        return lang_report
+
+
+class ExportRepoLanguageReport(LanguageReport):
+    """
+    A specialized report for export_repository.
+    """
+
+    def __init__(self, language_code: str):
+        super().__init__(language_code)
+        self.pushed = False
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "export_repository"
+
+    def get_summary(self) -> str:
+        if self.pushed:
+            return (f"Pushed htmls of {self.language} to remote repository.")
+        else:
+            return ""
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        exported_languages = [report for report in lang_reports if report.pushed]
+
+        return (f"Pushed html_exports for {len(exported_languages)}/{len(lang_reports)} languages.")

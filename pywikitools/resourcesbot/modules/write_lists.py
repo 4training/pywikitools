@@ -9,6 +9,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import LanguageReport
 
 
 class WriteList(LanguagePostProcessor):
@@ -191,9 +192,10 @@ class WriteList(LanguagePostProcessor):
         _english_changes,
         *,
         force_rewrite: bool = False
-    ) -> None:
+    ) -> LanguageReport:
+        lang_report = WriteListLanguageReport(language_info.language_code)
         if not force_rewrite and not self.needs_rewrite(language_info, changes):
-            return
+            return lang_report
 
         # Saving this to the language information page, e.g. https://www.4training.net/German
         language = language_info.english_name
@@ -202,12 +204,12 @@ class WriteList(LanguagePostProcessor):
                 f"English language name of {language_info.language_code} missing! "
                 f"Skipping WriteList"
             )
-            return
+            return lang_report
         self.logger.debug(f"Writing list of available resources in {language}...")
         page = pywikibot.Page(self._site, language)
         if not page.exists():
             self.logger.warning(f"Language information page {language} doesn't exist!")
-            return
+            return lang_report
         if page.isRedirectPage():
             self.logger.info(
                 f"Language information page {language} is a redirect. Following the "
@@ -218,7 +220,7 @@ class WriteList(LanguagePostProcessor):
                 self.logger.warning(
                     f"Redirect target for language {language} doesn't exist!"
                 )
-                return
+                return lang_report
             language = page.title()
 
         list_start, list_end = self._find_resources_list(page.text, language)
@@ -228,7 +230,7 @@ class WriteList(LanguagePostProcessor):
                 f"Doing nothing."
             )
             self.logger.info(page.text)
-            return
+            return lang_report
         self.logger.debug(
             f"Found existing list of available training resources "
             f"@{list_start}-{list_end}. Replacing..."
@@ -241,7 +243,7 @@ class WriteList(LanguagePostProcessor):
 
         # Save page and mark it for translation if necessary
         if page.text.strip() == new_page_content.strip():
-            return
+            return lang_report
         page.text = new_page_content
         page.save(
             "Updated list of available training resources"
@@ -254,8 +256,39 @@ class WriteList(LanguagePostProcessor):
                 f"Updated language information page {language} and marked it "
                 f"for translation."
             )
+            lang_report.updated_language_info = True
         else:
             self.logger.info(
                 f"Updated language information page {language}. Couldn't mark it "
                 f"for translation."
             )
+        return lang_report
+
+
+class WriteListLanguageReport(LanguageReport):
+    """
+    A specialized report for write_list.
+    """
+
+    def __init__(self, language_code: str):
+        super().__init__(language_code)
+        self.updated_language_info = False
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "write_list"
+
+    def get_summary(self) -> str:
+        if self.updated_language_info:
+            return (f"Updated language information page for {self.language}.")
+        else:
+            return ""
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        exported_languages = [report for report in lang_reports if report.updated_language_info]
+
+        return (f"Updated language information page for {len(exported_languages)}/{len(lang_reports)} languages.")

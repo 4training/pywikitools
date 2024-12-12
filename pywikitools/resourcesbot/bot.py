@@ -22,6 +22,7 @@ from pywikitools.resourcesbot.data_structures import (
 )
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.modules.write_summary import WriteSummary
+import pywikitools.resourcesbot.reporting as reporting
 
 AVAILABLE_MODULES: Final[List[str]] = [
     "consistency_checks",
@@ -206,19 +207,24 @@ class ResourcesBot:
 
         self.logger.info(f"Modules specified for execution: {self.modules}")
 
+        module_reports = {}
+
         for selected_module in self.modules:
             module = load_module(selected_module)(
                 self.fortraininglib, self._config, self.site
             )
+            module_reports[type(module).__name__] = []
+
             for lang in self._result:
-                module.run(
-                    self._result[lang],
-                    self._result["en"],
-                    ChangeLog(),
-                    ChangeLog(),
-                    force_rewrite=(self._rewrite == "all")
-                    or (self._rewrite == module.abbreviation()),
-                )
+                module_reports[type(module).__name__].append(
+                    module.run(
+                        self._result[lang],
+                        self._result["en"],
+                        ChangeLog(),
+                        ChangeLog(),
+                        force_rewrite=(self._rewrite == "all")
+                        or (self._rewrite == module.abbreviation()),
+                    ))
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
@@ -228,6 +234,8 @@ class ResourcesBot:
                 self._changelog,
                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"),
             )
+
+        reporting.print_summaries(module_reports)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """
