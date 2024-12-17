@@ -138,13 +138,15 @@ class PdfLanguageReport(LanguageReport):
         return "export_pdf"
 
     def get_summary(self) -> str:
-        return (f"Ran ExportHTML for {self.language}: Downloaded {self.pdf_counter} pdfs.")
+        if self.pdf_counter == 0:
+            return ""
+        return f"Ran ExportPDF for {self.language}: Downloaded {self.pdf_counter} pdfs."
 
     @classmethod
     def get_module_summary(cls, lang_reports: list) -> str:
         if len(lang_reports) == 0:
             return ""
-
         total_pdfs = sum(report.pdf_counter for report in lang_reports)
-
-        return (f"Ran export_pdf for {len(lang_reports)} languages: Downloaded {total_pdfs} pdfs.")
+        if total_pdfs == 0:
+            return ""
+        return f"Ran export_pdf for {len(lang_reports)} languages: Downloaded {total_pdfs} pdfs."

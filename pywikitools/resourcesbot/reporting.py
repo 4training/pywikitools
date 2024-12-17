@@ -21,7 +21,7 @@ class LanguageReport(ABC):
         self.summary_text = ""
 
     def was_anything_to_report(self) -> bool:
-        return self.summary_text != ""
+        return self.get_summary() != ""
 
     @abstractmethod
     def get_summary(self) -> str:
@@ -64,6 +64,16 @@ class Reporting:
                 summary += f"Module {key}'s report: {type(value[0]).get_module_summary(value)}\n"
         return summary
 
+    def get_reports_by_languages(self):
+        reports_by_language: Dict[str, List[LanguageReport]] = dict()
+        for key, value in self.module_reports.items():
+            if len(value) == 0:
+                pass
+            else:
+                for lang_report in value:
+                    reports_by_language.setdefault(lang_report.language, []).append(lang_report)
+        return reports_by_language
+
     def generate_mediawiki_overview(self):
         mediawiki = "===Overview===\n\n"
         for key, value in self.module_reports.items():
@@ -77,14 +87,20 @@ class Reporting:
         timestamp_str = datetime.now().strftime("%Y-%m-%d--%H:%M")
         head = f"==Resourcesbot-run at {timestamp_str}==\n\n"
         overview = self.generate_mediawiki_overview()
-        details = "===Detailed Reports per Module===\n\n"
-        for key, value in self.module_reports.items():
+        details = "===Detailed Reports per Language===\n\n"
+        for key, value in self.get_reports_by_languages().items():
             if len(value) == 0:
                 pass
             else:
-                details += f"===={key}====\n\n"
+                anything_to_report = False
+                lang_summary = ""
                 for lang_report in value:
-                    details += f"*{lang_report.get_summary()}\n\n"
+                    if lang_report.was_anything_to_report():
+                        anything_to_report = True
+                        lang_summary += f"*{lang_report.get_summary()}\n\n"
+                if anything_to_report:
+                    details += f"===={key}====\n\n"
+                    details += lang_summary
         return head + overview + details
 
     def save_report(self, site):

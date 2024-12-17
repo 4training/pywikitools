@@ -298,7 +298,6 @@ class ConsistencyLanguageReport(LanguageReport):
 
     def __init__(self, language_code: str):
         super().__init__(language_code)
-
         self.checks_passed = 0
 
     @classmethod
@@ -312,7 +311,7 @@ class ConsistencyLanguageReport(LanguageReport):
             return False
 
     def get_summary(self) -> str:
-        return (f"Ran Consistency checks for: {self.language}: {self.checks_passed}/5 checks passed.")
+        return (f"Ran Consistency checks for {self.language}: {self.checks_passed}/5 checks passed.")
 
     @classmethod
     def get_module_summary(cls, lang_reports: list) -> str:

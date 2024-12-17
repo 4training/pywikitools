@@ -280,7 +280,7 @@ class WriteListLanguageReport(LanguageReport):
 
     def get_summary(self) -> str:
         if self.updated_language_info:
-            return (f"Updated language information page for {self.language}.")
+            return f"Updated language information page for {self.language}."
         else:
             return ""
 

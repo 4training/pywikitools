@@ -281,6 +281,8 @@ class HtmlLanguageReport(LanguageReport):
         return self.image_counter
 
     def get_summary(self) -> str:
+        if self.html_counter + self.image_counter == 0:
+            return ""
         return (f"Ran ExportHTML for {self.language}: "
                 f"Processed {self.html_counter} htmls, downloaded {self.image_counter} images.")
 
@@ -295,6 +297,7 @@ class HtmlLanguageReport(LanguageReport):
 
         total_htmls = sum(report.get_html_number() for report in lang_reports)
         total_images = sum(report.get_image_number() for report in lang_reports)
-
+        if total_htmls + total_images == 0:
+            return ""
         return (f"Ran export_html for {len(lang_reports)} languages, "
                 f"processed {total_htmls} htmls, downloaded {total_images} images.")

@@ -120,6 +120,8 @@ class WriteSidebarReport(LanguageReport):
         return "write_sidebar_messages"
 
     def get_summary(self) -> str:
+        if self.updated_worksheet_counter == 0:
+            return ""
         return (f"Ran write_sidebar_messages for {self.language}: "
                 f"Updated {self.updated_worksheet_counter} worksheet titles.")
 
