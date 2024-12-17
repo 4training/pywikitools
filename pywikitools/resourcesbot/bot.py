@@ -207,16 +207,17 @@ class ResourcesBot:
 
         self.logger.info(f"Modules specified for execution: {self.modules}")
 
-        module_reports = {}
+        module_reports = reporting.Reporting()
 
         for selected_module in self.modules:
             module = load_module(selected_module)(
                 self.fortraininglib, self._config, self.site
             )
-            module_reports[type(module).__name__] = []
+            module_reports.add_module(type(module).__name__)
 
             for lang in self._result:
-                module_reports[type(module).__name__].append(
+                module_reports.add_language_report(
+                    type(module).__name__,
                     module.run(
                         self._result[lang],
                         self._result["en"],
@@ -235,8 +236,8 @@ class ResourcesBot:
                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"),
             )
 
-        reporting.print_summaries(module_reports)
-        reporting.save_report(self.site, module_reports)
+        module_reports.print_summaries()
+        module_reports.save_report(self.site)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """

@@ -164,12 +164,10 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.print_summaries", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.save_report", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.Reporting", autospec=True)
     def test_run_with_cache(
         self,
-        mock_save_report,
-        mock_print_summary,
+        mock_report,
         mock_consistency_check,
         mock_export_pdf,
         mock_export_html,
@@ -214,12 +212,10 @@ class TestResourcesBot(unittest.TestCase):
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.print_summaries", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.save_report", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.Reporting", autospec=True)
     def test_rewrite_options(
         self,
-        mock_save_report,
-        mock_reporting_summary,
+        mock_report,
         mock_consistency_check,
         mock_export_pdf,
         mock_export_html,

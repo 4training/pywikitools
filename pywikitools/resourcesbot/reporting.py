@@ -41,50 +41,57 @@ class LanguageReport(ABC):
             return f"Ran module {cls.get_module_name()} for {len(lang_reports)} languages"
 
 
-def print_summaries(module_reports: Dict[str, List[LanguageReport]]):
-    print(make_summaries(module_reports))
+class Reporting:
 
+    def __init__(self):
+        self.module_reports: Dict[str, List[LanguageReport]] = dict()
 
-def make_summaries(module_reports: Dict[str, List[LanguageReport]]):
-    summary = ""
-    for key, value in module_reports.items():
-        if len(value) == 0:
-            summary = f"Module {key}: Empty Report"
+    def add_module(self, module_name: str):
+        self.module_reports[module_name] = list()
+
+    def add_language_report(self, module_name: str, language_report: LanguageReport):
+        self.module_reports.setdefault(module_name, []).append(language_report)
+
+    def print_summaries(self):
+        print(self.make_summaries())
+
+    def make_summaries(self):
+        summary = ""
+        for key, value in self.module_reports.items():
+            if len(value) == 0:
+                summary = f"Module {key}: Empty Report"
+            else:
+                summary += f"Module {key}'s report: {type(value[0]).get_module_summary(value)}\n"
+        return summary
+
+    def generate_mediawiki_overview(self):
+        mediawiki = "===Overview===\n\n"
+        for key, value in self.module_reports.items():
+            if len(value) == 0:
+                mediawiki = f"*Module '''{key}''': Empty Report\n\n"
+            else:
+                mediawiki += f"*Module '''{key}''''s report: {type(value[0]).get_module_summary(value)}\n\n"
+        return mediawiki
+
+    def generate_mediawiki(self):
+        timestamp_str = datetime.now().strftime("%Y-%m-%d--%H:%M")
+        head = f"==Resourcesbot-run at {timestamp_str}==\n\n"
+        overview = self.generate_mediawiki_overview()
+        details = "===Detailed Reports per Module===\n\n"
+        for key, value in self.module_reports.items():
+            if len(value) == 0:
+                pass
+            else:
+                details += f"===={key}====\n\n"
+                for lang_report in value:
+                    details += f"*{lang_report.get_summary()}\n\n"
+        return head + overview + details
+
+    def save_report(self, site):
+        page_url = "4training:Resourcesbot.report"
+        page = pywikibot.Page(site, page_url)
+        if page.exists():
+            page.text = self.generate_mediawiki() + page.text
         else:
-            summary += f"Module {key}'s report: {type(value[0]).get_module_summary(value)}\n"
-    return summary
-
-
-def generate_mediawiki_overview(module_reports: Dict[str, List[LanguageReport]]):
-    mediawiki = "===Overview===\n\n"
-    for key, value in module_reports.items():
-        if len(value) == 0:
-            mediawiki = f"*Module '''{key}''': Empty Report\n\n"
-        else:
-            mediawiki += f"*Module '''{key}''''s report: {type(value[0]).get_module_summary(value)}\n\n"
-    return mediawiki
-
-
-def generate_mediawiki(module_reports: Dict[str, List[LanguageReport]]):
-    timestamp_str = datetime.now().strftime("%Y-%m-%d--%H:%M")
-    head = f"==Resourcesbot-run at {timestamp_str}==\n\n"
-    overview = generate_mediawiki_overview(module_reports)
-    details = "===Detailed Reports per Module===\n\n"
-    for key, value in module_reports.items():
-        if len(value) == 0:
-            pass
-        else:
-            details += f"===={key}====\n\n"
-            for lang_report in value:
-                details += f"*{lang_report.get_summary()}\n\n"
-    return head + overview + details
-
-
-def save_report(site, module_reports: Dict[str, List[LanguageReport]]):
-    page_url = "4training:Resourcesbot.report"
-    page = pywikibot.Page(site, page_url)
-    if page.exists():
-        page.text = generate_mediawiki(module_reports) + page.text
-    else:
-        page.text = generate_mediawiki(module_reports)
-    page.save("Created summary for Resourcesbot run")
+            page.text = self.generate_mediawiki()
+        page.save("Created summary for Resourcesbot run")
