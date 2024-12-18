@@ -10,6 +10,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import Report
 
 
 class Color(Enum):
@@ -22,7 +23,7 @@ class Color(Enum):
         return self.value
 
 
-class WriteReport(LanguagePostProcessor):
+class WriteTranslationProgress(LanguagePostProcessor):
     """
     Write/update status reports for all languages (for translators and translation
     coordinators).
@@ -40,7 +41,7 @@ class WriteReport(LanguagePostProcessor):
 
     @classmethod
     def abbreviation(cls) -> str:
-        return "report"
+        return "progress"
 
     @classmethod
     def can_be_rewritten(cls) -> bool:
@@ -57,6 +58,7 @@ class WriteReport(LanguagePostProcessor):
             site: our pywikibot object to be able to write to the mediawiki system
         """
         super().__init__(fortraininglib, config, site)
+        self.lang_report = WriteReportReport("")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_report"
         )
@@ -69,16 +71,17 @@ class WriteReport(LanguagePostProcessor):
         english_changes: ChangeLog,
         *,
         force_rewrite: bool = False
-    ):
+    ) -> Report:
         """Entry function
 
         We run everything, and don't look at whether we have changes because we need to
         look at all CorrectBot reports and according to them, may need to rewrite
         the report even if changes and english_changes are empty
         """
+        self.lang_report = WriteReportReport(language_info.language_code)
         # We don't need a report for English as it is the source language
         if language_info.language_code == "en":
-            return
+            return self.lang_report
 
         # Don't write reports for language variants (except Brazilian Portuguese)
         # TODO: this should go somewhere else
@@ -86,8 +89,9 @@ class WriteReport(LanguagePostProcessor):
             "-" in language_info.language_code
             and language_info.language_code != "pt-br"
         ):
-            return
+            return self.lang_report
         self.save_language_report(language_info, english_info)
+        return self.lang_report
 
     def create_correctbot_mediawiki(self, worksheet: str, language_code: str) -> str:
         """Check Correctbot report status for one worksheet
@@ -164,7 +168,7 @@ class WriteReport(LanguagePostProcessor):
                 f"English name of language {language_info.language_code} empty! "
                 f"Skipping WriteReport"
             )
-            return
+            return self.lang_report
         page_url = f"4training:{language_info.english_name}"
         page = pywikibot.Page(self._site, page_url)
         report = self.create_mediawiki(language_info, english_info)
@@ -174,6 +178,7 @@ class WriteReport(LanguagePostProcessor):
             )
             page.text = report
             page.save("Created language report")
+            self.lang_report.updated_language_report = True
         else:
             if page.text.strip() != report.strip():
                 page.text = report
@@ -183,6 +188,7 @@ class WriteReport(LanguagePostProcessor):
                 self.logger.info(
                     f"Updated language report for {language_info.english_name}"
                 )
+            self.lang_report.updated_language_report = True
 
     def create_mediawiki(
         self, language_info: LanguageInfo, english_info: LanguageInfo
@@ -408,3 +414,32 @@ class WriteReport(LanguagePostProcessor):
             line_color = Color.GREEN
         content = f'|- style="background-color:{line_color}"\n' + content
         return content
+
+
+class WriteReportReport(Report):
+    """
+    A specialized report for write_report.
+    """
+
+    def __init__(self, language_code: str):
+        super().__init__(language_code)
+        self.updated_language_report = False
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "write_report"
+
+    def get_summary(self) -> str:
+        if self.updated_language_report:
+            return (f"Updated language report for {self.language}.")
+        else:
+            return ""
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        updated_languages = [report for report in lang_reports if report.updated_language_report]
+
+        return (f"Updated language report for {len(updated_languages)}/{len(lang_reports)} languages.")
