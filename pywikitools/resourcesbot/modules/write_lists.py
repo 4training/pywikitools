@@ -9,7 +9,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class WriteList(LanguagePostProcessor):
@@ -192,8 +192,8 @@ class WriteList(LanguagePostProcessor):
         _english_changes,
         *,
         force_rewrite: bool = False
-    ) -> LanguageReport:
-        lang_report = WriteListLanguageReport(language_info.language_code)
+    ) -> Report:
+        lang_report = WriteListReport(language_info.language_code)
         if not force_rewrite and not self.needs_rewrite(language_info, changes):
             return lang_report
 
@@ -265,7 +265,7 @@ class WriteList(LanguagePostProcessor):
         return lang_report
 
 
-class WriteListLanguageReport(LanguageReport):
+class WriteListReport(Report):
     """
     A specialized report for write_list.
     """

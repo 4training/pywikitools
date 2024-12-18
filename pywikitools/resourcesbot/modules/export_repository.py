@@ -10,7 +10,7 @@ import pywikibot
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class ExportRepository(LanguagePostProcessor):
@@ -62,7 +62,7 @@ class ExportRepository(LanguagePostProcessor):
         Currently, we're ignoring the change parameter and just check for changes
         in the git repository
         """
-        lang_report = ExportRepoLanguageReport(language_info.language_code)
+        lang_report = ExportRepoReport(language_info.language_code)
         # Make sure we have a valid repository
         if self._base_folder == "":
             return lang_report
@@ -116,7 +116,7 @@ class ExportRepository(LanguagePostProcessor):
         return lang_report
 
 
-class ExportRepoLanguageReport(LanguageReport):
+class ExportRepoReport(Report):
     """
     A specialized report for export_repository.
     """

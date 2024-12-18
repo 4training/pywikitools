@@ -21,7 +21,7 @@ from pywikitools.resourcesbot.data_structures import (
     json_decode,
 )
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.modules.write_summary import WriteSummary
+from pywikitools.resourcesbot.modules.write_summary import WriteProgressSummary
 import pywikitools.resourcesbot.reporting as reporting
 
 AVAILABLE_MODULES: Final[List[str]] = [
@@ -30,7 +30,7 @@ AVAILABLE_MODULES: Final[List[str]] = [
     "export_pdf",
     "export_repository",
     "write_lists",
-    "write_report",
+    "write_progress",
     "write_sidebar_messages",
 ]
 
@@ -207,7 +207,7 @@ class ResourcesBot:
 
         self.logger.info(f"Modules specified for execution: {self.modules}")
 
-        module_reports = reporting.Reporting()
+        module_reports = reporting.ReportSummary()
 
         for selected_module in self.modules:
             module = load_module(selected_module)(
@@ -229,7 +229,7 @@ class ResourcesBot:
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site)
+            write_summary = WriteProgressSummary(self.site)
             write_summary.run(
                 self._result,
                 self._changelog,

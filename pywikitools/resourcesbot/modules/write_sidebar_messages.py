@@ -8,7 +8,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class WriteSidebarMessages(LanguagePostProcessor):
@@ -94,7 +94,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
         _english_changes,
         *,
         force_rewrite: bool = False
-    ) -> LanguageReport:
+    ) -> Report:
         """Our entry function"""
         self.lang_report = WriteSidebarReport(language_info.language_code)
         for worksheet in language_info.worksheets.values():
@@ -105,7 +105,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
         return self.lang_report
 
 
-class WriteSidebarReport(LanguageReport):
+class WriteSidebarReport(Report):
     """
     A specialized report for export_pdf,
     containing information about saved pdfs

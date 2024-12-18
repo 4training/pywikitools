@@ -11,7 +11,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import FileInfo, LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class ExportPDF(LanguagePostProcessor):
@@ -118,11 +118,11 @@ class ExportPDF(LanguagePostProcessor):
                 self.logger.info(f"Successfully downloaded and saved {file_path}")
 
         self.logger.info(f"ExportPDF {lang_code}: Downloaded {file_counter} PDF files")
-        lang_report = PdfLanguageReport(lang_info.language_code, file_counter)
+        lang_report = PdfReport(lang_info.language_code, file_counter)
         return lang_report
 
 
-class PdfLanguageReport(LanguageReport):
+class PdfReport(Report):
     """
     A specialized report for export_pdf,
     containing information about saved pdfs

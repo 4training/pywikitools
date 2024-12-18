@@ -156,15 +156,15 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteProgressSummary.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_progress.WriteTranslationProgress.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.Reporting", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.ReportSummary", autospec=True)
     def test_run_with_cache(
         self,
         mock_report,
@@ -174,7 +174,7 @@ class TestResourcesBot(unittest.TestCase):
         mock_export_repository,
         mock_write_sidebar_messages,
         mock_write_list,
-        mock_write_report,
+        mock_write_progress,
         mock_write_summary,
         mock_pywikibot_page,
         mock_pywikibot_site
@@ -190,7 +190,7 @@ class TestResourcesBot(unittest.TestCase):
         self.assertEqual(mock_export_repository.call_count, 2)
         self.assertEqual(mock_write_sidebar_messages.call_count, 2)
         self.assertEqual(mock_write_list.call_count, 2)
-        self.assertEqual(mock_write_report.call_count, 2)
+        self.assertEqual(mock_write_progress.call_count, 2)
         mock_write_summary.assert_called_once()
 
         self.assertIn("en", bot._result)
@@ -204,15 +204,15 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteProgressSummary.run", autospec=True)
+    @patch("pywikitools.resourcesbot.modules.write_progress.WriteTranslationProgress.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
-    @patch("pywikitools.resourcesbot.reporting.Reporting", autospec=True)
+    @patch("pywikitools.resourcesbot.reporting.ReportSummary", autospec=True)
     def test_rewrite_options(
         self,
         mock_report,
@@ -222,7 +222,7 @@ class TestResourcesBot(unittest.TestCase):
         mock_export_repository,
         mock_write_sidebar_messages,
         mock_write_list,
-        mock_write_report,
+        mock_write_progress,
         mock_write_summary,
         mock_pywikibot_page,
         mock_pywikibot_site,
@@ -234,7 +234,7 @@ class TestResourcesBot(unittest.TestCase):
         rewrite_check: Dict[str, Mock] = {
             "summary": mock_write_summary,
             "list": mock_write_list,
-            "report": mock_write_report,
+            "progress": mock_write_progress,
             "html": mock_export_html,
             "sidebar": mock_write_sidebar_messages,
         }

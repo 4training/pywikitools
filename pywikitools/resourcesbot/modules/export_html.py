@@ -17,7 +17,7 @@ from pywikitools.resourcesbot.data_structures import (
     WorksheetInfo,
 )
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class CustomBeautifyHTML(BeautifyHTML):
@@ -222,7 +222,7 @@ class ExportHTML(LanguagePostProcessor):
             f"ExportHTML {lang_code}: "
             f"Downloaded {html_counter} HTML files, {file_counter} images"
         )
-        lang_report = HtmlLanguageReport(lang_code, html_counter, file_counter)
+        lang_report = HtmlReport(lang_code, html_counter, file_counter)
         return lang_report
 
 
@@ -256,7 +256,7 @@ class StructureEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-class HtmlLanguageReport(LanguageReport):
+class HtmlReport(Report):
     """
     A specialized report for export_html,
     containing information about saved htmls and images

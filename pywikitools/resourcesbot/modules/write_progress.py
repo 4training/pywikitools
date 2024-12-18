@@ -10,7 +10,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class Color(Enum):
@@ -23,7 +23,7 @@ class Color(Enum):
         return self.value
 
 
-class WriteReport(LanguagePostProcessor):
+class WriteTranslationProgress(LanguagePostProcessor):
     """
     Write/update status reports for all languages (for translators and translation
     coordinators).
@@ -41,7 +41,7 @@ class WriteReport(LanguagePostProcessor):
 
     @classmethod
     def abbreviation(cls) -> str:
-        return "report"
+        return "progress"
 
     @classmethod
     def can_be_rewritten(cls) -> bool:
@@ -58,7 +58,7 @@ class WriteReport(LanguagePostProcessor):
             site: our pywikibot object to be able to write to the mediawiki system
         """
         super().__init__(fortraininglib, config, site)
-        self.lang_report = WriteReportLanguageReport("")
+        self.lang_report = WriteReportReport("")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_report"
         )
@@ -71,14 +71,14 @@ class WriteReport(LanguagePostProcessor):
         english_changes: ChangeLog,
         *,
         force_rewrite: bool = False
-    ) -> LanguageReport:
+    ) -> Report:
         """Entry function
 
         We run everything, and don't look at whether we have changes because we need to
         look at all CorrectBot reports and according to them, may need to rewrite
         the report even if changes and english_changes are empty
         """
-        self.lang_report = WriteReportLanguageReport(language_info.language_code)
+        self.lang_report = WriteReportReport(language_info.language_code)
         # We don't need a report for English as it is the source language
         if language_info.language_code == "en":
             return self.lang_report
@@ -416,7 +416,7 @@ class WriteReport(LanguagePostProcessor):
         return content
 
 
-class WriteReportLanguageReport(LanguageReport):
+class WriteReportReport(Report):
     """
     A specialized report for write_report.
     """

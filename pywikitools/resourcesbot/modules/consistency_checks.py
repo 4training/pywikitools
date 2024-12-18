@@ -13,7 +13,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.lang.translated_page import TranslationUnit
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.reporting import LanguageReport
+from pywikitools.resourcesbot.reporting import Report
 
 
 class ConsistencyCheck(LanguagePostProcessor):
@@ -264,7 +264,7 @@ class ConsistencyCheck(LanguagePostProcessor):
         self.logger.info(
             f"Consistency checks for {language_info.english_name}: {checks_passed}/5 passed"
         )
-        lang_report = ConsistencyLanguageReport(language_info.language_code)
+        lang_report = ConsistencyReport(language_info.language_code)
         lang_report.checks_passed = checks_passed
         return lang_report
 
@@ -290,7 +290,7 @@ be the same
 """
 
 
-class ConsistencyLanguageReport(LanguageReport):
+class ConsistencyReport(Report):
     """
     A specialized report for export_pdf,
     containing information about saved pdfs

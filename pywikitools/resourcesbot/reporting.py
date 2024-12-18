@@ -11,7 +11,7 @@ from datetime import datetime
 import pywikibot
 
 
-class LanguageReport(ABC):
+class Report(ABC):
     """
     Basic data structure for the report of one module running once for one language.
     """
@@ -41,15 +41,15 @@ class LanguageReport(ABC):
             return f"Ran module {cls.get_module_name()} for {len(lang_reports)} languages"
 
 
-class Reporting:
+class ReportSummary:
 
     def __init__(self):
-        self.module_reports: Dict[str, List[LanguageReport]] = dict()
+        self.module_reports: Dict[str, List[Report]] = dict()
 
     def add_module(self, module_name: str):
         self.module_reports[module_name] = list()
 
-    def add_language_report(self, module_name: str, language_report: LanguageReport):
+    def add_language_report(self, module_name: str, language_report: Report):
         self.module_reports.setdefault(module_name, []).append(language_report)
 
     def print_summaries(self):
@@ -65,7 +65,7 @@ class Reporting:
         return summary
 
     def get_reports_by_languages(self):
-        reports_by_language: Dict[str, List[LanguageReport]] = dict()
+        reports_by_language: Dict[str, List[Report]] = dict()
         for key, value in self.module_reports.items():
             if len(value) == 0:
                 pass
