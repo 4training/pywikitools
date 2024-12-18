@@ -104,10 +104,18 @@ class ReportSummary:
         return head + overview + details
 
     def save_report(self, site):
-        page_url = "4training:Resourcesbot.report"
+        timestamp_str = datetime.now().strftime("%Y-%m-%d")
+        run_content = self.generate_mediawiki()
+        page_url = f"4training:Resourcesbot.report.{timestamp_str}"
         page = pywikibot.Page(site, page_url)
         if page.exists():
-            page.text = self.generate_mediawiki() + page.text
+            page.text = run_content + page.text
         else:
-            page.text = self.generate_mediawiki()
+            page.text = run_content + "\n\n[[Category:ResourcesBot-Run]]"
         page.save("Created summary for Resourcesbot run")
+
+        main_page_url = "4training:Resourcesbot.report"
+        main_page = pywikibot.Page(site, main_page_url)
+        main_page.text = ("This page only shows the most recent run.\n\n"
+                          + run_content + "\n\n[[Category:ResourcesBot-Run]]")
+        main_page.save("Created summary for Resourcesbot run")
