@@ -34,44 +34,37 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
 
 ## Setup
 
-> **Note**: pywikitools base path refers to the directory where you can find
-> `README.md`, `CONTRIBUTING.md`, and `requirements.txt`.
-
-1. Install required libraries within a `virtualenv`:
-
-    > We strongly recommend you to use a virtual environment to manage your
-      Python dependencies.
-
-    * Install `virtualenv`:
-
-       ```shell
-       $ sudo python -m pip install virtualenv
-       ```
-
-    * Create a new virtual environment:
-
-       ```shell
-       $ virtualenv new_venv_name
-       ```
-
-    * Activate the virtual environment:
-
-       ```shell
-       $ source new_venv_name/bin/activate
-       ```
-
-    * At the root directory of `pywikitools`, run:
-
-       ```shell
-       $ pip install -r requirements.txt
-       ```
-
-2. Install LibreOffice UNO (python bridge, on linux)
+1. Install LibreOffice UNO (python bridge, on linux)
    ```shell
    $ sudo apt-get install python3-uno
    ```
    > This is required for our LibreOffice module and scripts using it
    > (`translateodt.py`), and to run the complete test suite.
+
+2. Install required python packages
+   > We assume you're in the root directory ("base path") of `pywikitools`:
+   > the directory where you find `README.md` and `requirements.txt`.
+
+    * Set up a virtual environment
+
+       ```shell
+       $ python3 -m venv env --system-site-packages
+       ```
+
+       > You need `--system-site-packages` so that the `uno` package 
+       > you just installed globally gets available
+
+    * Activate the virtual environment:
+
+       ```shell
+       $ source env/bin/activate
+       ```
+
+    * Install the necessary packages
+
+       ```shell
+       $ pip install -r requirements.txt
+       ```
 
 3. Set up configuration in `config.ini`:
    ```shell
@@ -85,14 +78,14 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
     * Configure all other necessary options like usernames and site (connect to
       `4training.net` / `test.4training.net` / [local docker-based server](https://github.com/4training/docker) `localhost:8082`)
 
-4. You're ready to go! Look at the different scripts and how to invoke them and
-   try them out! To get to know everything and to understand what is going on,
-   set the logging level to INFO (default is WARN) by adding `-l info`.
+You're ready to go! Look at the different scripts and how to invoke them and
+try them out! To get to know everything and to understand what is going on,
+set the logging level to INFO (default is WARN) by adding `-l info`.
 
 ## Run scripts
 
 ```shell
-$ python3 path/to/script args
+$ python path/to/script args
 ```
 
 If you're not yet logged in, `pywikibot` will ask you for the password for the
@@ -105,7 +98,7 @@ From your base pywikitools path, use the following command to run the test
 suite.
 
 ```shell
-$ python3 -m unittest discover -s pywikitools/test
+$ python -m unittest discover -s pywikitools/test
 ```
 
 Also, run the next command to check for linting issues
