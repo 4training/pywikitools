@@ -17,6 +17,7 @@ from pywikitools.resourcesbot.data_structures import (
     WorksheetInfo,
 )
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import Report
 
 
 class CustomBeautifyHTML(BeautifyHTML):
@@ -221,6 +222,8 @@ class ExportHTML(LanguagePostProcessor):
             f"ExportHTML {lang_code}: "
             f"Downloaded {html_counter} HTML files, {file_counter} images"
         )
+        lang_report = HtmlReport(lang_code, html_counter, file_counter)
+        return lang_report
 
 
 class StructureEncoder(json.JSONEncoder):
@@ -251,3 +254,50 @@ class StructureEncoder(json.JSONEncoder):
                     worksheet_json["pdf"] = pdf_info.url[pos + 1:]
             return worksheet_json
         return super().default(o)
+
+
+class HtmlReport(Report):
+    """
+    A specialized report for export_html,
+    containing information about saved htmls and images
+    """
+
+    def __init__(self, language_code: str, html_counter: int, image_counter: int):
+        super().__init__(language_code)
+
+        self.html_counter = html_counter
+        self.image_counter = image_counter
+
+    def get_html_number(self) -> int:
+        """
+        Returns the number of HTML elements processed.
+        """
+        return self.html_counter
+
+    def get_image_number(self) -> int:
+        """
+        Returns the number of images downloaded.
+        """
+        return self.image_counter
+
+    def get_summary(self) -> str:
+        if self.html_counter + self.image_counter == 0:
+            return ""
+        return (f"Ran ExportHTML for {self.language}: "
+                f"Processed {self.html_counter} htmls, downloaded {self.image_counter} images.")
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "export_html"
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        total_htmls = sum(report.get_html_number() for report in lang_reports)
+        total_images = sum(report.get_image_number() for report in lang_reports)
+        if total_htmls + total_images == 0:
+            return ""
+        return (f"Ran export_html for {len(lang_reports)} languages, "
+                f"processed {total_htmls} htmls, downloaded {total_images} images.")

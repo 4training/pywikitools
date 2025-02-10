@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
-from pywikitools.resourcesbot.modules.write_summary import WriteSummary
+from pywikitools.resourcesbot.modules.write_summary import WriteProgressSummary
 
 
 class TestWriteSummary(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestWriteSummary(unittest.TestCase):
                 self.language_data[language_code] = json.load(f, object_hook=json_decode)
             self.empty_change_log[language_code] = ChangeLog()
 
-        self.write_summary = WriteSummary(None)
+        self.write_summary = WriteProgressSummary(None)
 
     def test_created_mediawiki(self):
         # Compare mediawiki output with the content in data/summary.mediawiki
@@ -49,7 +49,7 @@ class TestWriteSummary(unittest.TestCase):
         self.write_summary.save_summary(self.language_data)
         mock_page.return_value.save.assert_called_with("Updated summary report")
 
-    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary"
+    @patch("pywikitools.resourcesbot.modules.write_summary.WriteProgressSummary"
            ".save_summary")
     def test_run(self, mock_save):
         # save_summary() shouldn't get called when there are no changes
@@ -64,7 +64,7 @@ class TestWriteSummary(unittest.TestCase):
         mock_save.assert_called_once()
 
         # save_summary() should be called when we have force_rewrite (even if there are no changes)
-        write_summary = WriteSummary(None)
+        write_summary = WriteProgressSummary(None)
         write_summary.run(self.language_data, self.empty_change_log, force_rewrite=True)
         self.assertEqual(mock_save.call_count, 2)
 

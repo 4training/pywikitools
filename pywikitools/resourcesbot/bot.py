@@ -21,7 +21,8 @@ from pywikitools.resourcesbot.data_structures import (
     json_decode,
 )
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
-from pywikitools.resourcesbot.modules.write_summary import WriteSummary
+from pywikitools.resourcesbot.modules.write_summary import WriteProgressSummary
+import pywikitools.resourcesbot.reporting as reporting
 
 AVAILABLE_MODULES: Final[List[str]] = [
     "consistency_checks",
@@ -29,7 +30,7 @@ AVAILABLE_MODULES: Final[List[str]] = [
     "export_pdf",
     "export_repository",
     "write_lists",
-    "write_report",
+    "write_progress",
     "write_sidebar_messages",
 ]
 
@@ -206,28 +207,37 @@ class ResourcesBot:
 
         self.logger.info(f"Modules specified for execution: {self.modules}")
 
+        module_reports = reporting.ReportSummary()
+
         for selected_module in self.modules:
             module = load_module(selected_module)(
                 self.fortraininglib, self._config, self.site
             )
+            module_reports.add_module(type(module).__name__)
+
             for lang in self._result:
-                module.run(
-                    self._result[lang],
-                    self._result["en"],
-                    ChangeLog(),
-                    ChangeLog(),
-                    force_rewrite=(self._rewrite == "all")
-                    or (self._rewrite == module.abbreviation()),
-                )
+                module_reports.add_language_report(
+                    type(module).__name__,
+                    module.run(
+                        self._result[lang],
+                        self._result["en"],
+                        ChangeLog(),
+                        ChangeLog(),
+                        force_rewrite=(self._rewrite == "all")
+                        or (self._rewrite == module.abbreviation()),
+                    ))
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site)
+            write_summary = WriteProgressSummary(self.site)
             write_summary.run(
                 self._result,
                 self._changelog,
                 force_rewrite=(self._rewrite == "all") or (self._rewrite == "summary"),
             )
+
+        module_reports.print_summaries()
+        module_reports.save_report(self.site)
 
     def get_english_version(self, page_source: str) -> Tuple[str, int]:
         """
