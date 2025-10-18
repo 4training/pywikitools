@@ -11,7 +11,6 @@ TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when
 
 class TransferTool:
     def __init__(self, config: ConfigParser):
-
         if not config.has_option('transfer', 'source_site') or \
            not config.has_option('transfer', 'source_username') or \
            not config.has_option('transfer', 'destination_site') or \
