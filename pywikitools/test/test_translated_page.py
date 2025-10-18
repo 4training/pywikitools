@@ -270,6 +270,17 @@ class TestTranslatedPage(unittest.TestCase):
         self.assertEqual(translated_page.get_worksheet_info().progress.total, 3)
         self.assertEqual(translated_page.get_worksheet_info().progress.translated, 3)
 
+    def test_get_iteration_unit(self):
+        unit1 = TranslationUnit("Test/1", "de", TEST_UNIT_WITH_LISTS, TEST_UNIT_WITH_LISTS_DE)
+        unit2 = TranslationUnit("Test/2", "de", TEST_UNIT_WITH_DEFINITION, TEST_UNIT_WITH_DEFINITION_DE_ERROR)
+        page = TranslatedPage("Test", "de", [unit1, unit2])
+        retrieved1 = page.get_iteration_unit(unit1.identifier)
+        retrieved2 = page.get_iteration_unit(unit2.identifier)
+        notExisting = page.get_iteration_unit("not existing")
+        self.assertEqual(unit1, retrieved1)
+        self.assertEqual(unit2, retrieved2)
+        self.assertIsNone(notExisting)
+
     def test_with_real_data(self):
         # TODO this test is closely tied to content on 4training.net that might change in the future
         fortraininglib = ForTrainingLib("https://test.4training.net")
