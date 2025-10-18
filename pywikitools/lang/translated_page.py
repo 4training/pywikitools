@@ -419,7 +419,8 @@ class TranslatedPage:
         """Append a translation unit. Infos are not invalidated"""
         self.units.append(unit)
 
-    def get_iteration_unit(self, identifier: str):
+    def get_translation_unit(self, identifier: str):
+        """Return translation unit by the given identifier"""
         for slice in self.units:
             if (slice.identifier == identifier):
                 return slice
