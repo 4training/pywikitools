@@ -50,25 +50,17 @@ class TransferTool:
         if source_translation_page is None:
             raise RuntimeError("Could not get translation units from source site")
 
-        destination_translation_page: Optional[TranslatedPage] = self.destination_fortraininglib.get_translation_units(
-            page_name, language_code)
-
-        if destination_translation_page is None:
-            raise RuntimeError("Could not get translation units from destination site")
-
         for source_translation_unit in source_translation_page:
             source_translation = source_translation_unit.get_translation()
             self.upload(f"{source_translation_unit.identifier}/{language_code}",
                         source_translation)
 
         numTotal = self.unchanged + self.modified + self.created
-        print(f"Transfer of {numTotal} elements completed.")
-        print(f"unchanged: {self.unchanged}")
-        print(f"modified:  {self.modified}")
-        print(f"created:   {self.created}")
+        print(f"Transfer of {numTotal} elements for '{page_name}/{language_code}' from '{self.source_site}' to '{self.destination_site}' completed.")
+        print(f"unchanged: {self.unchanged} | modified: {self.modified} | created: {self.created}")
 
     def upload(self, identifier: str, translated_text: str):
-        """Transfer a workshoot from one mediawiki system to another one"""
+        """Transfer a worksheet from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
 
         if destination_mediawiki_page.text is None or "":
