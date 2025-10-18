@@ -12,10 +12,8 @@ class TestTransferTool(unittest.TestCase):
         mock_pywikibot_site.return_value.logged_in.return_value = True
         config = ConfigParser()
         config.read_dict({"transfer": {"source_username": "User1", 
-                                       "source_password": "Pw1", 
                                        "source_site": "local",
                                        "destination_username": "User2", 
-                                       "destination_password": "Pw2", 
                                        "destination_site": "test"
                                        }})
         self.transfer_tool = TransferTool(config)
