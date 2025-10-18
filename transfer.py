@@ -48,12 +48,8 @@ class TransferTool:
                                                              family.scriptpath(self.destination_site))
 
 
-    def transfer(self, page_name, language_code, force=False):
+    def transfer(self, page_name, language_code):
         source_translation_page = self.source_fortraininglib.get_translation_units(page_name, "en")
-
-        if not force and self.destination_fortraininglib.get_translated_title(page_name, language_code) is not None:
-            self.logger.warning("Destination already exists. If you want to force overwrite, use the -f flag.")
-            return
 
         for translation_unit in source_translation_page:
             self.upload(f"{translation_unit.identifier}/{language_code}",
@@ -64,19 +60,18 @@ class TransferTool:
         """Transfer a workshoot from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
         destination_mediawiki_page.text = translated_text
-        destination_mediawiki_page.save(summary=f"Transfer of '{identifier}' from '{self.source_site}' to '{self.destination_site}' completed")        
+        destination_mediawiki_page.save(summary=f"Transfer of '{identifier}' from '{self.source_site}' to '{self.destination_site}'")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Transfer a worksheet for a certain language from one site to another site.")
     parser.add_argument("worksheet_name", help="Name of the worksheet to transfer.")
     parser.add_argument("language_code", help="Target language code for transfer.")
-    parser.add_argument("-f", "--force", action="store_true", help="Force overwrite if source exists.")
     args = parser.parse_args()
 
     config = ConfigParser()
     config.read(join(dirname(abspath(__file__)), "config.ini"))
 
     transfer_tool = TransferTool(config)
-    transfer_tool.transfer(args.worksheet_name, args.language_code, args.force)
+    transfer_tool.transfer(args.worksheet_name, args.language_code)
 
