@@ -7,7 +7,6 @@ from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from configparser import ConfigParser
 from pywikitools.lang.translated_page import TranslatedPage
-from pywikitools.lang.translated_page import TranslationUnit
 
 TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
 
@@ -20,6 +19,10 @@ class TransferTool:
             raise RuntimeError("Missing settings for transfer in config.ini")
 
         self.logger: logging.Logger = logging.getLogger('pywikitools.transfer')
+
+        self.unchanged: int = 0
+        self.modified: int = 0
+        self.created: int = 0
 
         self.source_site = config.get('transfer', 'source_site')
         self.destination_site = config.get('transfer', 'destination_site')
@@ -44,10 +47,6 @@ class TransferTool:
         source_translation_page: Optional[TranslatedPage] = self.source_fortraininglib.get_translation_units(
             page_name, language_code)
 
-        unchanged: int = 0
-        modified: int = 0
-        created: int = 0
-
         if source_translation_page is None:
             raise RuntimeError("Could not get translation units from source site")
 
@@ -59,27 +58,26 @@ class TransferTool:
 
         for source_translation_unit in source_translation_page:
             source_translation = source_translation_unit.get_translation()
-            destination_translation_unit: Optional[TranslationUnit] = destination_translation_page.get_translation_unit(
-                source_translation_unit.identifier)
-            if destination_translation_unit is None:
-                created += 1
-            elif destination_translation_unit.get_translation() == source_translation:
-                unchanged += 1
-            else:
-                modified += 1
-
             self.upload(f"{source_translation_unit.identifier}/{language_code}",
                         source_translation)
 
-        numTotal = unchanged + modified + created
+        numTotal = self.unchanged + self.modified + self.created
         print(f"Transfer of {numTotal} elements completed.")
-        print(f"unchanged: {unchanged}")
-        print(f"modified:  {modified}")
-        print(f"created:   {created}")
+        print(f"unchanged: {self.unchanged}")
+        print(f"modified:  {self.modified}")
+        print(f"created:   {self.created}")
 
     def upload(self, identifier: str, translated_text: str):
         """Transfer a workshoot from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
+
+        if destination_mediawiki_page.text is None or "":
+            self.created += 1
+        elif destination_mediawiki_page.text == translated_text:
+            self.unchanged += 1
+        else:
+            self.modified += 1
+
         destination_mediawiki_page.text = translated_text
         destination_mediawiki_page.save(
             summary=f"Transfer of '{identifier}' from '{self.source_site}' to '{self.destination_site}'")
