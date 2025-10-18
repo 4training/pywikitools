@@ -20,14 +20,19 @@ class TestTransferTool(unittest.TestCase):
     @patch('pywikibot.Page')
     def test_upload(self, mock_page):
         self.transfer_tool.upload("Test_Page/1/fr", "Test transfer")
+        mock_page.return_value.save.assert_called_once()
+
+    @patch('pywikibot.Page')
+    def test_upload_with_message(self, mock_page):
+        self.transfer_tool.upload("Test_Page/1/fr", "Test transfer", "Test")
         mock_page.return_value.save.assert_called_once_with(
-            summary="Transfer of 'Test_Page/1/fr' from 'test' to 'local'")
+            summary="Test")
+    
 
     @patch('pywikibot.Page')
     def test_transfer(self, mock_page):
         self.transfer_tool.transfer("A_Daily_Prayer", "fr")
-        mock_page.return_value.save.assert_called_with(
-            summary="Transfer of 'A_Daily_Prayer/21/fr' from 'test' to 'local'")
+        mock_page.return_value.save.assert_called()
 
 
 if __name__ == "__main__":

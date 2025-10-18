@@ -43,7 +43,7 @@ class TransferTool:
         self.destination_fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(self.destination_site, ''),
                                                                          family.scriptpath(self.destination_site))
 
-    def transfer(self, page_name, language_code, message):
+    def transfer(self, page_name, language_code, message=None):
         source_translation_page: Optional[TranslatedPage] = self.source_fortraininglib.get_translation_units(
             page_name, language_code)
 
@@ -59,7 +59,7 @@ class TransferTool:
         print(f"Transfer of {numTotal} elements for '{page_name}/{language_code}' from '{self.source_site}' to '{self.destination_site}' completed.")
         print(f"unchanged: {self.unchanged} | modified: {self.modified} | created: {self.created}")
 
-    def upload(self, identifier: str, translated_text: str, message):
+    def upload(self, identifier: str, translated_text: str, message=None):
         """Transfer a worksheet from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
 
