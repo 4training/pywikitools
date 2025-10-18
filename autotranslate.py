@@ -27,7 +27,7 @@ class TranslationTool:
             if not self.site.logged_in():
                 raise RuntimeError("Login with pywikibot failed.")
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
-        self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
         self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
                                                              family.scriptpath(code))
 
