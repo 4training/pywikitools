@@ -31,7 +31,7 @@ class TransferTool:
             if not self.source_wiki_site.logged_in():
                 raise RuntimeError("Login with pywikibot failed to source site failed.")
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
-        self.source_wiki_site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.source_wiki_site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
 
         self.destination_wiki_site = pywikibot.Site(code=self.destination_site, fam=family,
                                                     user=config.get('transfer', 'destination_username'))
@@ -40,7 +40,7 @@ class TransferTool:
             if not self.destination_wiki_site.logged_in():
                 raise RuntimeError("Login with pywikibot failed to destination site failed.")
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
-        self.destination_wiki_site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.destination_wiki_site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
 
         self.source_fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(self.source_site, ''),
                                                                     family.scriptpath(self.source_site))
