@@ -1,10 +1,13 @@
 import logging
 from os.path import abspath, dirname, join
+from typing import Optional
 import pywikibot
 import argparse
 from pywikitools.family import Family
 from pywikitools.fortraininglib import ForTrainingLib
 from configparser import ConfigParser
+from pywikitools.lang.translated_page import TranslatedPage
+from pywikitools.lang.translated_page import TranslationUnit
 
 TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
 
@@ -48,10 +51,41 @@ class TransferTool:
                                                                          family.scriptpath(self.destination_site))
 
     def transfer(self, page_name, language_code):
-        source_translation_page = self.source_fortraininglib.get_translation_units(page_name, language_code)
+        source_translation_page: Optional[TranslatedPage] = self.source_fortraininglib.get_translation_units(
+            page_name, language_code)
 
-        for translation_unit in source_translation_page:
-            self.upload(f"{translation_unit.identifier}/{language_code}", translation_unit.get_translation())
+        unchanged: int = 0
+        modified: int = 0
+        created: int = 0
+
+        if source_translation_page is None:
+            raise RuntimeError("Could not get translation units from source site")
+
+        destination_translation_page: Optional[TranslatedPage] = self.destination_fortraininglib.get_translation_units(
+            page_name, language_code)
+
+        if destination_translation_page is None:
+            raise RuntimeError("Could not get translation units from destination site")
+
+        for source_translation_unit in source_translation_page:
+            source_translation = source_translation_unit.get_translation()
+            destination_translation_unit: Optional[TranslationUnit] = destination_translation_page.get_iteration_unit(
+                source_translation_unit.identifier)
+            if destination_translation_unit is None:
+                created += 1
+            elif destination_translation_unit.get_translation() == source_translation:
+                unchanged += 1
+            else:
+                modified += 1
+
+            self.upload(f"{source_translation_unit.identifier}/{language_code}",
+                        source_translation)
+
+        numTotal = unchanged + modified + created
+        print(f"Transfer of {numTotal} elements completed.")
+        print(f"unchanged: {unchanged}")
+        print(f"modified:  {modified}")
+        print(f"created:   {created}")
 
     def upload(self, identifier: str, translated_text: str):
         """Transfer a workshoot from one mediawiki system to another one"""
