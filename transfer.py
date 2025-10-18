@@ -90,5 +90,4 @@ if __name__ == "__main__":
     config.read(join(dirname(abspath(__file__)), "config.ini"))
 
     transfer_tool = TransferTool(config)
-    print(args)
     transfer_tool.transfer(args.worksheet_name, args.language_code, args.message)
