@@ -15,7 +15,6 @@ TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when
 class TransferTool:
     def __init__(self, config: ConfigParser):
         if not config.has_option('transfer', 'source_site') or \
-           not config.has_option('transfer', 'source_username') or \
            not config.has_option('transfer', 'destination_site') or \
            not config.has_option('transfer', 'destination_username'):
             raise RuntimeError("Missing settings for transfer in config.ini")
@@ -26,15 +25,6 @@ class TransferTool:
         self.destination_site = config.get('transfer', 'destination_site')
 
         family = Family()
-
-        self.source_wiki_site = pywikibot.Site(code=self.source_site, fam=family,
-                                               user=config.get('transfer', 'source_username'))
-        if not self.source_wiki_site.logged_in():
-            self.source_wiki_site.login()
-            if not self.source_wiki_site.logged_in():
-                raise RuntimeError("Login with pywikibot failed to source site failed.")
-        # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
-        self.source_wiki_site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
 
         self.destination_wiki_site = pywikibot.Site(code=self.destination_site, fam=family,
                                                     user=config.get('transfer', 'destination_username'))
@@ -69,7 +59,7 @@ class TransferTool:
 
         for source_translation_unit in source_translation_page:
             source_translation = source_translation_unit.get_translation()
-            destination_translation_unit: Optional[TranslationUnit] = destination_translation_page.get_iteration_unit(
+            destination_translation_unit: Optional[TranslationUnit] = destination_translation_page.get_translation_unit(
                 source_translation_unit.identifier)
             if destination_translation_unit is None:
                 created += 1
