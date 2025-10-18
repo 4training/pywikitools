@@ -49,6 +49,10 @@ class TransferTool:
 
         if source_translation_page is None:
             raise RuntimeError("Could not get translation units from source site")
+        
+        self.unchanged: int = 0
+        self.modified: int = 0
+        self.created: int = 0
 
         for source_translation_unit in source_translation_page:
             source_translation = source_translation_unit.get_translation()
@@ -63,7 +67,7 @@ class TransferTool:
         """Transfer a worksheet from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
 
-        if destination_mediawiki_page.text is None or "":
+        if not destination_mediawiki_page.exists():
             self.created += 1
         elif destination_mediawiki_page.text == translated_text:
             self.unchanged += 1
@@ -71,11 +75,11 @@ class TransferTool:
             self.modified += 1
 
         destination_mediawiki_page.text = translated_text
+
         if message is None:
             destination_mediawiki_page.save()
         else:
-            destination_mediawiki_page.save(
-                    summary=message)
+            destination_mediawiki_page.save(summary=message)
 
 
 if __name__ == "__main__":
