@@ -49,7 +49,7 @@ class TransferTool:
 
         if source_translation_page is None:
             raise RuntimeError("Could not get translation units from source site")
-        
+
         self.unchanged: int = 0
         self.modified: int = 0
         self.created: int = 0
@@ -60,7 +60,8 @@ class TransferTool:
                         source_translation, message)
 
         numTotal = self.unchanged + self.modified + self.created
-        print(f"Transfer of {numTotal} elements for '{page_name}/{language_code}' from '{self.source_site}' to '{self.destination_site}' completed.")
+        print(f"Transfer of {numTotal} elements for '{page_name}/{language_code}' " +
+              "from '{self.source_site}' to '{self.destination_site}' completed.")
         print(f"unchanged: {self.unchanged} | modified: {self.modified} | created: {self.created}")
 
     def upload(self, identifier: str, translated_text: str, message=None):
