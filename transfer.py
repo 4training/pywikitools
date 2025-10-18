@@ -48,7 +48,7 @@ class TransferTool:
                                                                          family.scriptpath(self.destination_site))
 
     def transfer(self, page_name, language_code):
-        source_translation_page = self.source_fortraininglib.get_translation_units(page_name, "en")
+        source_translation_page = self.source_fortraininglib.get_translation_units(page_name, language_code)
 
         for translation_unit in source_translation_page:
             self.upload(f"{translation_unit.identifier}/{language_code}", translation_unit.get_translation())
