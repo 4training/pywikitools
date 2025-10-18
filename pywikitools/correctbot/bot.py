@@ -25,7 +25,7 @@ class CorrectBot:
         family = Family()
         self.site = pywikibot.Site(code=code, fam=family, user=self._config.get('correctbot', 'username'))
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
-        self.site.throttle.setDelays(delay=0, writedelay=0, absolute=True)
+        self.site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
         self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
                                                              family.scriptpath(code))
 
