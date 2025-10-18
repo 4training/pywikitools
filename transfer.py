@@ -43,7 +43,7 @@ class TransferTool:
         self.destination_fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(self.destination_site, ''),
                                                                          family.scriptpath(self.destination_site))
 
-    def transfer(self, page_name, language_code):
+    def transfer(self, page_name, language_code, message):
         source_translation_page: Optional[TranslatedPage] = self.source_fortraininglib.get_translation_units(
             page_name, language_code)
 
@@ -53,13 +53,13 @@ class TransferTool:
         for source_translation_unit in source_translation_page:
             source_translation = source_translation_unit.get_translation()
             self.upload(f"{source_translation_unit.identifier}/{language_code}",
-                        source_translation)
+                        source_translation, message)
 
         numTotal = self.unchanged + self.modified + self.created
         print(f"Transfer of {numTotal} elements for '{page_name}/{language_code}' from '{self.source_site}' to '{self.destination_site}' completed.")
         print(f"unchanged: {self.unchanged} | modified: {self.modified} | created: {self.created}")
 
-    def upload(self, identifier: str, translated_text: str):
+    def upload(self, identifier: str, translated_text: str, message):
         """Transfer a worksheet from one mediawiki system to another one"""
         destination_mediawiki_page = pywikibot.Page(self.destination_wiki_site, f"Translations:{identifier}")
 
@@ -71,8 +71,11 @@ class TransferTool:
             self.modified += 1
 
         destination_mediawiki_page.text = translated_text
-        destination_mediawiki_page.save(
-            summary=f"Transfer of '{identifier}' from '{self.source_site}' to '{self.destination_site}'")
+        if message is None:
+            destination_mediawiki_page.save()
+        else:
+            destination_mediawiki_page.save(
+                    summary=message)
 
 
 if __name__ == "__main__":
@@ -80,10 +83,12 @@ if __name__ == "__main__":
         description="Transfer a worksheet for a certain language from one site to another site.")
     parser.add_argument("worksheet_name", help="Name of the worksheet to transfer.")
     parser.add_argument("language_code", help="Target language code for transfer.")
+    parser.add_argument("--message", nargs=1, help="This is a test")
     args = parser.parse_args()
 
     config = ConfigParser()
     config.read(join(dirname(abspath(__file__)), "config.ini"))
 
     transfer_tool = TransferTool(config)
-    transfer_tool.transfer(args.worksheet_name, args.language_code)
+    print(args)
+    transfer_tool.transfer(args.worksheet_name, args.language_code, args.message)
