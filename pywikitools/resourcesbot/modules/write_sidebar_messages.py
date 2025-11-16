@@ -8,6 +8,7 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog, ChangeType
 from pywikitools.resourcesbot.data_structures import LanguageInfo, WorksheetInfo
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
+from pywikitools.resourcesbot.reporting import Report
 
 
 class WriteSidebarMessages(LanguagePostProcessor):
@@ -44,6 +45,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
         site: pywikibot.site.APISite
     ):
         super().__init__(fortraininglib, config, site)
+        self.lang_report = WriteSidebarReport("")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_sidebar_messages"
         )
@@ -66,6 +68,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
             self.logger.info(f"Updating system message {title}")
             page.text = worksheet.title
             page.save("Updated translated worksheet title")
+            self.lang_report.updated_worksheet_counter += 1
 
     @staticmethod
     def has_relevant_change(worksheet: str, changes: ChangeLog) -> bool:
@@ -91,10 +94,43 @@ class WriteSidebarMessages(LanguagePostProcessor):
         _english_changes,
         *,
         force_rewrite: bool = False
-    ) -> None:
+    ) -> Report:
         """Our entry function"""
+        self.lang_report = WriteSidebarReport(language_info.language_code)
         for worksheet in language_info.worksheets.values():
             if worksheet.title == "":
                 continue
             if force_rewrite or self.has_relevant_change(worksheet.page, changes):
                 self.save_worksheet_title(worksheet)
+        return self.lang_report
+
+
+class WriteSidebarReport(Report):
+    """
+    A specialized report for export_pdf,
+    containing information about saved pdfs
+    """
+
+    def __init__(self, language_code: str):
+        super().__init__(language_code)
+        self.updated_worksheet_counter = 0
+
+    @classmethod
+    def get_module_name(cls) -> str:
+        return "write_sidebar_messages"
+
+    def get_summary(self) -> str:
+        if self.updated_worksheet_counter == 0:
+            return ""
+        return (f"Ran write_sidebar_messages for {self.language}: "
+                f"Updated {self.updated_worksheet_counter} worksheet titles.")
+
+    @classmethod
+    def get_module_summary(cls, lang_reports: list) -> str:
+        if len(lang_reports) == 0:
+            return ""
+
+        total_updated_titles = sum(report.updated_worksheet_counter for report in lang_reports)
+
+        return (f"Ran write_sidebar_messages for {len(lang_reports)} languages: "
+                f"Updated {total_updated_titles} worksheet titles.")

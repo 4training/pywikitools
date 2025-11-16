@@ -8,10 +8,10 @@ from unittest.mock import Mock, patch
 from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo, json_decode
-from pywikitools.resourcesbot.modules.write_report import WriteReport
+from pywikitools.resourcesbot.modules.write_progress import WriteTranslationProgress
 
 
-class TestWriteReport(unittest.TestCase):
+class TestWriteProgress(unittest.TestCase):
     def setUp(self):
         self.config = ConfigParser()
         with open(join(dirname(abspath(__file__)), "data", "ru.json"), "r") as f:
@@ -61,7 +61,7 @@ class TestWriteReport(unittest.TestCase):
     def test_created_mediawiki(self, mock_page):
         # Compare mediawiki output with the content in
         # data/ru_worksheet_overview.mediawiki
-        write_report = WriteReport(self.fortraininglib, self.config, None)
+        write_report = WriteTranslationProgress(self.fortraininglib, self.config, None)
         mock_page.side_effect = self.mock_pywikibot_pages
 
         with open(
@@ -86,11 +86,11 @@ class TestWriteReport(unittest.TestCase):
                 )
 
     @patch(
-        "pywikitools.resourcesbot.modules.write_report.WriteReport" ".create_mediawiki"
+        "pywikitools.resourcesbot.modules.write_progress.WriteTranslationProgress" ".create_mediawiki"
     )  # don't go into create_mediawiki()
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page, mock_create_mediawiki):
-        write_report = WriteReport(self.fortraininglib, self.config, None)
+        write_report = WriteTranslationProgress(self.fortraininglib, self.config, None)
         # When there is no proper language name, save_language_report()
         # should directly exit
         with self.assertLogs(
@@ -114,11 +114,11 @@ class TestWriteReport(unittest.TestCase):
         mock_page.return_value.save.assert_called_with("Updated language report")
 
     @patch(
-        "pywikitools.resourcesbot.modules.write_report.WriteReport"
+        "pywikitools.resourcesbot.modules.write_progress.WriteTranslationProgress"
         ".save_language_report"
     )
     def test_run(self, mock_save):
-        write_report = WriteReport(self.fortraininglib, self.config, None)
+        write_report = WriteTranslationProgress(self.fortraininglib, self.config, None)
         # save_language_report() shouldn't get called when we have a language variant
         write_report.run(
             LanguageInfo("de-test", "Deutsch (Test)"),
@@ -130,7 +130,7 @@ class TestWriteReport(unittest.TestCase):
 
         # save_language_report() should be called once (for Russian) and force_rewrite
         # should be ignored
-        write_report = WriteReport(self.fortraininglib, self.config, None)
+        write_report = WriteTranslationProgress(self.fortraininglib, self.config, None)
         write_report.run(
             self.language_info, self.english_info, ChangeLog(), ChangeLog()
         )

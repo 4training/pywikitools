@@ -7,7 +7,7 @@ from pywikitools.resourcesbot.data_structures import LanguageInfo
 from pywikitools.resourcesbot.modules.post_processing import GlobalPostProcessor
 
 
-class WriteSummary(GlobalPostProcessor):
+class WriteProgressSummary(GlobalPostProcessor):
     """
     Write/update global status report with an overview over the translation progress in all languages:
 
