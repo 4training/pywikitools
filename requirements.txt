@@ -1,6 +1,5 @@
 flake8>=6.1.0
 coverage>=7.3.2
-setuptools>=68.2.2
 wikitextparser>=0.54.0
 pywikibot>=8.4.0
 requests>=2.31.0

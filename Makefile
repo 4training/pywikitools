@@ -1,5 +1,10 @@
-.PHONY: clean clean-test clean-pyc clean-build help
+.PHONY: help test lint coverage clean clean-pyc clean-test
+
 .DEFAULT_GOAL := help
+
+PYTHON ?= ./env/bin/python
+FLAKE8 ?= ./env/bin/flake8
+COVERAGE ?= ./env/bin/coverage
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -9,6 +14,8 @@ from urllib.request import pathname2url
 webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
 endef
 export BROWSER_PYSCRIPT
+
+BROWSER := python3 -c "$$BROWSER_PYSCRIPT"
 
 define PRINT_HELP_PYSCRIPT
 import re, sys
@@ -21,54 +28,29 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-BROWSER := python3 -c "$$BROWSER_PYSCRIPT"
-
-help:
+help: ## show this help
 	@python3 -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
-
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
-
-clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
-
-clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
-	rm -fr .pytest_cache
+test: ## run the test suite
+	$(PYTHON) -m unittest discover -s pywikitools/test
 
 lint: ## check style with flake8
-	flake8 pywikitools tests
+	$(FLAKE8) .
 
-test: ## run tests quickly with the default Python
-	python3 setup.py test
-
-test-all: ## run tests on every Python version with tox
-	tox
-
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source pywikitools setup.py test
-	coverage report -m
-	coverage html
+coverage: ## run tests with coverage report and open HTML in browser
+	$(COVERAGE) run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test
+	$(COVERAGE) report -m
+	$(COVERAGE) html
 	$(BROWSER) htmlcov/index.html
 
-release: dist ## package and upload a release
-	twine upload dist/*
+clean: clean-pyc clean-test ## remove cache and coverage artifacts
 
-dist: clean ## builds source and wheel package
-	python3 setup.py sdist
-	python3 setup.py bdist_wheel
-	ls -l dist
+# Skip ./env
+FIND_EXCLUDE_ENV = -path './env' -prune -o
 
-install: clean ## install the package to the active Python's site-packages
-	python3 setup.py install
+clean-pyc: ## remove __pycache__ directories
+	find . $(FIND_EXCLUDE_ENV) -name '__pycache__' -type d -print -exec rm -fr {} +
+
+clean-test: ## remove coverage artifacts
+	rm -f .coverage
+	rm -fr htmlcov/
