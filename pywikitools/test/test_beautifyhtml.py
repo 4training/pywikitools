@@ -11,6 +11,11 @@ class TestBeautifyHTML(unittest.TestCase):
     def test_get_image_basename(self):
         beautify = BeautifyHTML()
         self.assertEqual(beautify._extract_image_name(
+            "/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"), "Hand_5.png")
+        self.assertEqual(beautify._extract_image_name(
+            "/images/a/ab/Family.png"), "Family.png")
+        # Legacy paths with $wgScriptPath = /mediawiki
+        self.assertEqual(beautify._extract_image_name(
             "/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"), "Hand_5.png")
         self.assertEqual(beautify._extract_image_name(
             "/mediawiki/images/a/ab/Family.png"), "Family.png")
@@ -19,7 +24,7 @@ class TestBeautifyHTML(unittest.TestCase):
                 "/path/Test.png"), "Test.png")
         with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify._extract_image_name(
-                "/mediawiki/images/thumb/wrong_structure.png"), "wrong_structure.png")
+                "/images/thumb/wrong_structure.png"), "wrong_structure.png")
         with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
             self.assertEqual(beautify._extract_image_name("Test.png"), "Test.png")
 
@@ -29,9 +34,10 @@ class TestBeautifyHTML(unittest.TestCase):
             "Body.png": "Rename_body.png"
         }
         test_dict: Dict[str, str] = {   # Dictionary of input -> expected result
+            "/images/thumb/5/51/Family.png/120px-Family.png": "/files/Rename_family.png",
+            "/images/a/ab/Family.png": "/files/Rename_family.png",
+            "/images/thumb/5/51/Hand_5.png/30px-Hand_5.png": "/files/Hand_5.png",
             "/mediawiki/images/thumb/5/51/Family.png/120px-Family.png": "/files/Rename_family.png",
-            "/mediawiki/images/a/ab/Family.png": "/files/Rename_family.png",
-            "/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png": "/files/Hand_5.png"
         }
         beautify = BeautifyHTML(img_src_rewrite=img_rewrite)
         for src_in, src_out in test_dict.items():

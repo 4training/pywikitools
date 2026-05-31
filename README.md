@@ -14,7 +14,7 @@ scripts as well!
 * Free
   software: [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-The tools use the [MediaWiki API](https://www.4training.net/mediawiki/api.php).
+The tools use the [MediaWiki API](https://www.4training.net/api.php).
 
 Read-only scripts make direct use of the API calls. Bots writing to the system
 use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).

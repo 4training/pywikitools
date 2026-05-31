@@ -22,7 +22,7 @@ class ForTrainingLib():
 
     __slots__ = ["base_url", "script_path", "api_url", "index_url", "logger", "session"]
 
-    def __init__(self, base_url: str, script_path: str = "/mediawiki"):
+    def __init__(self, base_url: str, script_path: str = ""):
         """
         @param base_url: Domain of the mediawiki system we want to query (example: "https://www.example.com")
         @param script_path: Equivalent to $wgScriptPath of the mediawiki system
@@ -228,7 +228,7 @@ class ForTrainingLib():
         @param identifier: number of the translation unit (mediawiki internal)
         (use get_translated_title() for getting the "Page display title" translation unit)
         @param revision_id: Specify this to retrieve an older revision (default: retrieve current revision)
-        (similar to https://www.4training.net/mediawiki/index.php?title=Translations:Hearing_from_God/2/de&oldid=26928 )
+        (similar to https://www.4training.net/index.php?title=Translations:Hearing_from_God/2/de&oldid=26928 )
         @return the translated string or None if translation doesn't exist
         """
         return self.get_page_source(f"Translations:{page}/{identifier}/{language_code}", revision_id)
@@ -297,7 +297,7 @@ class ForTrainingLib():
         @param page the worksheet name
         @param include_unfinished whether unfinished translations should also be included
 
-        Example: https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+        Example: https://www.4training.net/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
         @return a dictionary of language codes -> TranslationProgress objects
                 In case no other translation exists the result will be {'en': progress object}
                 In case of an error the map will be empty {}
@@ -340,7 +340,7 @@ class ForTrainingLib():
         """ Returns list of templates that are transcluded by a given page
         Strips potential language code at the end of a template (returns 'Template:Italic', not 'Template:Italic/en')
         See also https://translatewiki.net/w/api.php?action=help&modules=query%2Btemplates
-        Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&titles=Polish&prop=templates
+        Example: https://www.4training.net/api.php?action=query&format=json&titles=Polish&prop=templates
         @return empty list in case of an error
         """
         json = self._get({
@@ -369,7 +369,7 @@ class ForTrainingLib():
     def get_translation_units(self, page: str, language_code: str, limit: int = 500) -> Optional[TranslatedPage]:
         """
         Get the translation units of a page translated into the language identified by language_code
-        Example: https://www.4training.net/mediawiki/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de  # noqa: E501
+        Example: https://www.4training.net/api.php?action=query&format=json&list=messagecollection&mcgroup=page-Forgiving_Step_by_Step&mclanguage=de  # noqa: E501
         @param limit: Maximum number of translation units to return (default limit in API is also 500)
         @return None in case of an error
         """
@@ -425,7 +425,7 @@ class ForTrainingLib():
     def expand_template(self, raw_template: str) -> str:
         """
         TODO more documentation
-        https://www.4training.net/mediawiki/api.php?action=expandtemplates&text={{CC0Notice/de|1.3}}&prop=wikitext&format=json
+        https://www.4training.net/api.php?action=expandtemplates&text={{CC0Notice/de|1.3}}&prop=wikitext&format=json
         """
         json = self._get({
             "action": "expandtemplates",
@@ -460,7 +460,7 @@ class ForTrainingLib():
         """
         Return the number of jobs in the mediawiki job queue
 
-        https://www.4training.net/mediawiki/api.php?action=query&meta=siteinfo&siprop=statistics
+        https://www.4training.net/api.php?action=query&meta=siteinfo&siprop=statistics
         """
         json = self._get({
             "action": "query",
@@ -482,7 +482,7 @@ class ForTrainingLib():
         Unfortunately this functionality is not exposed in the API yet. (See https://phabricator.wikimedia.org/T235397)
         Also pywikibot doesn't support calling anything outside the API
         So we need to log in on our own and call Special:PageTranslation in the necessary way:
-        1. GET https://www.4training.net/mediawiki/index.php?title=Special:PageTranslation&target=Afrikaans&do=mark
+        1. GET https://www.4training.net/index.php?title=Special:PageTranslation&target=Afrikaans&do=mark
         2. scrape the answer: we need the content of the hidden input fields
         3. POST https://www.4training.net/Special:PageTranslation (with some data)
         @param title The title of the page that should be marked for translation
@@ -533,6 +533,6 @@ class ForTrainingLib():
             self.logger.warning(f"mark_for_translation failed: KeyError, no key named {error}")
 
     # Other possibly relevant API calls:
-    # https://www.4training.net/mediawiki/api.php?action=query&meta=messagetranslations&mttitle=Translations:Church/44
+    # https://www.4training.net/api.php?action=query&meta=messagetranslations&mttitle=Translations:Church/44
     # Is equivalent to https://www.4training.net/Special:Translations?message=Church%2F44&namespace=1198
     # Directly lists all translations of one specific translation unit

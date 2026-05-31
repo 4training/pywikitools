@@ -80,21 +80,39 @@ class BeautifyHTML:
         """
         Extract the "real" name of the image in the mediawiki system out of a given path
 
-        We receive <img> tags with src tags following one of two possible structures:
-          src="/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png" -> extract "Hand_5.png"
-          src="/mediawiki/images/a/ab/Family.png" -> extract "Family.png"
+        We receive <img> tags with src tags following one of these structures:
+          src="/images/thumb/5/51/Hand_5.png/30px-Hand_5.png" -> extract "Hand_5.png"
+          src="/images/a/ab/Family.png" -> extract "Family.png"
+        Legacy paths with a /mediawiki prefix are still accepted.
         """
         parts = path.split('/')
-        if (len(parts) < 4) or (parts[0] != '') or (parts[1] != 'mediawiki') or (parts[2] != 'images'):
+        if not parts or parts[0] != '':
             self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
-            return parts.pop()  # return the last part
+            return parts[-1] if parts else path
 
-        if parts[3] == 'thumb':
-            if len(parts) != 8:
+        try:
+            images_idx = parts.index('images')
+        except ValueError:
+            self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
+            return parts[-1]
+
+        after_images = parts[images_idx + 1:]
+        if not after_images:
+            self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
+            return parts[-1]
+
+        if after_images[0] == 'thumb':
+            # thumb/hash1/hash2/Filename/size-Filename
+            if len(after_images) != 5:
                 self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
-                return parts.pop()
-            return parts[6]
-        return parts.pop()
+                return parts[-1]
+            return after_images[3]
+
+        # hash1/hash2/Filename
+        if len(after_images) != 3:
+            self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
+            return parts[-1]
+        return after_images[2]
 
     def img_rewrite_handler(self, element):
         """

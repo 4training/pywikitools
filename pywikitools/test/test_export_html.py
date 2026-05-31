@@ -88,6 +88,7 @@ class TestExportHTML(unittest.TestCase):
 
     @patch('pywikitools.fortraininglib.ForTrainingLib.get_page_html')
     def test_download_and_save_transformed_html_and_images(self, mock_get_page_html):
+        # example.html mixes legacy (/mediawiki/images/...) and current (/images/...) img src paths
         with open(join(dirname(abspath(__file__)), "data", "example.html"), 'r') as f:
             mock_get_page_html.return_value = f.read()
         changelog = ChangeLog()

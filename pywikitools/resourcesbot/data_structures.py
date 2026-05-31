@@ -16,7 +16,7 @@ class TranslationProgress:
         """
         The constructor can take a dictionary as returned when doing a translation progress query:
         { "total": 44, "translated": 44, "fuzzy": 0, "proofread": 0, "code": "de", "language": "de" },
-        from https://www.4training.net/mediawiki/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
+        from https://www.4training.net/api.php?action=query&meta=messagegroupstats&mgsgroup=page-Church
         """
         self.translated: Final[int] = int(translated)
         self.fuzzy: Final[int] = int(fuzzy)
