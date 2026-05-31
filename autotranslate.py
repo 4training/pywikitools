@@ -42,10 +42,10 @@ class TranslationTool:
 
         self.google_translator = Translator()
 
-    def fetch_and_translate(self, page_name, language_code, force=False):
+    def fetch_and_translate(self, page_name, language_code, force=False, simulate=False):
         translated_page = self.fortraininglib.get_translation_units(page_name, "en")
 
-        if not force and self.fortraininglib.get_translated_title(page_name, language_code) is not None:
+        if not simulate and not force and self.fortraininglib.get_translated_title(page_name, language_code) is not None:
             self.logger.warning("Translation already exists. If you want to force overwrite, use the -f flag.")
             return
 
@@ -57,21 +57,30 @@ class TranslationTool:
             for orig_snippet, trans_snippet in translation_unit:
                 trans_snippet.content = self.translate_with_deepl_or_google(orig_snippet.content, language_code)
             translation_unit.sync_from_snippets()
-            self.upload_translation(f"{translation_unit.identifier}/{language_code}",
-                                    translation_unit.get_translation())
+            identifier = f"{translation_unit.identifier}/{language_code}"
+            translated_text = translation_unit.get_translation()
+            if simulate:
+                print(f"--- Translations:{identifier} ---")
+                print(translated_text)
+                print()
+                continue
+            self.upload_translation(identifier, translated_text)
 
     def translate_with_deepl_or_google(self, text, language_code) -> str:
         """Do the translation: First try DeepL, if that doesn't work (DeepL supports less languages), use Google"""
         if self.language_supported_by_deepl:
             data = {
-                "auth_key": self.deepl_api_key,
                 "text": text,
                 "target_lang": language_code
             }
-            response = requests.post(self.deepl_endpoint, data=data, timeout=TIMEOUT)
+            headers = {
+                "Authorization": f"DeepL-Auth-Key {self.deepl_api_key}"
+            }
+            response = requests.post(self.deepl_endpoint, data=data, headers=headers, timeout=TIMEOUT)
             if response.status_code == 200:
                 return response.json()['translations'][0]['text']
             else:
+                self.logger.warning(f"DeepL error {response.status_code}: {response.text}")
                 self.logger.warning(f"DeepL cannot translate to {language_code}. Using Google Translate instead.")
                 self.language_supported_by_deepl = False
 
@@ -93,10 +102,15 @@ if __name__ == "__main__":
     parser.add_argument("worksheet_name", help="Name of the worksheet to translate.")
     parser.add_argument("language_code", help="Target language code for translation.")
     parser.add_argument("-f", "--force", action="store_true", help="Force overwrite if translation exists.")
+    parser.add_argument("--simulate", action="store_true",
+                        help="Print translated units without uploading to MediaWiki.")
     args = parser.parse_args()
 
     config = ConfigParser()
     config.read(join(dirname(abspath(__file__)), "config.ini"))
 
     translator_tool = TranslationTool(config)
-    translator_tool.fetch_and_translate(args.worksheet_name, args.language_code, args.force)
+    translator_tool.fetch_and_translate(args.worksheet_name,
+                                        args.language_code,
+                                        args.force,
+                                        args.simulate)
