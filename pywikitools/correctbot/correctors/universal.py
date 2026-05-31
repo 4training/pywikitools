@@ -63,7 +63,6 @@ class UniversalCorrector(ABC):
         # TODO: Quotation marks are not yet covered - double check if necessary
         def is_exception(punctuation_pos: int):
             """Is the punctuation found in text at position punctuation_pos part of an exception?"""
-            nonlocal text
             for exception in self._capitalization_exceptions():
                 # Example: text = "Use e.g. tests" and exception = "e.g."
                 # Then is_exception(5) and is_exception(7) both return True as both dots are part of an exception
@@ -124,7 +123,7 @@ class UniversalCorrector(ABC):
         last_start_pos = 0              # necessary to not run into endless loops
 
         def does_match_exception(match: Match) -> bool:
-            nonlocal check_missing_spaces, text, last_start_pos
+            nonlocal last_start_pos
             for exception in self._missing_spaces_exceptions():
                 exception_match = check_missing_spaces.search(exception)
                 if not exception_match:
