@@ -138,7 +138,7 @@ class LibreOffice:
                     found.CharWeight = FontWeight.NORMAL
                 elif next_match.group(0) == "<i>":
                     found.CharPosture = FontSlant.ITALIC
-                elif next_match.group(0) == "</b>":
+                elif next_match.group(0) == "</i>":
                     found.CharPosture = FontSlant.NONE
                 elif next_match.group(0) == "<u>":
                     found.CharUnderline = FontUnderline.SINGLE
