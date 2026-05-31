@@ -31,10 +31,6 @@ jobs:
       - name: Run all tests
         run: python -X dev -m unittest discover -s pywikitools/test
 
-      # Now we're generating the coverage report
-      - name: Install coverage.py
-        run: pip install coverage
-
       - name: Generate coverage report
         run: |
           coverage run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test

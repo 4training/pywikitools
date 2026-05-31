@@ -45,7 +45,10 @@ class TranslationTool:
     def fetch_and_translate(self, page_name, language_code, force=False, simulate=False):
         translated_page = self.fortraininglib.get_translation_units(page_name, "en")
 
-        if not simulate and not force and self.fortraininglib.get_translated_title(page_name, language_code) is not None:
+        if (
+            not simulate and not force
+            and self.fortraininglib.get_translated_title(page_name, language_code) is not None
+        ):
             self.logger.warning("Translation already exists. If you want to force overwrite, use the -f flag.")
             return
 

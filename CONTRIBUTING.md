@@ -52,8 +52,8 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
    `flake8` has nothing to complain:
 
    ```shell
-   $ python3 -m unittest discover -s pywikitools/test
-   $ flake8 .
+   $ make test
+   $ make lint
    ```
 
 6. Commit your changes and push your branch to GitHub:

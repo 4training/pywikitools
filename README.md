@@ -29,7 +29,6 @@ use the [pywikibot framework](https://www.mediawiki.org/wiki/Manual:Pywikibot).
   * [License](#license)
   * [Contributing and coding conventions](#contributing-and-coding-conventions)
   * [Communication](#communication)
-  * [Credits](#credits)
 <!-- TOC -->
 
 ## Setup
@@ -94,22 +93,23 @@ stored in `pywikibot-[UserName].lwp` so you don't have to log in every time.
 
 ## Testing and ensuring good code quality
 
-From your base pywikitools path, use the following command to run the test
-suite.
+From your base pywikitools path (with the virtual environment set up):
+
+```shell
+$ make test      # run the test suite
+$ make lint      # check style with flake8
+$ make coverage  # coverage report; opens htmlcov/ in your browser
+```
+
+The same commands without `make`:
 
 ```shell
 $ python -m unittest discover -s pywikitools/test
+$ flake8 .
 ```
 
-Also, run the next command to check for linting issues
-
-```shell
-$ flake8
-```
-
-With `GitHub Actions` these two commands are automatically run also on every
-push or pull request in the repository. The goal is to cover all important code
-with good test coverage.
+With `GitHub Actions` tests and linting run automatically on every push or pull
+request. The goal is to cover all important code with good test coverage.
 
 Some tests are making real API calls, that's why running the tests can
 take half a
@@ -139,7 +139,7 @@ Which username should it use?
 correct_bot.py
 : Automatically correct simple mistakes in texts of different languages.
 
-resources_bot.py
+resourcesbot.py
 : Automatically scan through all available translations, gather information on
 each language and do many useful things with this information.
 Such as filling out the “Available training resources in...”
@@ -188,10 +188,3 @@ For more details, see CONTRIBUTING.md
 Please subscribe to the repository to get informed on changes. We use GitHub
 issues for specific tasks, wishes, bugs, etc. Please don’t hesitate to open
 a new one! Assign yourself to the issues that you plan to work on.
-
-## Credits
-
-This package was created
-with [Cookiecutter](https://github.com/audreyr/cookiecutter) and
-the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage)
-project template.
