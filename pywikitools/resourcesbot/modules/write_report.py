@@ -137,7 +137,10 @@ class WriteReport(LanguagePostProcessor):
             f"[[CorrectBot:{page}|{match.group(1)} corrections,"
             f" {match.group(2)} suggestions]]"
         )
-        if correctbot_page.editTime() > worksheet_page.editTime():
+        if (
+            correctbot_page.latest_revision.timestamp
+            > worksheet_page.latest_revision.timestamp
+        ):
             # Perfect: CorrectBot report is newer than the latest change on the
             # worksheet page
             return f'| style="background-color:{Color.GREEN}" | {report_link}\n'

@@ -21,6 +21,18 @@ class TestWriteReport(unittest.TestCase):
         self.fortraininglib = ForTrainingLib("https://test.4training.net")
 
     @staticmethod
+    def _mock_revision(comment: str | None = None, timestamp: datetime | None = None):
+        class MockRevision:
+            def __init__(self):
+                self.timestamp = timestamp
+                self._data = {"comment": comment} if comment is not None else {}
+
+            def __getitem__(self, key):
+                return self._data[key]
+
+        return MockRevision()
+
+    @staticmethod
     def mock_pywikibot_pages(site, page: str):
         """Test all different cases in create_correctbot_mediawiki"""
         result = Mock()
@@ -33,27 +45,29 @@ class TestWriteReport(unittest.TestCase):
 
         # defaults for the worksheet_page
         result.exists = lambda: True
-        result.editTime = lambda: datetime(2022, 1, 1)
+        result.latest_revision = TestWriteReport._mock_revision(
+            timestamp=datetime(2022, 1, 1)
+        )
 
         if page.startswith("CorrectBot"):
             # defaults for the correctbot_page
-            result.latest_revision = {
-                "comment": "2 corrections, 1 suggestions, 0 warnings"
-            }
-            result.editTime = lambda: datetime(2022, 1, 2)
+            comment = "2 corrections, 1 suggestions, 0 warnings"
+            timestamp = datetime(2022, 1, 2)
 
             if (
                 page == "CorrectBot:Hearing_from_God/ru"
             ):  # CorrectBot report contains warnings
-                result.latest_revision = {
-                    "comment": "0 corrections, 5 suggestions, 2 warnings"
-                }
+                comment = "0 corrections, 5 suggestions, 2 warnings"
             elif (
                 page == "CorrectBot:Bible_Reading_Hints/ru"
             ):  # weird CorrectBot edit message
-                result.latest_revision = {"comment": "invalid"}
+                comment = "invalid"
             elif page == "CorrectBot:Time_with_God/ru":  # outdated CorrectBot report
-                result.editTime = lambda: datetime(2021, 1, 1)
+                timestamp = datetime(2021, 1, 1)
+
+            result.latest_revision = TestWriteReport._mock_revision(
+                comment=comment, timestamp=timestamp
+            )
 
         return result
 
