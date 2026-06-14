@@ -48,10 +48,11 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that all tests are passing and that
-   `flake8` has nothing to complain:
+5. When you're done making changes, run `make format` and check that all tests
+   are passing and that `make lint` has nothing to complain:
 
    ```shell
+   $ make format
    $ make test
    $ make lint
    ```
@@ -70,7 +71,7 @@ Ready to contribute? Here's how to set up `pywikitools` for local development.
 
 * Please write good and readable code with meaningful documentation.
 * We do our best to follow the PEP 8 style guide ([PEP 8](https://pep8.org/))
-  with the exception that lines can have up to `120 characters`.
+  with a maximum line length of `88 characters` (enforced by Ruff).
 * Every script should print documentation on arguments when run without or with
   incorrect arguments.
 

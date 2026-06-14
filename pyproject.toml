@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 88
+exclude = [
+    "env",
+    "pywikitools/user-config.py",
+    "pywikitools/correctbot/user-config.py",
+]
+
+[tool.ruff.format]
+# defaults (Black-compatible) are sufficient

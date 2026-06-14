@@ -97,7 +97,8 @@ From your base pywikitools path (with the virtual environment set up):
 
 ```shell
 $ make test      # run the test suite
-$ make lint      # check style with flake8
+$ make lint      # check style with ruff
+$ make format    # auto-format code with ruff
 $ make coverage  # coverage report; opens htmlcov/ in your browser
 ```
 
@@ -105,7 +106,8 @@ The same commands without `make`:
 
 ```shell
 $ python -m unittest discover -s pywikitools/test
-$ flake8 .
+$ ruff check .
+$ ruff format --check .
 ```
 
 With `GitHub Actions` tests and linting run automatically on every push or pull

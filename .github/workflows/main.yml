@@ -40,7 +40,7 @@ jobs:
         uses: codecov/codecov-action@v2
 
   python-code-quality:
-    # Run flake8 for linting
+    # Run ruff for linting and formatting
     runs-on: ubuntu-latest
 
     steps:
@@ -50,5 +50,7 @@ jobs:
       - name: Install python packages
         run: pip install -r requirements.txt
 
-      - name: Run flake8
-        run: flake8 .
+      - name: Run ruff
+        run: |
+          ruff check .
+          ruff format --check .

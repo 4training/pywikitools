@@ -1,9 +1,9 @@
-.PHONY: help test lint coverage clean clean-pyc clean-test
+.PHONY: help test lint format coverage clean clean-pyc clean-test
 
 .DEFAULT_GOAL := help
 
 PYTHON ?= ./env/bin/python
-FLAKE8 ?= ./env/bin/flake8
+RUFF ?= ./env/bin/ruff
 COVERAGE ?= ./env/bin/coverage
 
 define BROWSER_PYSCRIPT
@@ -34,8 +34,12 @@ help: ## show this help
 test: ## run the test suite
 	$(PYTHON) -m unittest discover -s pywikitools/test
 
-lint: ## check style with flake8
-	$(FLAKE8) .
+lint: ## check style with ruff
+	$(RUFF) check .
+	$(RUFF) format --check .
+
+format: ## auto-format code with ruff
+	$(RUFF) format .
 
 coverage: ## run tests with coverage report and open HTML in browser
 	$(COVERAGE) run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test
