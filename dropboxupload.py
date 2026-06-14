@@ -3,6 +3,7 @@ Upload created files to a shared Dropbox folder
 
 Dropbox account credentials are stored in a separate file
 """
+
 import sys
 import os
 import logging
@@ -12,9 +13,9 @@ from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
 import configparser
 
-logger = logging.getLogger('pywikitools.dropboxupload')
+logger = logging.getLogger("pywikitools.dropboxupload")
 config = configparser.ConfigParser()
-config.read(os.path.dirname(os.path.abspath(__file__)) + '/config.ini')
+config.read(os.path.dirname(os.path.abspath(__file__)) + "/config.ini")
 
 
 def usage():
@@ -25,26 +26,33 @@ def _upload(filename: str, content: bytes) -> bool:
     """
     Internal upload function: write content to the specified file
     """
-    if (not config.has_option('Dropbox', 'folder')) or (not config.has_option('Dropbox', 'token')):
+    if (not config.has_option("Dropbox", "folder")) or (
+        not config.has_option("Dropbox", "token")
+    ):
         logger.error("Dropbox configuration missing or incomplete. Not doing anything.")
         return False
 
-    dbx = dropbox.Dropbox(config['Dropbox'].get('token'))
+    dbx = dropbox.Dropbox(config["Dropbox"].get("token"))
     # Check that the access token is valid
     try:
         dbx.users_get_current_account()
     except AuthError:
-        logger.error("ERROR: Invalid access token; try re-generating an access token from the app console on the web.")
+        logger.error(
+            "ERROR: Invalid access token; try re-generating an access token from the app console on the web."
+        )
         return False
 
     logger.debug("Trying to write to Dropbox file " + filename + " ...")
     try:
-        dbx.files_upload(content, config['Dropbox'].get('folder') + filename, mode=WriteMode('overwrite'))
+        dbx.files_upload(
+            content,
+            config["Dropbox"].get("folder") + filename,
+            mode=WriteMode("overwrite"),
+        )
     except ApiError as err:
         # This checks for the specific error where a user doesn't have
         # enough Dropbox space quota to upload this file
-        if (err.error.is_path() and
-                err.error.get_path().reason.is_insufficient_space()):
+        if err.error.is_path() and err.error.get_path().reason.is_insufficient_space():
             logger.error("ERROR: Cannot back up; insufficient space.")
             return False
         elif err.user_message_text:
@@ -66,7 +74,7 @@ def upload_string(language_code: str, filename: str, content: str) -> bool:
     Returns:
         True if successful
     """
-    return _upload(language_code + '/' + filename, content.encode())
+    return _upload(language_code + "/" + filename, content.encode())
 
 
 def upload_file(language_code: str, filename: str) -> bool:
@@ -77,21 +85,23 @@ def upload_file(language_code: str, filename: str) -> bool:
     Returns:
         True for Success, False if error occured
     """
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         # We use WriteMode=overwrite to make sure that the settings in the file are changed on upload
-        pos = filename.rfind('/')   # check if filename contains path as well
-        if (pos > -1):
-            upload_filename = language_code + "/" + filename[pos+1:]
+        pos = filename.rfind("/")  # check if filename contains path as well
+        if pos > -1:
+            upload_filename = language_code + "/" + filename[pos + 1 :]
         else:
             upload_filename = language_code + "/" + filename
 
-        logger.info("Uploading " + filename + " to Dropbox as " + upload_filename + " ...")
+        logger.info(
+            "Uploading " + filename + " to Dropbox as " + upload_filename + " ..."
+        )
         return _upload(upload_filename, f.read())
     return True
 
 
 # Check if the script is run as standalone or called by another script
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hl:", ["help", "loglevel"])
     except getopt.GetoptError as err:
@@ -99,10 +109,10 @@ if __name__ == '__main__':
         print(err)
         usage()
         sys.exit(2)
-    if (len(args) != 2):
+    if len(args) != 2:
         usage()
         sys.exit(2)
-    languagecode = args[0]      # TODO check the validity of this argument
+    languagecode = args[0]  # TODO check the validity of this argument
     filename = args[1]
     for o, a in opts:
         if o == "-l":

@@ -34,6 +34,7 @@ class WriteReport(LanguagePostProcessor):
     Do we have ODT and PDF files for download?
     To help interpret the results, we use colors (green / orange / red) for each cell.
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Write status report for a language"
@@ -50,7 +51,7 @@ class WriteReport(LanguagePostProcessor):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite
+        site: pywikibot.site.APISite,
     ):
         """
         Args:
@@ -68,7 +69,7 @@ class WriteReport(LanguagePostProcessor):
         changes: ChangeLog,
         english_changes: ChangeLog,
         *,
-        force_rewrite: bool = False
+        force_rewrite: bool = False,
     ):
         """Entry function
 

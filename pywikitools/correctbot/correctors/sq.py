@@ -1,18 +1,28 @@
 from typing import List
 
 from .base import CorrectorBase
-from .universal import NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector, UniversalCorrector
+from .universal import (
+    NoSpaceBeforePunctuationCorrector,
+    QuotationMarkCorrector,
+    UniversalCorrector,
+)
 
 
-class AlbanianCorrector(CorrectorBase, UniversalCorrector, NoSpaceBeforePunctuationCorrector, QuotationMarkCorrector):
+class AlbanianCorrector(
+    CorrectorBase,
+    UniversalCorrector,
+    NoSpaceBeforePunctuationCorrector,
+    QuotationMarkCorrector,
+):
     """
     Correct Albanian typos:
     * Albanian quotations start with « and end with »
     * Common corrections from UniversalCorrector and NoSpaceBeforePunctuationCorrector
     """
+
     def correct_quotes(self, text: str) -> str:
         """Ensure correct Albanian quotes (example: «quote»)"""
-        return self._correct_quotes('«', '»', text)
+        return self._correct_quotes("«", "»", text)
 
     def _suffix_for_print_version(self) -> str:
         return "_printim"

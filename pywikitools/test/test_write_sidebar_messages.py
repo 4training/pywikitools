@@ -94,7 +94,9 @@ class TestWriteSidebarMessages(unittest.TestCase):
         write_sidebar_messages = WriteSidebarMessages(
             fortraininglib=None, config=self.config, site=None
         )
-        write_sidebar_messages.run(self.language_info, None, ChangeLog(), ChangeLog(), force_rewrite=True)
+        write_sidebar_messages.run(
+            self.language_info, None, ChangeLog(), ChangeLog(), force_rewrite=True
+        )
         self.assertEqual(mock_save.call_count, 2)
 
 

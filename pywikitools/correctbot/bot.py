@@ -15,19 +15,26 @@ from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 
 class CorrectBot:
     """Main class for doing corrections"""
+
     def __init__(self, config: ConfigParser, simulate: bool = False):
         self._config = config
-        if not self._config.has_option('correctbot', 'site') or \
-           not self._config.has_option('correctbot', 'username'):
-            raise RuntimeError("Missing connection settings for correctbot in config.ini")
+        if not self._config.has_option(
+            "correctbot", "site"
+        ) or not self._config.has_option("correctbot", "username"):
+            raise RuntimeError(
+                "Missing connection settings for correctbot in config.ini"
+            )
 
-        code = self._config.get('correctbot', 'site')
+        code = self._config.get("correctbot", "site")
         family = Family()
-        self.site = pywikibot.Site(code=code, fam=family, user=self._config.get('correctbot', 'username'))
+        self.site = pywikibot.Site(
+            code=code, fam=family, user=self._config.get("correctbot", "username")
+        )
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
         self.site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
-                                                             family.scriptpath(code))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(
+            family.base_url(code, ""), family.scriptpath(code)
+        )
 
         self.logger: logging.Logger = logging.getLogger("pywikitools.correctbot")
         self._simulate: bool = simulate
@@ -60,10 +67,16 @@ class CorrectBot:
                 if corrector_class.__module__ == module_name:
                     return corrector_class
 
-        raise RuntimeError(f"Couldn't load corrector for language {language_code}. Giving up")
+        raise RuntimeError(
+            f"Couldn't load corrector for language {language_code}. Giving up"
+        )
 
-    def check_unit(self, corrector: CorrectorBase, unit: TranslationUnit,
-                   apply_only_rule: Optional[str] = None) -> Optional[CorrectionResult]:
+    def check_unit(
+        self,
+        corrector: CorrectorBase,
+        unit: TranslationUnit,
+        apply_only_rule: Optional[str] = None,
+    ) -> Optional[CorrectionResult]:
         """
         Check one specific translation unit: Run the right correction rules on it.
         For this we analyze: Is it a title, a file name or a "normal" translation unit?
@@ -78,7 +91,7 @@ class CorrectBot:
         if unit.get_translation() == "":
             return None
 
-        if unit.is_title():     # translation unit holds the title
+        if unit.is_title():  # translation unit holds the title
             result = corrector.title_correct(unit, apply_only_rule)
             # We save this internally to correct the filename later
             self._translated_title = result.corrections.get_translation()
@@ -87,11 +100,15 @@ class CorrectBot:
         if re.search(r"\.(odt|pdf|odg|png)$", unit.get_definition()):
             # translation unit holds a filename -> correct it according to worksheet title
             if self._translated_title is None:
-                self.logger.warning("Trying to correct filename but we don't have information on translated title")
+                self.logger.warning(
+                    "Trying to correct filename but we don't have information on translated title"
+                )
                 return None
             if self._translated_title == "":  # Title isn't translated yet
                 return None
-            return corrector.filename_correct(unit, ForTrainingLib.convert_to_filename(self._translated_title))
+            return corrector.filename_correct(
+                unit, ForTrainingLib.convert_to_filename(self._translated_title)
+            )
 
         if re.search(r"^\d\.\d[a-zA-Z]?$", unit.get_definition()):
             # translation unit holds the version number -> ignore it
@@ -102,11 +119,14 @@ class CorrectBot:
                 return None
             else:
                 # But for any longer content there's most likely something wrong
-                return CorrectionResult(unit, unit, {}, {}, "Translation is the same as English original.")
+                return CorrectionResult(
+                    unit, unit, {}, {}, "Translation is the same as English original."
+                )
         return corrector.correct(unit, apply_only_rule)
 
-    def check_page(self, page: str, language_code: str,
-                   apply_only_rule: Optional[str] = None) -> List[CorrectionResult]:
+    def check_page(
+        self, page: str, language_code: str, apply_only_rule: Optional[str] = None
+    ) -> List[CorrectionResult]:
         """
         Check one specific page and store the results in this class
 
@@ -124,7 +144,7 @@ class CorrectBot:
         Raises:
             RuntimeError if an error occurred
         """
-        self._translated_title = None   # This is in the first translation unit and we need it to correct the file name
+        self._translated_title = None  # This is in the first translation unit and we need it to correct the file name
         self._correction_diff = ""
         self._suggestion_diff = ""
         self._correction_stats = None
@@ -136,7 +156,9 @@ class CorrectBot:
         correction_stats: Counter = Counter()
         suggestion_stats: Counter = Counter()
 
-        translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(page, language_code)
+        translated_page: Optional[TranslatedPage] = (
+            self.fortraininglib.get_translation_units(page, language_code)
+        )
         if translated_page is None:
             raise RuntimeError("Couldn't query translation units")
         corrector = self._load_corrector(language_code)()
@@ -152,9 +174,13 @@ class CorrectBot:
                 self._warnings += f"{translation_unit.get_name()}: {result.warnings}\n"
 
             if (correction_diff := result.corrections.get_translation_diff()) != "":
-                self._correction_diff += f"{translation_unit.get_name()}: {correction_diff}\n"
+                self._correction_diff += (
+                    f"{translation_unit.get_name()}: {correction_diff}\n"
+                )
             if (suggestion_diff := result.suggestions.get_translation_diff()) != "":
-                self._suggestion_diff += f"{translation_unit.get_name()}: {suggestion_diff}\n"
+                self._suggestion_diff += (
+                    f"{translation_unit.get_name()}: {suggestion_diff}\n"
+                )
             correction_stats += Counter(result.correction_stats)
             suggestion_stats += Counter(result.suggestion_stats)
 
@@ -167,7 +193,9 @@ class CorrectBot:
     def get_correction_stats(self) -> str:
         """Return a summary: which correction rules could be applied (in the last run)?"""
         if self._correction_stats is None:
-            self.logger.warning("No statistics available. You need to run check_page() first.")
+            self.logger.warning(
+                "No statistics available. You need to run check_page() first."
+            )
             return ""
         stats: str = f"{self._correction_counter} corrections"
         if self._correction_counter > 0:
@@ -177,7 +205,9 @@ class CorrectBot:
     def get_suggestion_stats(self) -> str:
         """Return a summary: which corrections are suggested (in the last run)?"""
         if self._suggestion_stats is None:
-            self.logger.warning("No statistics available. You need to run check_page() first.")
+            self.logger.warning(
+                "No statistics available. You need to run check_page() first."
+            )
             return ""
         stats: str = f"{self._suggestion_counter} suggestions"
         if self._suggestion_counter > 0:
@@ -223,13 +253,17 @@ class CorrectBot:
         saved_corrections = False
         for result in results:
             if result.corrections.has_translation_changes():
-                mediawiki_page = pywikibot.Page(self.site, result.corrections.get_name())
+                mediawiki_page = pywikibot.Page(
+                    self.site, result.corrections.get_name()
+                )
                 mediawiki_page.text = result.corrections.get_translation()
                 mediawiki_page.save(minor=True)
                 saved_corrections = True
         return saved_corrections
 
-    def save_report(self, page: str, language_code: str, results: List[CorrectionResult]) -> bool:
+    def save_report(
+        self, page: str, language_code: str, results: List[CorrectionResult]
+    ) -> bool:
         """Save report with the correction results to the mediawiki system
 
         We save the report in our custom CorrectBot namespace, for example to CorrectBot:Prayer/de
@@ -256,7 +290,10 @@ class CorrectBot:
                     report += f" {result.corrections.get_name()}] ===\n"
                     report += f"<b><pre><nowiki>{result.warnings}</nowiki></pre></b>\n"
                     report += '{| class="wikitable'
-                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                    if (
+                        self.fortraininglib.get_language_direction(language_code)
+                        == "rtl"
+                    ):
                         report += " mw-content-rtl"
                     report += '"\n|-\n! Original\n! Translation\n|- style="vertical-align:top"\n'
                     report += f"|\n{result.corrections.get_definition()}\n|\n{result.corrections.get_translation()}\n"
@@ -270,9 +307,14 @@ class CorrectBot:
                 if result.suggestions.has_translation_changes():
                     report += f"=== [{self.fortraininglib.index_url}?title={result.suggestions.get_name()}&action=edit"
                     report += f" {result.suggestions.get_name()}] ===\n"
-                    report += "{{StringDiff|" + result.suggestions.get_original_translation()
+                    report += (
+                        "{{StringDiff|" + result.suggestions.get_original_translation()
+                    )
                     report += "|" + result.suggestions.get_translation()
-                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                    if (
+                        self.fortraininglib.get_language_direction(language_code)
+                        == "rtl"
+                    ):
                         report += "|direction=rtl"
                     report += "}}\n"
         if self.get_correction_counter() > 0:
@@ -285,9 +327,14 @@ class CorrectBot:
                 if result.corrections.has_translation_changes():
                     report += f"=== [{self.fortraininglib.index_url}?title={result.corrections.get_name()}&action=edit"
                     report += f" {result.corrections.get_name()}] ===\n"
-                    report += "{{StringDiff|" + result.corrections.get_original_translation()
+                    report += (
+                        "{{StringDiff|" + result.corrections.get_original_translation()
+                    )
                     report += "|" + result.corrections.get_translation()
-                    if self.fortraininglib.get_language_direction(language_code) == "rtl":
+                    if (
+                        self.fortraininglib.get_language_direction(language_code)
+                        == "rtl"
+                    ):
                         report += "|direction=rtl"
                     report += "}}\n"
 
@@ -308,20 +355,28 @@ class CorrectBot:
             True if we could successfully run this script
             False if paths were not configured or there was an error while executing
         """
-        if self._config.has_option('Paths', 'php') and self._config.has_option('correctbot', 'runjobs'):
-            args = [self._config['Paths']['php'], self._config['correctbot']['runjobs']]
+        if self._config.has_option("Paths", "php") and self._config.has_option(
+            "correctbot", "runjobs"
+        ):
+            args = [self._config["Paths"]["php"], self._config["correctbot"]["runjobs"]]
             try:
                 script = subprocess.Popen(args, stdout=subprocess.DEVNULL)
                 exit_code = script.wait(timeout=15)
             except subprocess.TimeoutExpired:
-                self.logger.warning("Invoking runJobs.php didn't finished - job queue is maybe still not empty")
+                self.logger.warning(
+                    "Invoking runJobs.php didn't finished - job queue is maybe still not empty"
+                )
                 return False
             if exit_code != 0:
-                self.logger.warning(f"runJobs.php did not finish successfully. Exit code: {exit_code}")
+                self.logger.warning(
+                    f"runJobs.php did not finish successfully. Exit code: {exit_code}"
+                )
                 return False
             return True
         else:
-            self.logger.warning("Settings for invoking runJobs.php missing in config.ini. Can't empty job queue.")
+            self.logger.warning(
+                "Settings for invoking runJobs.php missing in config.ini. Can't empty job queue."
+            )
             return False
 
     def run(self, page: str, language_code: str, apply_only_rule: Optional[str] = None):
@@ -331,7 +386,9 @@ class CorrectBot:
             page: The name of the worksheet
             apply_only_rule: If specified, only apply the correction rule with this name
         """
-        page = page.replace(' ', '_')   # spaces may lead to problems in some places: "Time with God" -> "Time_with_God"
+        page = page.replace(
+            " ", "_"
+        )  # spaces may lead to problems in some places: "Time with God" -> "Time_with_God"
         try:
             results = self.check_page(page, language_code, apply_only_rule)
         except Exception as e:
@@ -357,11 +414,17 @@ class CorrectBot:
         if not saved_report:
             print("NOTHING SAVED.")
             if self._simulate:
-                print("We're running with --simulate. No corrections are written back to the mediawiki system.")
+                print(
+                    "We're running with --simulate. No corrections are written back to the mediawiki system."
+                )
             elif not saved_corrections:
-                print("Nothing new. The existing CorrectBot report in the mediawiki system is still correct.")
+                print(
+                    "Nothing new. The existing CorrectBot report in the mediawiki system is still correct."
+                )
             else:
-                print("WARNING: Inconsistency! Please inform an administrator. Saved corrections but not report.")
+                print(
+                    "WARNING: Inconsistency! Please inform an administrator. Saved corrections but not report."
+                )
 
         print(self.get_correction_stats())
         if self._correction_counter > 0:

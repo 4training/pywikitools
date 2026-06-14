@@ -1,15 +1,35 @@
 from typing import Dict, Final, Set
 
-SNIPPET_WARN_LENGTH = 3     # give a warning when search or replace string is shorter than 3 characters
+SNIPPET_WARN_LENGTH = (
+    3  # give a warning when search or replace string is shorter than 3 characters
+)
 # The following templates don't contain any translation units and can be ignored
-IGNORE_TEMPLATES = ['Template:DocDownload', 'Template:OdtDownload', 'Template:PdfDownload',
-                    'Template:PrintPdfDownload',
-                    'Template:Translatable template', 'Template:Version', 'Module:Template translation',
-                    'Template:Italic']
+IGNORE_TEMPLATES = [
+    "Template:DocDownload",
+    "Template:OdtDownload",
+    "Template:PdfDownload",
+    "Template:PrintPdfDownload",
+    "Template:Translatable template",
+    "Template:Version",
+    "Module:Template translation",
+    "Template:Italic",
+]
 # for the following languages we don't add ", version x.y" to the keywords in the document properties
 # because the translation of "version" is very close to the English word "version"
 # TODO should 'ko' be in this list?
-NO_ADD_ENGLISH_VERSION = ['de', 'pt-br', 'cs', 'nl', 'fr', 'id', 'ro', 'es', 'sv', 'tr', 'tr-tanri']
+NO_ADD_ENGLISH_VERSION = [
+    "de",
+    "pt-br",
+    "cs",
+    "nl",
+    "fr",
+    "id",
+    "ro",
+    "es",
+    "sv",
+    "tr",
+    "tr-tanri",
+]
 
 
 class TranslateOdtConfig:
@@ -27,6 +47,7 @@ class TranslateOdtConfig:
     # Process the following translation unit 5 times
     Template:BibleReadingHints/6 = 5
     """
+
     __slots__ = ["ignore", "multiple"]
 
     def __init__(self):

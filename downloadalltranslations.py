@@ -5,6 +5,7 @@ Script to download all translated PDFs of a worksheet, e.g. downloadalltranslati
 The PDF files are named [languagename in English] - [language autonym].pdf
 They're put into a (newly created) subdirectory named after the worksheet
 """
+
 import sys
 import os
 import logging
@@ -14,10 +15,12 @@ from pywikitools.fortraininglib import ForTrainingLib
 
 
 def usage():
-    print("Usage: python3 downloadalltranslations.py [-l {debug, info, warning, error, critical}] <worksheetname>")
+    print(
+        "Usage: python3 downloadalltranslations.py [-l {debug, info, warning, error, critical}] <worksheetname>"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hl:", ["help", "loglevel"])
     except getopt.GetoptError as err:
@@ -48,7 +51,9 @@ if __name__ == '__main__':
 
     fortraininglib = ForTrainingLib("https://www.4training.net")
     translations = fortraininglib.list_page_translations(worksheetname)
-    logging.info(f'Worksheet {worksheetname} is translated into {len(translations)} languages: {translations.keys()}')
+    logging.info(
+        f"Worksheet {worksheetname} is translated into {len(translations)} languages: {translations.keys()}"
+    )
     for language in translations.keys():
         pdf = fortraininglib.get_pdf_name(worksheetname, language)
         if pdf is None:
@@ -57,17 +62,23 @@ if __name__ == '__main__':
         logging.debug(f"Language: {language}, filename: {pdf}")
         url = fortraininglib.get_file_url(pdf)
         if not url:
-            logging.warning(f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring")
+            logging.warning(
+                f"Language: {language}, file: {pdf} doesn't seem to exist, ignoring"
+            )
             continue
         file_request = requests.get(url, allow_redirects=True)
         language_autonym = fortraininglib.get_language_name(language)
-        language_english = fortraininglib.get_language_name(language, 'en')
+        language_english = fortraininglib.get_language_name(language, "en")
         if language_autonym is None or language_english is None:
-            logging.warning(f"Strang: couldn't get language name for language {language}, ignoring")
+            logging.warning(
+                f"Strang: couldn't get language name for language {language}, ignoring"
+            )
             continue
         file_name = f"{worksheetname}/{language_english} - {language_autonym}.pdf"
         try:
-            open(file_name, 'wb').write(file_request.content)
+            open(file_name, "wb").write(file_request.content)
         except FileNotFoundError:
-            logging.warning(f"Language: {language}, error while trying to open file {file_name}, ignoring")
+            logging.warning(
+                f"Language: {language}, error while trying to open file {file_name}, ignoring"
+            )
         logging.info(f"We saved {file_name}")

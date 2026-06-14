@@ -6,6 +6,7 @@ If the functionality needs to look at everything, implement GlobalPostProcessor.
 The resourcesbot will first call any LanguagePostProcessors for each language and
 afterwards call any GlobalPostProcessor
 """
+
 from abc import ABC, abstractmethod
 from configparser import ConfigParser
 from typing import Dict, Final, Optional
@@ -45,16 +46,22 @@ class LanguagePostProcessor(ABC):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser = None,
-        site: pywikibot.site.APISite = None
+        site: pywikibot.site.APISite = None,
     ):
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._config: Final[ConfigParser] = config
         self._site: Final[Optional[pywikibot.site.APISite]] = site
 
     @abstractmethod
-    def run(self, language_info: LanguageInfo, english_info: LanguageInfo,
-            changes: ChangeLog, english_changes: ChangeLog,
-            *, force_rewrite: bool = False):
+    def run(
+        self,
+        language_info: LanguageInfo,
+        english_info: LanguageInfo,
+        changes: ChangeLog,
+        english_changes: ChangeLog,
+        *,
+        force_rewrite: bool = False,
+    ):
         """Entry point"""
         raise NotImplementedError()
 
@@ -63,6 +70,8 @@ class GlobalPostProcessor(ABC):
     """Base class for all functionality doing useful stuff with the data on all languages"""
 
     @abstractmethod
-    def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]):
+    def run(
+        self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog]
+    ):
         """Entry point"""
         raise NotImplementedError()

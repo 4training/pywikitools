@@ -9,9 +9,13 @@ from pywikitools.test.test_data_structures import TEST_PROGRESS
 
 class TestPdfMetadata(unittest.TestCase):
     @staticmethod
-    def mock_get_language_name(language_code: str, target_language_code: str = None) -> str:
+    def mock_get_language_name(
+        language_code: str, target_language_code: str = None
+    ) -> str:
         """Mock fortraininglib.get_language_name() so that we don't have to do real API calls"""
-        if language_code == "de":   # As we're testing with German examples we only need German currently
+        if (
+            language_code == "de"
+        ):  # As we're testing with German examples we only need German currently
             if target_language_code == "en":
                 return "German"
             return "Deutsch"
@@ -19,8 +23,12 @@ class TestPdfMetadata(unittest.TestCase):
 
     def setUp(self):
         progress = TranslationProgress(**TEST_PROGRESS)
-        self.info_money = WorksheetInfo("Dealing_with_Money", "de", "Umgang mit Geld", progress, "1.0")
-        self.info_hearing = WorksheetInfo("Hearing_from_God", "de", "Gottes Reden wahrnehmen", progress, "1.2")
+        self.info_money = WorksheetInfo(
+            "Dealing_with_Money", "de", "Umgang mit Geld", progress, "1.0"
+        )
+        self.info_hearing = WorksheetInfo(
+            "Hearing_from_God", "de", "Gottes Reden wahrnehmen", progress, "1.2"
+        )
 
     @patch("pywikitools.pdftools.metadata.pikepdf")
     def test_check_metadata(self, mock_pikepdf):
@@ -29,23 +37,29 @@ class TestPdfMetadata(unittest.TestCase):
 
         # A PDF document that has incorrect properties, stored only as DocInfo
         mock_meta = Mock()
-        mock_meta.__bool__ = lambda x: False        # let our mock evaluate to False
+        mock_meta.__bool__ = lambda x: False  # let our mock evaluate to False
         mock_meta.pdfa_status = ""
         mock_pikepdf.open.return_value.open_metadata.return_value = mock_meta
-        mock_pikepdf.open.return_value.docinfo = {"/Title": "-", "/Subject": "-", "/Keywords": "-"}
+        mock_pikepdf.open.return_value.docinfo = {
+            "/Title": "-",
+            "/Subject": "-",
+            "/Keywords": "-",
+        }
         result = check_metadata(fortraininglib, "", self.info_money)
         self.assertEqual(result.version, "")
         self.assertFalse(result.correct)
         self.assertFalse(result.pdf1a)
         self.assertTrue(result.only_docinfo)
-        self.assertEqual(len(result.warnings.split("\n")), 4)   # There should be four warnings
+        self.assertEqual(
+            len(result.warnings.split("\n")), 4
+        )  # There should be four warnings
 
         # Same, but DocInfo properties are now correct
         mock_pikepdf.open.return_value.docinfo = {
             "/Title": self.info_money.title,
             # It would be nice if there two functions in our code give_me_subject() and give_me_keywords()
-            "/Subject": f'{self.info_money.page.replace("_", " ")} German Deutsch',
-            "/Keywords": "Copyright-free. More text. Version 1.0"
+            "/Subject": f"{self.info_money.page.replace('_', ' ')} German Deutsch",
+            "/Keywords": "Copyright-free. More text. Version 1.0",
         }
         result = check_metadata(fortraininglib, "", self.info_money)
         self.assertTrue(result.correct)
@@ -56,8 +70,8 @@ class TestPdfMetadata(unittest.TestCase):
         mock_pikepdf.open.return_value.docinfo = {
             "/Title": self.info_money.title,
             # It would be nice if there two functions in our code give_me_subject() and give_me_keywords()
-            "/Subject": f'{self.info_money.page.replace("_", " ")} German Deutsch',
-            "/Keywords": "Copyright-free. More text. Version 0.9"
+            "/Subject": f"{self.info_money.page.replace('_', ' ')} German Deutsch",
+            "/Keywords": "Copyright-free. More text. Version 0.9",
         }
         result = check_metadata(fortraininglib, "", self.info_money)
         self.assertFalse(result.correct)
@@ -68,8 +82,8 @@ class TestPdfMetadata(unittest.TestCase):
         mock_meta.pdfa_status = "1A"
         properties = {
             "dc:title": self.info_money.title,
-            "dc:description": f'{self.info_money.page.replace("_", " ")} German Deutsch',
-            "pdf:Keywords": "Copyright-free. More text. Version 1.0"
+            "dc:description": f"{self.info_money.page.replace('_', ' ')} German Deutsch",
+            "pdf:Keywords": "Copyright-free. More text. Version 1.0",
         }
         # This is all a bit tricky because our mocked object needs to support
         # both access by index: mock_meta["dc:title"] and access of a member: mock_meta.pdfa_status
@@ -97,7 +111,9 @@ class TestPdfMetadata(unittest.TestCase):
         self.assertEqual(result.warnings, "")
 
         # This PDF is a bit outdated: metadata is correct but it is stored in outdated docinfo
-        file_path = join(dirname(abspath(__file__)), "data", "Gottes_Reden_wahrnehmen.pdf")
+        file_path = join(
+            dirname(abspath(__file__)), "data", "Gottes_Reden_wahrnehmen.pdf"
+        )
         result = check_metadata(fortraininglib, file_path, self.info_hearing)
         self.assertFalse(result.pdf1a)
         self.assertTrue(result.correct)
@@ -106,5 +122,5 @@ class TestPdfMetadata(unittest.TestCase):
         self.assertEqual(result.warnings, "")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

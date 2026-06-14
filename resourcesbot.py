@@ -81,7 +81,7 @@ def parse_arguments() -> ResourcesBot:
 
     log_levels: List[str] = ["debug", "info", "warning", "error"]
     rewrite_options: List[str] = ["all", "json", "summary"]
-    modules: Dict[str, str] = {}    # abbreviation -> full name
+    modules: Dict[str, str] = {}  # abbreviation -> full name
     modules_help = "Select the modules to be run. Available options are:\n"
     # Read module information from the module classes
     for selected_module in AVAILABLE_MODULES:
@@ -135,7 +135,7 @@ def parse_arguments() -> ResourcesBot:
         read_from_cache=args.read_from_cache,
         limit_to_lang=limit_to_lang,
         modules=run_modules,
-        rewrite=args.rewrite
+        rewrite=args.rewrite,
     )
 
 

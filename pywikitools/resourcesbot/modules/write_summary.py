@@ -18,6 +18,7 @@ class WriteSummary(GlobalPostProcessor):
     This is a summary of all the language reports written by WriteReport.
     It will be written to https://www.4training.net/4training:Summary - see also there for more explanations
     """
+
     def __init__(self, site: pywikibot.site.APISite):
         """
         Args:
@@ -25,12 +26,17 @@ class WriteSummary(GlobalPostProcessor):
         """
         self._site: Final[pywikibot.site.APISite] = site
         self.logger: Final[logging.Logger] = logging.getLogger(
-            'pywikitools.resourcesbot.modules.write_summary'
+            "pywikitools.resourcesbot.modules.write_summary"
         )
-        self.total_stats: Counter = Counter()   # Summing up statistics for all languages
+        self.total_stats: Counter = Counter()  # Summing up statistics for all languages
 
-    def run(self, language_data: Dict[str, LanguageInfo], changes: Dict[str, ChangeLog],
-            *, force_rewrite: bool = False) -> None:
+    def run(
+        self,
+        language_data: Dict[str, LanguageInfo],
+        changes: Dict[str, ChangeLog],
+        *,
+        force_rewrite: bool = False,
+    ) -> None:
         """Entry function
 
         Args:
@@ -51,20 +57,26 @@ class WriteSummary(GlobalPostProcessor):
             language_data: All the details for all languages
         """
         if "en" not in language_data:
-            self.logger.warning("No English language info found. Can't write summary report.")
+            self.logger.warning(
+                "No English language info found. Can't write summary report."
+            )
             return
 
         page_url = "4training:Summary"
         page = pywikibot.Page(self._site, page_url)
         report = self.create_mediawiki(language_data)
         if not page.exists():
-            self.logger.warning(f"Summary report page {page_url} doesn't exist, creating...")
+            self.logger.warning(
+                f"Summary report page {page_url} doesn't exist, creating..."
+            )
             page.text = report
             page.save("Created summary report")
         else:
             if page.text.strip() != report.strip():
                 page.text = report
-                page.save("Updated summary report")    # TODO write human-readable changes here in the save message
+                page.save(
+                    "Updated summary report"
+                )  # TODO write human-readable changes here in the save message
                 self.logger.info("Updated summary report")
 
     def create_mediawiki(self, language_data: Dict[str, LanguageInfo]) -> str:
@@ -87,26 +99,38 @@ class WriteSummary(GlobalPostProcessor):
 |-
 ! Language !! Code !! Up-to-date !! Outdated !! Up-to-date (= PDF missing) !! Unfinished / very outdated
 """
-        content += self.create_language_line(language_data["en"], language_data["en"], "sorttop")
-        self.total_stats = Counter()        # Reset our total statistics (don't count English in)
+        content += self.create_language_line(
+            language_data["en"], language_data["en"], "sorttop"
+        )
+        self.total_stats = (
+            Counter()
+        )  # Reset our total statistics (don't count English in)
 
         # Sort alphabetically by language name to ensure a stable ordering in the table
-        for language_info in sorted(language_data.values(), key=lambda language_info: language_info.english_name):
-            if language_info.language_code == "en":   # We already had details for English in the first line
+        for language_info in sorted(
+            language_data.values(), key=lambda language_info: language_info.english_name
+        ):
+            if (
+                language_info.language_code == "en"
+            ):  # We already had details for English in the first line
                 continue
             content += self.create_language_line(language_info, language_data["en"])
 
         content += f"|-\n! Translations total !! {self.total_stats['languages']}"
         content += f"!! {self.total_stats['listed_uptodate']}"
-        if self.total_stats['listed_uptodate_warning'] > 0:
+        if self.total_stats["listed_uptodate_warning"] > 0:
             content += f" ({self.total_stats['listed_uptodate_warning']} ⚠)"
         content += f"!! {self.total_stats['listed_outdated']} !! {self.total_stats['unlisted_uptodate']} "
         content += f"!! {self.total_stats['unlisted_outdated']} (with PDF: {self.total_stats['unlisted_outdated_pdf']})"
         content += "\n|}\n"
         return content
 
-    def create_language_line(self, language_info: LanguageInfo, english_info: LanguageInfo,
-                             row_class: str = "") -> str:
+    def create_language_line(
+        self,
+        language_info: LanguageInfo,
+        english_info: LanguageInfo,
+        row_class: str = "",
+    ) -> str:
         """Create mediawiki code with report for one language (one line of the overview)
 
         Args:
@@ -120,11 +144,16 @@ class WriteSummary(GlobalPostProcessor):
                 if worksheet.has_same_version(english_info.worksheets[page]):
                     language_stats["listed_uptodate"] += 1
                     pdf_info = worksheet.get_file_type_info("pdf")
-                    assert pdf_info is not None     # PDF must exist because worksheet.show_in_list() was True
+                    assert (
+                        pdf_info is not None
+                    )  # PDF must exist because worksheet.show_in_list() was True
                     # We warn if either translation progress is < 100% or
                     # if worksheet version is different from PDF version
-                    if worksheet.progress.translated < worksheet.progress.total or \
-                       (pdf_info.metadata is None) or (pdf_info.metadata.version != worksheet.version):
+                    if (
+                        worksheet.progress.translated < worksheet.progress.total
+                        or (pdf_info.metadata is None)
+                        or (pdf_info.metadata.version != worksheet.version)
+                    ):
                         language_stats["listed_uptodate_warning"] += 1
                 else:
                     language_stats["listed_outdated"] += 1
@@ -150,7 +179,7 @@ class WriteSummary(GlobalPostProcessor):
 
         # column 3: Listed, up-to-date (= with PDF)
         content += f"|| {language_stats['listed_uptodate']} "
-        if language_stats['listed_uptodate_warning'] > 0:
+        if language_stats["listed_uptodate_warning"] > 0:
             content += f"({language_stats['listed_uptodate_warning']} ⚠) "
 
         # column 4: Listed, outdated (= with PDF)

@@ -18,6 +18,7 @@ class ExportPDF(LanguagePostProcessor):
     Export all PDF files of this language into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Export PDF files of a language"
@@ -34,7 +35,7 @@ class ExportPDF(LanguagePostProcessor):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite = None
+        site: pywikibot.site.APISite = None,
     ):
         super().__init__(fortraininglib, config, site)
         self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
@@ -74,7 +75,7 @@ class ExportPDF(LanguagePostProcessor):
         changes: ChangeLog,
         _english_changes,
         *,
-        force_rewrite: bool = False
+        force_rewrite: bool = False,
     ):
         if self._base_folder == "":
             return

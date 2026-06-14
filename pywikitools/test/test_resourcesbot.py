@@ -36,12 +36,17 @@ class TestResourcesBot(unittest.TestCase):
         self.config = ConfigParser()
         self.config.read_dict(
             {
-                "resourcesbot": {"site": "test", "username": "TestBotName",
-                                 "password": "test"},
-                "Paths": {"logs": "~/", "temp": "~/temp/",
-                          "htmlexport": "~/htmlexport/",
-                          "pdfexport": "~/pdfexport/"
-                          },
+                "resourcesbot": {
+                    "site": "test",
+                    "username": "TestBotName",
+                    "password": "test",
+                },
+                "Paths": {
+                    "logs": "~/",
+                    "temp": "~/temp/",
+                    "htmlexport": "~/htmlexport/",
+                    "pdfexport": "~/pdfexport/",
+                },
             }
         )  # Fill this to prevent warnings
         self.bot = ResourcesBot(self.config)
@@ -156,14 +161,27 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True
+    )
+    @patch(
+        "pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True
+    )
     @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run",
+        autospec=True,
+    )
+    @patch(
+        "pywikitools.resourcesbot.modules.export_repository.ExportRepository.run",
+        autospec=True,
+    )
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run",
+        autospec=True,
+    )
     def test_run_with_cache(
         self,
         mock_consistency_check,
@@ -203,14 +221,27 @@ class TestResourcesBot(unittest.TestCase):
 
     @patch("pywikibot.Site", autospec=True)
     @patch("pywikibot.Page", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True
+    )
+    @patch(
+        "pywikitools.resourcesbot.modules.write_report.WriteReport.run", autospec=True
+    )
     @patch("pywikitools.resourcesbot.modules.write_lists.WriteList.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.write_sidebar_messages.WriteSidebarMessages.run",
+        autospec=True,
+    )
+    @patch(
+        "pywikitools.resourcesbot.modules.export_repository.ExportRepository.run",
+        autospec=True,
+    )
     @patch("pywikitools.resourcesbot.modules.export_html.ExportHTML.run", autospec=True)
     @patch("pywikitools.resourcesbot.modules.export_pdf.ExportPDF.run", autospec=True)
-    @patch("pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.consistency_checks.ConsistencyCheck.run",
+        autospec=True,
+    )
     def test_rewrite_options(
         self,
         mock_consistency_check,
@@ -238,7 +269,9 @@ class TestResourcesBot(unittest.TestCase):
         for rewrite_option, mocked_component in rewrite_check.items():
             # Component selected with the rewrite option should have force_rewrite=True,
             # the others not
-            bot = ResourcesBot(config=self.config, read_from_cache=True, rewrite=rewrite_option)
+            bot = ResourcesBot(
+                config=self.config, read_from_cache=True, rewrite=rewrite_option
+            )
             bot.run()
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))
             for other_mock in rewrite_check.values():
@@ -246,7 +279,7 @@ class TestResourcesBot(unittest.TestCase):
                     self.assertFalse(other_mock.call_args.kwargs.get("force_rewrite"))
 
         # "all" components should get called with force_rewrite=True
-        bot = ResourcesBot(config=self.config, read_from_cache=True, rewrite='all')
+        bot = ResourcesBot(config=self.config, read_from_cache=True, rewrite="all")
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertTrue(mocked_component.call_args.kwargs.get("force_rewrite"))

@@ -10,30 +10,42 @@ from pywikitools.htmltools.beautify_html import BeautifyHTML
 class TestBeautifyHTML(unittest.TestCase):
     def test_get_image_basename(self):
         beautify = BeautifyHTML()
-        self.assertEqual(beautify._extract_image_name(
-            "/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"), "Hand_5.png")
-        self.assertEqual(beautify._extract_image_name(
-            "/images/a/ab/Family.png"), "Family.png")
+        self.assertEqual(
+            beautify._extract_image_name(
+                "/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"
+            ),
+            "Hand_5.png",
+        )
+        self.assertEqual(
+            beautify._extract_image_name("/images/a/ab/Family.png"), "Family.png"
+        )
         # Legacy paths with $wgScriptPath = /mediawiki
-        self.assertEqual(beautify._extract_image_name(
-            "/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"), "Hand_5.png")
-        self.assertEqual(beautify._extract_image_name(
-            "/mediawiki/images/a/ab/Family.png"), "Family.png")
-        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
-            self.assertEqual(beautify._extract_image_name(
-                "/path/Test.png"), "Test.png")
-        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
-            self.assertEqual(beautify._extract_image_name(
-                "/images/thumb/wrong_structure.png"), "wrong_structure.png")
-        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
+        self.assertEqual(
+            beautify._extract_image_name(
+                "/mediawiki/images/thumb/5/51/Hand_5.png/30px-Hand_5.png"
+            ),
+            "Hand_5.png",
+        )
+        self.assertEqual(
+            beautify._extract_image_name("/mediawiki/images/a/ab/Family.png"),
+            "Family.png",
+        )
+        with self.assertLogs("pywikitools.lib.htmltools.BeautifyHTML", level="WARNING"):
+            self.assertEqual(beautify._extract_image_name("/path/Test.png"), "Test.png")
+        with self.assertLogs("pywikitools.lib.htmltools.BeautifyHTML", level="WARNING"):
+            self.assertEqual(
+                beautify._extract_image_name("/images/thumb/wrong_structure.png"),
+                "wrong_structure.png",
+            )
+        with self.assertLogs("pywikitools.lib.htmltools.BeautifyHTML", level="WARNING"):
             self.assertEqual(beautify._extract_image_name("Test.png"), "Test.png")
 
     def test_img_rewrite_handler(self):
         img_rewrite: Dict[str, str] = {
             "Family.png": "Rename_family.png",
-            "Body.png": "Rename_body.png"
+            "Body.png": "Rename_body.png",
         }
-        test_dict: Dict[str, str] = {   # Dictionary of input -> expected result
+        test_dict: Dict[str, str] = {  # Dictionary of input -> expected result
             "/images/thumb/5/51/Family.png/120px-Family.png": "/files/Rename_family.png",
             "/images/a/ab/Family.png": "/files/Rename_family.png",
             "/images/thumb/5/51/Hand_5.png/30px-Hand_5.png": "/files/Hand_5.png",
@@ -41,10 +53,10 @@ class TestBeautifyHTML(unittest.TestCase):
         }
         beautify = BeautifyHTML(img_src_rewrite=img_rewrite)
         for src_in, src_out in test_dict.items():
-            element: Dict[str, str] = {'srcset': 'something', 'src': src_in}
+            element: Dict[str, str] = {"srcset": "something", "src": src_in}
             beautify.img_rewrite_handler(element)
-            self.assertNotIn('srcset', element)
-            self.assertEqual(element['src'], src_out)
+            self.assertNotIn("srcset", element)
+            self.assertEqual(element["src"], src_out)
 
     def test_with_real_example(self):
         """Request HTML via fortraininglib, process it and check the result with BeautifulSoup"""
@@ -52,8 +64,11 @@ class TestBeautifyHTML(unittest.TestCase):
 
         # There should be no empty <span> sections anymore
         fortraininglib = ForTrainingLib("https://test.4training.net")
-        soup = BeautifulSoup(BeautifyHTML().process_html(fortraininglib.get_page_html("Church/en")), 'html.parser')
-        fortraininglib.session.close()      # workaround to remove annoying ResourceWarnings on unclosed SSLSockets
+        soup = BeautifulSoup(
+            BeautifyHTML().process_html(fortraininglib.get_page_html("Church/en")),
+            "html.parser",
+        )
+        fortraininglib.session.close()  # workaround to remove annoying ResourceWarnings on unclosed SSLSockets
         self.assertEqual(len(soup.find_all("div", class_="mw-parser-output")), 0)
         for element in soup.find_all("span"):
             self.assertIsNotNone(element.string)
@@ -73,17 +88,27 @@ class TestBeautifyHTML(unittest.TestCase):
         # Now check the change_hrefs functionality
         change_hrefs: Dict[str, str] = {
             "/Prayer": "/Prayer_redirected",
-            "/Church": "Church.html"
+            "/Church": "Church.html",
         }
         beautify = BeautifyHTML(change_hrefs=change_hrefs)
-        self.assertEqual(beautify.process_html('<div><a href="/Prayer"><span>test</span></a></div>'),
-                                               '<a href="/Prayer_redirected"><span>test</span></a>')    # noqa: E127
-        self.assertEqual(beautify.process_html('<div><p><b><a href="/Church">Test<br/></a></b></p></div>'),
-                                               '<p><b><a href="Church.html">Test<br/></a></b></p>')  # noqa: E127
-        with self.assertLogs('pywikitools.lib.htmltools.BeautifyHTML', level='WARNING'):
-            self.assertEqual(beautify.process_html('<div><a href="/other">not in change_hrefs</a></div>'),
-                                                   'not in change_hrefs')          # noqa: E127
+        self.assertEqual(
+            beautify.process_html('<div><a href="/Prayer"><span>test</span></a></div>'),
+            '<a href="/Prayer_redirected"><span>test</span></a>',
+        )  # noqa: E127
+        self.assertEqual(
+            beautify.process_html(
+                '<div><p><b><a href="/Church">Test<br/></a></b></p></div>'
+            ),
+            '<p><b><a href="Church.html">Test<br/></a></b></p>',
+        )  # noqa: E127
+        with self.assertLogs("pywikitools.lib.htmltools.BeautifyHTML", level="WARNING"):
+            self.assertEqual(
+                beautify.process_html(
+                    '<div><a href="/other">not in change_hrefs</a></div>'
+                ),
+                "not in change_hrefs",
+            )  # noqa: E127
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

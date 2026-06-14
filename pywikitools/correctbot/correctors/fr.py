@@ -12,6 +12,7 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
     * TODO Instead of ellipsis, use "..."
     * Ensure correct French quotation marks: « Foo » (with non-breaking whitespaces \u00a0 before/after the guillemets!)
     """
+
     def correct_false_friends(self, text: str) -> str:
         """Correct typical mistakes
 
@@ -29,9 +30,9 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
         as we don't want to destroy the mediawiki formatting symbols ; and : at the beginning of lines
         """
         # Insert missing space if there is none before punctuation
-        text = re.sub(r"([^\W\d])([:;!?])", "\\1\u00A0\\2", text)
+        text = re.sub(r"([^\W\d])([:;!?])", "\\1\u00a0\\2", text)
         # Replace normal space with non-breaking space before punctuation
-        text = re.sub(r" ([:;!?])", "\u00A0\\1", text)
+        text = re.sub(r" ([:;!?])", "\u00a0\\1", text)
         return text
 
     def correct_quotation_marks(self, text: str) -> str:
@@ -39,31 +40,35 @@ class FrenchCorrector(CorrectorBase, UniversalCorrector):
         (with non-breaking whitespaces \u00a0 before/after the guillemets!)
         """
         logger = logging.getLogger(__name__)
-        if re.search('[„“”]', text):
-            logger.warning("Found at least one special quotation mark (one of „“”). Please correct manually.")
+        if re.search("[„“”]", text):
+            logger.warning(
+                "Found at least one special quotation mark (one of „“”). Please correct manually."
+            )
 
         splitted_text: List[str] = re.split('"', text)
         if (len(splitted_text) % 2) != 1:
-            logger.warning('Found uneven amount of quotation marks (")! Please correct manually.')
+            logger.warning(
+                'Found uneven amount of quotation marks (")! Please correct manually.'
+            )
         else:
             # Put all parts together again, replacing all simple quotation marks with « and » (alternating)
             text = splitted_text[0]
             for counter in range(1, len(splitted_text)):
-                text += '«' if counter % 2 == 1 else '»'
+                text += "«" if counter % 2 == 1 else "»"
                 text += splitted_text[counter]
 
         # Now we insert non-breaking spaces if necessary
-        text = re.sub('« ', '«\u00A0', text)
-        text = re.sub(r'«([^\s])', '«\u00A0\\1', text)
-        text = re.sub(' »', '\u00A0»', text)
-        text = re.sub(r'([^\s])»', '\\1\u00A0»', text)
+        text = re.sub("« ", "«\u00a0", text)
+        text = re.sub(r"«([^\s])", "«\u00a0\\1", text)
+        text = re.sub(" »", "\u00a0»", text)
+        text = re.sub(r"([^\s])»", "\\1\u00a0»", text)
         return text
 
     def _suffix_for_print_version(self) -> str:
         return "_impression"
 
     def _capitalization_exceptions(self) -> List[str]:
-        return []   # TODO
+        return []  # TODO
 
     def _missing_spaces_exceptions(self) -> List[str]:
-        return []   # TODO
+        return []  # TODO

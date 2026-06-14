@@ -59,7 +59,9 @@ def build_worksheet_info(
         resolved_version = fetched.strip()
 
     progress = TranslationProgress(translated=1, fuzzy=0, total=1)
-    return WorksheetInfo(worksheet_name, language_code, resolved_title, progress, resolved_version)
+    return WorksheetInfo(
+        worksheet_name, language_code, resolved_title, progress, resolved_version
+    )
 
 
 def main(argv: Optional[List[str]] = None) -> int:

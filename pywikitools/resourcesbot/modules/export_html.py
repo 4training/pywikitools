@@ -43,6 +43,7 @@ class ExportHTML(LanguagePostProcessor):
     Export all finished worksheets of this language as HTML into a folder
     This is a step towards having a git repo with this content always up-to-date
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Exports finished worksheets of a language to HTML"
@@ -59,7 +60,7 @@ class ExportHTML(LanguagePostProcessor):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite
+        site: pywikibot.site.APISite,
     ):
         super().__init__(fortraininglib, config, site)
         self._base_folder: str = self._config.get("Paths", "htmlexport", fallback="")
@@ -133,7 +134,7 @@ class ExportHTML(LanguagePostProcessor):
         changes: ChangeLog,
         _english_changes,
         *,
-        force_rewrite: bool = False
+        force_rewrite: bool = False,
     ):
         if self._base_folder == "":
             return
@@ -165,9 +166,9 @@ class ExportHTML(LanguagePostProcessor):
             )
             return
 
-        change_hrefs: Dict[str, str] = (
-            {}
-        )  # Dictionary to set correct targets for links in the HTML files
+        change_hrefs: Dict[
+            str, str
+        ] = {}  # Dictionary to set correct targets for links in the HTML files
         for worksheet, info in lang_info.worksheets.items():
             # Most links can stay the same, but we need to add them to change_hrefs;
             # otherwise links are removed
@@ -248,6 +249,6 @@ class StructureEncoder(json.JSONEncoder):
             if pdf_info:
                 pos: int = pdf_info.url.rfind("/")
                 if pos > -1:
-                    worksheet_json["pdf"] = pdf_info.url[pos + 1:]
+                    worksheet_json["pdf"] = pdf_info.url[pos + 1 :]
             return worksheet_json
         return super().default(o)

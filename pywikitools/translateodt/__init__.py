@@ -12,8 +12,12 @@ from pywikitools.correctbot.correctors.universal import UniversalCorrector
 from pywikitools.lang.native_numerals import native_to_standard_numeral
 from pywikitools.lang.translated_page import TranslatedPage, TranslationUnit
 from pywikitools.libreoffice import LibreOffice
-from pywikitools.translateodt.config import IGNORE_TEMPLATES, NO_ADD_ENGLISH_VERSION, SNIPPET_WARN_LENGTH, \
-                                            TranslateOdtConfig
+from pywikitools.translateodt.config import (
+    IGNORE_TEMPLATES,
+    NO_ADD_ENGLISH_VERSION,
+    SNIPPET_WARN_LENGTH,
+    TranslateOdtConfig,
+)
 
 
 class UsableUniversalCorrector(UniversalCorrector):
@@ -25,31 +29,44 @@ class UsableUniversalCorrector(UniversalCorrector):
 
 
 class TranslateODT:
-    def __init__(self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}):
+    def __init__(
+        self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}
+    ):
         """Variable initializations (no connection to LibreOffice here)
         @param keep_english_file: Don't delete English ODT file afterwards (command line option)
         @param config: can be used to overwrite config settings
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
         self.config: ConfigParser = ConfigParser()
-        self.config.read_dict({'Paths': {'worksheets': abspath(os.getcwd()) + '/worksheets/'},
-                               'translateodt': {'closeoffice': True,
-                                                'headless': False}})
+        self.config.read_dict(
+            {
+                "Paths": {"worksheets": abspath(os.getcwd()) + "/worksheets/"},
+                "translateodt": {"closeoffice": True, "headless": False},
+            }
+        )
         self.config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
         self.config.read_dict(config)
 
         self.correctbot = CorrectBot(self.config, simulate=True)
 
-        self.logger = logging.getLogger('pywikitools.translateodt')
+        self.logger = logging.getLogger("pywikitools.translateodt")
         self.keep_english_file: bool = keep_english_file
-        if not self.config.has_option('translateodt', 'site'):
-            raise RuntimeError("Missing connection settings for translateodt in config.ini")
-        site = self.config.get('translateodt', 'site')
-        self.fortraininglib = ForTrainingLib(Family().base_url(site, ''), Family().scriptpath(site))
+        if not self.config.has_option("translateodt", "site"):
+            raise RuntimeError(
+                "Missing connection settings for translateodt in config.ini"
+            )
+        site = self.config.get("translateodt", "site")
+        self.fortraininglib = ForTrainingLib(
+            Family().base_url(site, ""), Family().scriptpath(site)
+        )
 
-        self._loffice = LibreOffice(self.config.getboolean('translateodt', 'headless'))
-        self._original_page_count: int = 0          # How many pages did the currently opened file have originally?
-        self._did_page_count_change: bool = False   # Did the page count of the currently opened file change?
+        self._loffice = LibreOffice(self.config.getboolean("translateodt", "headless"))
+        self._original_page_count: int = (
+            0  # How many pages did the currently opened file have originally?
+        )
+        self._did_page_count_change: bool = (
+            False  # Did the page count of the currently opened file change?
+        )
 
     def _is_search_and_replace_necessary(self, orig: str, trans: str) -> bool:
         """
@@ -57,20 +74,28 @@ class TranslateODT:
         Logs warnings for certain circumstances
         @return true if we need to do search and replace
         """
-        if orig.endswith((".pdf", ".odt", ".odg")):     # if string is a file name, we ignore it
+        if orig.endswith(
+            (".pdf", ".odt", ".odg")
+        ):  # if string is a file name, we ignore it
             return False
 
         if orig == trans:
-            self.logger.debug(f"Search and replace string are identical, ignoring: {orig}")
+            self.logger.debug(
+                f"Search and replace string are identical, ignoring: {orig}"
+            )
             return False
 
         if len(orig) < SNIPPET_WARN_LENGTH:
             if orig in ["", " ", ".", ",", ":", ";"]:
-                self.logger.warning("Warning: Problematic search string detected! Please check and correct."
-                                    f" Replaced {orig} with {trans}")
+                self.logger.warning(
+                    "Warning: Problematic search string detected! Please check and correct."
+                    f" Replaced {orig} with {trans}"
+                )
             else:
-                self.logger.warning("Potential problem: short search string. "
-                                    f"This can be totally normal but please check. Replaced {orig} with {trans}")
+                self.logger.warning(
+                    "Potential problem: short search string. "
+                    f"This can be totally normal but please check. Replaced {orig} with {trans}"
+                )
         return True
 
     def _process_snippet(self, orig: str, trans: str):
@@ -88,16 +113,22 @@ class TranslateODT:
 
         # if translation snippet can be found in document, replace
         try:
-            replaced = self._loffice.search_and_replace(orig, trans, not self._did_page_count_change, True)
+            replaced = self._loffice.search_and_replace(
+                orig, trans, not self._did_page_count_change, True
+            )
             if replaced:
                 self.logger.debug(f"Replaced: {orig} with: {trans}")
             else:
-                self.logger.warning("Couldn't replace the following translation snippet. Please check.")
+                self.logger.warning(
+                    "Couldn't replace the following translation snippet. Please check."
+                )
                 self.logger.warning(f"Original: \n{orig}")
                 self.logger.warning(f"Translation: \n{trans}")
 
         except AttributeError as error:
-            self.logger.error(f"AttributeError: {error}")  # todo: wait some seconds and try again
+            self.logger.error(
+                f"AttributeError: {error}"
+            )  # todo: wait some seconds and try again
 
         if self._loffice.get_page_count() != self._original_page_count:
             self._did_page_count_change = True
@@ -105,7 +136,7 @@ class TranslateODT:
     def _search_and_replace(self, translated_page: TranslatedPage):
         """Go through the whole document, search for original text snippets and replace them
         with the translated text snippets"""
-        for t in translated_page:           # for each translation unit:
+        for t in translated_page:  # for each translation unit:
             self.logger.debug(f"Translation unit: {t.get_definition()}")
 
             is_well_structured, warning = t.is_translation_well_structured()
@@ -113,29 +144,35 @@ class TranslateODT:
                 self.logger.warning(warning)
                 continue
 
-            for (search, replace) in t:   # for each snippet of translation unit
+            for search, replace in t:  # for each snippet of translation unit
                 self._process_snippet(search.content, replace.content)
 
         if self._did_page_count_change:
             if self._loffice.get_page_count() > self._original_page_count:
-                self.logger.warning(f"Page count of translation is {self._loffice.get_page_count()}. "
-                                    f"Please edit and fit it to {self._original_page_count} pages like the original.")
+                self.logger.warning(
+                    f"Page count of translation is {self._loffice.get_page_count()}. "
+                    f"Please edit and fit it to {self._original_page_count} pages like the original."
+                )
             else:
                 # in the (rare) case that first translations were longer so that page count increased
                 # but later translations were shorter so that page count decreased again.
-                self.logger.warning("Page structure change detected. Did the position of the page break change? "
-                                    "Please check and correct if necessary.")
+                self.logger.warning(
+                    "Page structure change detected. Did the position of the page break change? "
+                    "Please check and correct if necessary."
+                )
 
     def _fetch_english_file(self, odt_file: str) -> str:
         """Download the specified file from the mediawiki server
         @return full path of the downloaded file (empty string on error)
         """
-        en_path = self.config['Paths']['worksheets'] + 'en'
+        en_path = self.config["Paths"]["worksheets"] + "en"
         if not os.path.isdir(en_path):
             os.makedirs(en_path)
         odt_path = f"{en_path}/{odt_file}"
         if os.path.isfile(odt_path):
-            self.logger.warning(f"File {odt_path} already exists locally, not downloading.")
+            self.logger.warning(
+                f"File {odt_path} already exists locally, not downloading."
+            )
         else:
             url = self.fortraininglib.get_file_url(odt_file)
             if url is None:
@@ -143,7 +180,7 @@ class TranslateODT:
                 return ""
 
             odt_doc = requests.get(url, allow_redirects=True)
-            with open(odt_path, 'wb') as fh:
+            with open(odt_path, "wb") as fh:
                 fh.write(odt_doc.content)
             self.logger.info(f"Successfully downloaded and saved {odt_path}")
         return odt_path
@@ -154,14 +191,23 @@ class TranslateODT:
         Compare it to the translated file name and give a warning if it doesn't match.
         However, that shouldn't happen anymore since CorrectBot is correcting that
         (see CorrectBot.check_unit()) - maybe remove this extra safety net?"""
-        filename = ForTrainingLib.convert_to_filename(translated_page.get_worksheet_info().title) + ".odt"
+        filename = (
+            ForTrainingLib.convert_to_filename(
+                translated_page.get_worksheet_info().title
+            )
+            + ".odt"
+        )
         if translated_page.get_worksheet_info().get_file_type_name("odt") != filename:
-            self.logger.warning("Warning: Is the file name not correctly translated? Please correct. "
-                                f"Translation: {translated_page.get_worksheet_info().get_file_type_name('odt')}, "
-                                f"according to the headline it should be: {filename}")
+            self.logger.warning(
+                "Warning: Is the file name not correctly translated? Please correct. "
+                f"Translation: {translated_page.get_worksheet_info().get_file_type_name('odt')}, "
+                f"according to the headline it should be: {filename}"
+            )
         return filename
 
-    def _cleanup_units(self, translated_page: TranslatedPage, config: TranslateOdtConfig) -> TranslatedPage:
+    def _cleanup_units(
+        self, translated_page: TranslatedPage, config: TranslateOdtConfig
+    ) -> TranslatedPage:
         """
         Clean up translation units before we do search and replace:
         - filter out empty/irrelevant units
@@ -182,10 +228,14 @@ class TranslateODT:
         result: List[TranslationUnit] = []
         for t in translated_page:
             if t.get_definition() == "":
-                self.logger.warning(f"Empty unit in original detected: Ignoring {t.get_name()}")
+                self.logger.warning(
+                    f"Empty unit in original detected: Ignoring {t.get_name()}"
+                )
                 continue
             if t.get_translation() == "":
-                self.logger.warning(f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}")
+                self.logger.warning(
+                    f"Translation of {t.get_name()} missing. Please translate: {t.get_definition()}"
+                )
                 continue
             if t.get_definition() == translated_page.get_english_info().version:
                 # We don't try to do search and replace with the version string. We later process the whole CC0 notice
@@ -197,19 +247,25 @@ class TranslateODT:
             # Do some normalization on the translation unit now: first remove [[Links]]
             t.remove_links()
             # remove bold/italic/underline formatting from definition
-            t.set_definition(re.sub("\'\'+|</?[biu]>", '', t.get_definition()))
+            t.set_definition(re.sub("''+|</?[biu]>", "", t.get_definition()))
             # replace '' / ''' with <i> / <b> in translation (necessary for LibreOffice.search_and_replace())
             corrector = UsableUniversalCorrector()
-            t.set_translation(corrector.correct_mediawiki_bold_italic(t.get_translation()))
+            t.set_translation(
+                corrector.correct_mediawiki_bold_italic(t.get_translation())
+            )
 
             if t.identifier in config.multiple:
-                self.logger.info(f"{t.identifier} will be processed {config.multiple[t.identifier]} times")
+                self.logger.info(
+                    f"{t.identifier} will be processed {config.multiple[t.identifier]} times"
+                )
                 for i in range(1, config.multiple[t.identifier]):
                     result.append(t)
             result.append(t)
 
         self.special_sort_units(result)
-        return TranslatedPage(translated_page.page, translated_page.language_code, result)
+        return TranslatedPage(
+            translated_page.page, translated_page.language_code, result
+        )
 
     def special_sort_units(self, units: List[TranslationUnit]) -> None:
         """
@@ -235,8 +291,10 @@ class TranslateODT:
                     continue
                 # Do the actual sorting
                 if (units[i] < units[j]) and (i < j):
-                    self.logger.info(f"{units[i].get_definition()} is part of {units[j].get_definition()}. "
-                                     f"Reordering. ({i} / {j})")
+                    self.logger.info(
+                        f"{units[i].get_definition()} is part of {units[j].get_definition()}. "
+                        f"Reordering. ({i} / {j})"
+                    )
                     temp_unit = units[i]
                     units[i] = units[j]
                     units[j] = temp_unit
@@ -248,8 +306,10 @@ class TranslateODT:
                     for _, j_snippet_trans in units[j]:
                         # warn in case a search string can be found in a translation (unlikely but better check)
                         if i_snippet_orig.content in j_snippet_trans.content:
-                            self.logger.warning(f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) is '
-                                                f'in translation "{j_snippet_trans.content}" ({units[j].get_name()})!')
+                            self.logger.warning(
+                                f'Search string "{i_snippet_orig.content}" ({units[i].get_name()}) is '
+                                f'in translation "{j_snippet_trans.content}" ({units[j].get_name()})!'
+                            )
 
     def read_worksheet_config(self, worksheet: str) -> TranslateOdtConfig:
         """
@@ -259,9 +319,11 @@ class TranslateODT:
         If there is no such config, the two members of the data structure returned will both be empty
         """
         result = TranslateOdtConfig()
-        config = ConfigParser(delimiters=('='), allow_no_value=True)
-        config.optionxform = str    # We want to have the options case-sensitive
-        config_string = self.fortraininglib.get_page_source(f"Project:{worksheet}.config")
+        config = ConfigParser(delimiters=("="), allow_no_value=True)
+        config.optionxform = str  # We want to have the options case-sensitive
+        config_string = self.fortraininglib.get_page_source(
+            f"Project:{worksheet}.config"
+        )
         if config_string is None:
             self.logger.info(f"No config found for worksheet {worksheet}")
             return result
@@ -272,11 +334,15 @@ class TranslateODT:
         if config.has_section("Multiple"):
             for option, value in config.items("Multiple"):
                 result.multiple[option] = int(value)
-        self.logger.info(f"Read config: Ignoring {len(result.ignore)} translation units, "
-                         f"{len(result.multiple)} translation units will be processed multiple times")
+        self.logger.info(
+            f"Read config: Ignoring {len(result.ignore)} translation units, "
+            f"{len(result.multiple)} translation units will be processed multiple times"
+        )
         return result
 
-    def translate_odt(self, odt_path: str, translated_page: TranslatedPage, config: TranslateOdtConfig) -> None:
+    def translate_odt(
+        self, odt_path: str, translated_page: TranslatedPage, config: TranslateOdtConfig
+    ) -> None:
         """Open the specified ODT file and replace contents with translation
         @param odt_path: Path of the ODT file
         @param translated_page: Contains all translation units we'll do search&replace with
@@ -298,23 +364,36 @@ class TranslateODT:
         """
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
         self.correctbot.check_page(worksheet, language_code)
-        if self.correctbot.get_correction_counter() > 0 or self.correctbot.get_warning_counter() > 0:
+        if (
+            self.correctbot.get_correction_counter() > 0
+            or self.correctbot.get_warning_counter() > 0
+        ):
             self.logger.error("Please run CorrectBot first and then try again.")
             return None
-        translated_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(worksheet, language_code)
+        translated_page: Optional[TranslatedPage] = (
+            self.fortraininglib.get_translation_units(worksheet, language_code)
+        )
         if translated_page is None:
             self.logger.error(f"Couldn't get translation units of {worksheet}.")
             return None
         if translated_page.is_untranslated():
-            self.logger.error(f"Worksheet {worksheet} is not translated into language {language_code}")
+            self.logger.error(
+                f"Worksheet {worksheet} is not translated into language {language_code}"
+            )
             return None
 
         # Check for templates we need to read as well
-        templates = set(self.fortraininglib.list_page_templates(worksheet)) - set(IGNORE_TEMPLATES)
+        templates = set(self.fortraininglib.list_page_templates(worksheet)) - set(
+            IGNORE_TEMPLATES
+        )
         for template in templates:
-            template_page: Optional[TranslatedPage] = self.fortraininglib.get_translation_units(template, language_code)
+            template_page: Optional[TranslatedPage] = (
+                self.fortraininglib.get_translation_units(template, language_code)
+            )
             if template_page is None:
-                self.logger.warning(f"Couldn't get translations of {template}, ignoring this template.")
+                self.logger.warning(
+                    f"Couldn't get translations of {template}, ignoring this template."
+                )
             else:
                 for translation_unit in template_page:
                     translated_page.add_translation_unit(translation_unit)
@@ -323,11 +402,15 @@ class TranslateODT:
         if translated_version == "":
             self.logger.warning("Translation of version is missing!")
             translated_version = translated_page.get_english_info().version
-        elif not translated_page.get_worksheet_info().has_same_version(translated_page.get_english_info()):
-            self.logger.warning(f"English original has version {translated_page.get_english_info().version}, "
-                                f"translation has version {translated_version}. "
-                                "Please update translation. "
-                                "Ask an administrator for a list of changes in the English original.")
+        elif not translated_page.get_worksheet_info().has_same_version(
+            translated_page.get_english_info()
+        ):
+            self.logger.warning(
+                f"English original has version {translated_page.get_english_info().version}, "
+                f"translation has version {translated_version}. "
+                "Please update translation. "
+                "Ask an administrator for a list of changes in the English original."
+            )
 
         if translated_page.get_english_info().get_file_type_name("odt") == "":
             self.logger.error(f"Couldn't find name of odt file in page {worksheet}")
@@ -339,22 +422,34 @@ class TranslateODT:
             self.logger.warning("Translation of file name is missing!")
 
         # Add footer (Template:CC0Notice) to translation list
-        translated_page.add_translation_unit(TranslationUnit("Template:CC0Notice", language_code,
-            self.fortraininglib.get_cc0_notice(translated_page.get_english_info().version, 'en'),   # noqa: E128
-            self.fortraininglib.get_cc0_notice(translated_version, language_code)))                 # noqa: E128
+        translated_page.add_translation_unit(
+            TranslationUnit(
+                "Template:CC0Notice",
+                language_code,
+                self.fortraininglib.get_cc0_notice(
+                    translated_page.get_english_info().version, "en"
+                ),  # noqa: E128
+                self.fortraininglib.get_cc0_notice(translated_version, language_code),
+            )
+        )  # noqa: E128
 
-        odt_path = self._fetch_english_file(translated_page.get_english_info().get_file_type_name("odt"))
+        odt_path = self._fetch_english_file(
+            translated_page.get_english_info().get_file_type_name("odt")
+        )
         if not odt_path:
             return None
 
         config = self.read_worksheet_config(worksheet)
         self.translate_odt(odt_path, translated_page, config)
         self._set_properties(translated_page)
-        self._loffice.set_default_styles(translated_page.language_code,
-            self.fortraininglib.get_language_direction(translated_page.language_code) == "rtl")     # noqa: E128
+        self._loffice.set_default_styles(
+            translated_page.language_code,
+            self.fortraininglib.get_language_direction(translated_page.language_code)
+            == "rtl",
+        )  # noqa: E128
 
         # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
-        save_path = self.config['Paths']['worksheets'] + translated_page.language_code
+        save_path = self.config["Paths"]["worksheets"] + translated_page.language_code
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         filename = self._get_odt_filename(translated_page)
@@ -364,12 +459,14 @@ class TranslateODT:
         try:
             self._loffice.save_odt(file_path)
         except FileExistsError:
-            self.logger.error(f"Couldn't save {file_path}: File exists and is currently opened.")
+            self.logger.error(
+                f"Couldn't save {file_path}: File exists and is currently opened."
+            )
         pdf_path = file_path.replace(".odt", ".pdf")
         self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
         self._loffice.export_pdf(pdf_path)
 
-        if self.config.getboolean('translateodt', 'closeoffice'):
+        if self.config.getboolean("translateodt", "closeoffice"):
             self._loffice.close()
 
         if self.keep_english_file:
@@ -388,11 +485,15 @@ class TranslateODT:
         if subject != "":
             if len(page.units) < 2:
                 # TODO: Check this already in the beginning
-                self.logger.error(f"{page.page} only has {len(page.units)} translation units! Exiting now.")
+                self.logger.error(
+                    f"{page.page} only has {len(page.units)} translation units! Exiting now."
+                )
                 return None
             if subject != page.units[1].get_definition():
-                self.logger.info(f"Assuming we have no subtitle. Subject in properties is {subject}"
-                                 f", but second translation unit is {page.units[1].get_definition()}")
+                self.logger.info(
+                    f"Assuming we have no subtitle. Subject in properties is {subject}"
+                    f", but second translation unit is {page.units[1].get_definition()}"
+                )
             else:
                 subtitle_en = " - " + page.units[1].get_definition()
                 subtitle_lan = " - " + page.units[1].get_translation()
@@ -408,17 +509,23 @@ class TranslateODT:
         # Subject: [English title] [Languagename in English] [Languagename autonym]
         subject = page.get_english_info().title
         subject += subtitle_en
-        subject += " " + str(self.fortraininglib.get_language_name(page.language_code, 'en'))
+        subject += " " + str(
+            self.fortraininglib.get_language_name(page.language_code, "en")
+        )
         if page.language_code == "fa":  # Persian is also often known as Farsi
-            subject += " Farsi"         # TODO: Put this special case somewhere else?
+            subject += " Farsi"  # TODO: Put this special case somewhere else?
         subject += " " + str(self.fortraininglib.get_language_name(page.language_code))
 
         # Keywords: [Translated no-copyright notice + version] - copyright-free, version [original version]
         # ",version [original version]" is omitted in languages where the translation of "version" is very similar
-        cc0_notice = self.fortraininglib.get_cc0_notice(page.get_worksheet_info().version, page.language_code)
+        cc0_notice = self.fortraininglib.get_cc0_notice(
+            page.get_worksheet_info().version, page.language_code
+        )
         cc0_notice += " - copyright-free"
         if page.language_code not in NO_ADD_ENGLISH_VERSION:
             cc0_notice += ", version "
-            cc0_notice += native_to_standard_numeral(page.language_code, page.get_worksheet_info().version)
+            cc0_notice += native_to_standard_numeral(
+                page.language_code, page.get_worksheet_info().version
+            )
 
         self._loffice.set_properties(headline, subject, cc0_notice)

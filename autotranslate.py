@@ -8,57 +8,76 @@ from pywikitools.fortraininglib import ForTrainingLib
 from googletrans import Translator
 from configparser import ConfigParser
 
-TIMEOUT: int = 30           # Timeout after 30s (prevent indefinite hanging when there is network issues)
+TIMEOUT: int = (
+    30  # Timeout after 30s (prevent indefinite hanging when there is network issues)
+)
 
 
 class TranslationTool:
     def __init__(self, config: ConfigParser):
-        if not config.has_option('autotranslate', 'site') or \
-           not config.has_option('autotranslate', 'username'):
-            raise RuntimeError("Missing connection settings for autotranslate in config.ini")
+        if not config.has_option("autotranslate", "site") or not config.has_option(
+            "autotranslate", "username"
+        ):
+            raise RuntimeError(
+                "Missing connection settings for autotranslate in config.ini"
+            )
 
-        self.logger: logging.Logger = logging.getLogger('pywikitools.autotranslate')
+        self.logger: logging.Logger = logging.getLogger("pywikitools.autotranslate")
 
-        code = config.get('autotranslate', 'site')
+        code = config.get("autotranslate", "site")
         family = Family()
-        self.site = pywikibot.Site(code=code, fam=family, user=config.get('autotranslate', 'username'))
+        self.site = pywikibot.Site(
+            code=code, fam=family, user=config.get("autotranslate", "username")
+        )
         if not self.site.logged_in():
             self.site.login()
             if not self.site.logged_in():
                 raise RuntimeError("Login with pywikibot failed.")
         # Set throttle to 0 to speed up write operations (otherwise pywikibot would wait up to 10s after each write)
         self.site.throttle.set_delays(delay=0, writedelay=0, absolute=True)
-        self.fortraininglib: ForTrainingLib = ForTrainingLib(family.base_url(code, ''),
-                                                             family.scriptpath(code))
+        self.fortraininglib: ForTrainingLib = ForTrainingLib(
+            family.base_url(code, ""), family.scriptpath(code)
+        )
 
         self.language_supported_by_deepl = True
-        if not config.has_option('autotranslate', 'deeplendpoint') or \
-           not config.has_option('autotranslate', 'deeplapikey'):
+        if not config.has_option(
+            "autotranslate", "deeplendpoint"
+        ) or not config.has_option("autotranslate", "deeplapikey"):
             self.logger.warning("Missing settings for DeepL connection in config.ini")
             self.language_supported_by_deepl = False
         else:
-            self.deepl_endpoint = config.get('autotranslate', 'deeplendpoint')
-            self.deepl_api_key = config.get('autotranslate', 'deeplapikey')
+            self.deepl_endpoint = config.get("autotranslate", "deeplendpoint")
+            self.deepl_api_key = config.get("autotranslate", "deeplapikey")
 
         self.google_translator = Translator()
 
-    def fetch_and_translate(self, page_name, language_code, force=False, simulate=False):
+    def fetch_and_translate(
+        self, page_name, language_code, force=False, simulate=False
+    ):
         translated_page = self.fortraininglib.get_translation_units(page_name, "en")
 
         if (
-            not simulate and not force
-            and self.fortraininglib.get_translated_title(page_name, language_code) is not None
+            not simulate
+            and not force
+            and self.fortraininglib.get_translated_title(page_name, language_code)
+            is not None
         ):
-            self.logger.warning("Translation already exists. If you want to force overwrite, use the -f flag.")
+            self.logger.warning(
+                "Translation already exists. If you want to force overwrite, use the -f flag."
+            )
             return
 
         # Split the translation units into snippets to avoid mark-up symbols
         for translation_unit in translated_page:
-            translation_unit.split_all_tags = True  # We want that to get rid of all markup
+            translation_unit.split_all_tags = (
+                True  # We want that to get rid of all markup
+            )
             translation_unit.remove_links()
 
             for orig_snippet, trans_snippet in translation_unit:
-                trans_snippet.content = self.translate_with_deepl_or_google(orig_snippet.content, language_code)
+                trans_snippet.content = self.translate_with_deepl_or_google(
+                    orig_snippet.content, language_code
+                )
             translation_unit.sync_from_snippets()
             identifier = f"{translation_unit.identifier}/{language_code}"
             translated_text = translation_unit.get_translation()
@@ -72,19 +91,20 @@ class TranslationTool:
     def translate_with_deepl_or_google(self, text, language_code) -> str:
         """Do the translation: First try DeepL, if that doesn't work (DeepL supports less languages), use Google"""
         if self.language_supported_by_deepl:
-            data = {
-                "text": text,
-                "target_lang": language_code
-            }
-            headers = {
-                "Authorization": f"DeepL-Auth-Key {self.deepl_api_key}"
-            }
-            response = requests.post(self.deepl_endpoint, data=data, headers=headers, timeout=TIMEOUT)
+            data = {"text": text, "target_lang": language_code}
+            headers = {"Authorization": f"DeepL-Auth-Key {self.deepl_api_key}"}
+            response = requests.post(
+                self.deepl_endpoint, data=data, headers=headers, timeout=TIMEOUT
+            )
             if response.status_code == 200:
-                return response.json()['translations'][0]['text']
+                return response.json()["translations"][0]["text"]
             else:
-                self.logger.warning(f"DeepL error {response.status_code}: {response.text}")
-                self.logger.warning(f"DeepL cannot translate to {language_code}. Using Google Translate instead.")
+                self.logger.warning(
+                    f"DeepL error {response.status_code}: {response.text}"
+                )
+                self.logger.warning(
+                    f"DeepL cannot translate to {language_code}. Using Google Translate instead."
+                )
                 self.language_supported_by_deepl = False
 
         # If DeepL fails, use Google Translate
@@ -104,16 +124,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Machine-translate a worksheet.")
     parser.add_argument("worksheet_name", help="Name of the worksheet to translate.")
     parser.add_argument("language_code", help="Target language code for translation.")
-    parser.add_argument("-f", "--force", action="store_true", help="Force overwrite if translation exists.")
-    parser.add_argument("--simulate", action="store_true",
-                        help="Print translated units without uploading to MediaWiki.")
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force overwrite if translation exists.",
+    )
+    parser.add_argument(
+        "--simulate",
+        action="store_true",
+        help="Print translated units without uploading to MediaWiki.",
+    )
     args = parser.parse_args()
 
     config = ConfigParser()
     config.read(join(dirname(abspath(__file__)), "config.ini"))
 
     translator_tool = TranslationTool(config)
-    translator_tool.fetch_and_translate(args.worksheet_name,
-                                        args.language_code,
-                                        args.force,
-                                        args.simulate)
+    translator_tool.fetch_and_translate(
+        args.worksheet_name, args.language_code, args.force, args.simulate
+    )

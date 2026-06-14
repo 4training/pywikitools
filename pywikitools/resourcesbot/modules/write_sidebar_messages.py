@@ -25,6 +25,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Write the system messages for sidebar with translated titles"
@@ -41,7 +42,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite
+        site: pywikibot.site.APISite,
     ):
         super().__init__(fortraininglib, config, site)
         self.logger: Final[logging.Logger] = logging.getLogger(
@@ -90,7 +91,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
         changes: ChangeLog,
         _english_changes,
         *,
-        force_rewrite: bool = False
+        force_rewrite: bool = False,
     ) -> None:
         """Our entry function"""
         for worksheet in language_info.worksheets.values():

@@ -11,8 +11,13 @@ class BeautifyHTML:
     This involves removing of comments, removing some CSS classes and
     rewriting <img src="" so that the resulting HTML can be used elsewhere
     """
-    def __init__(self, img_src_base: str = '/files/', change_hrefs: Dict[str, str] = None,
-                 img_src_rewrite: Dict[str, str] = None):
+
+    def __init__(
+        self,
+        img_src_base: str = "/files/",
+        change_hrefs: Dict[str, str] = None,
+        img_src_rewrite: Dict[str, str] = None,
+    ):
         """
         @param img_src_base: Change all <img src=""> tags to src="[img_src_base][image name]"
         @param change_hrefs: Rewriting <a href=""> destinations (old destination -> new destination)
@@ -21,7 +26,7 @@ class BeautifyHTML:
         self._img_src_base = img_src_base
         self._change_hrefs = change_hrefs
         self._img_src_rewrite = img_src_rewrite
-        self.logger = logging.getLogger('pywikitools.lib.htmltools.BeautifyHTML')
+        self.logger = logging.getLogger("pywikitools.lib.htmltools.BeautifyHTML")
 
     def process_html(self, text: str) -> str:
         """
@@ -31,8 +36,8 @@ class BeautifyHTML:
         Don't use fortraininglib.get_page_html("Prayer") as we would need to remove the [edit] sections
         TODO think of a better architecture?
         """
-        soup = BeautifulSoup(text, 'html.parser')
-        soup.div.unwrap()   # Remove enclosing <div class="mw-parser-output">...</div>
+        soup = BeautifulSoup(text, "html.parser")
+        soup.div.unwrap()  # Remove enclosing <div class="mw-parser-output">...</div>
         # Remove the language overview
         for element in soup.find_all(class_="noprint"):
             element.decompose()
@@ -58,20 +63,24 @@ class BeautifyHTML:
             self.img_rewrite_handler(element)
 
         for element in soup.find_all("a", href=True):
-            if element['href'].startswith("/File:"):
+            if element["href"].startswith("/File:"):
                 # Remove <a> links around <img> tags
                 element.unwrap()
                 continue
-            del element['title']
+            del element["title"]
             # Rewrite hrefs
             if self._change_hrefs is not None:
-                href = unquote(element['href'])
+                href = unquote(element["href"])
                 if href in self._change_hrefs:
                     new_href = self._change_hrefs[href]
-                    self.logger.info(f"Rewriting a href source {element['href']} with {new_href}")
-                    element['href'] = new_href
+                    self.logger.info(
+                        f"Rewriting a href source {element['href']} with {new_href}"
+                    )
+                    element["href"] = new_href
                 else:
-                    self.logger.warning(f"Couldn't find href rewrite for destination {element['href']}. Removing link.")
+                    self.logger.warning(
+                        f"Couldn't find href rewrite for destination {element['href']}. Removing link."
+                    )
                     element.unwrap()
 
         return str(soup)
@@ -85,26 +94,28 @@ class BeautifyHTML:
           src="/images/a/ab/Family.png" -> extract "Family.png"
         Legacy paths with a /mediawiki prefix are still accepted.
         """
-        parts = path.split('/')
-        if not parts or parts[0] != '':
+        parts = path.split("/")
+        if not parts or parts[0] != "":
             self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
             return parts[-1] if parts else path
 
         try:
-            images_idx = parts.index('images')
+            images_idx = parts.index("images")
         except ValueError:
             self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
             return parts[-1]
 
-        after_images = parts[images_idx + 1:]
+        after_images = parts[images_idx + 1 :]
         if not after_images:
             self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
             return parts[-1]
 
-        if after_images[0] == 'thumb':
+        if after_images[0] == "thumb":
             # thumb/hash1/hash2/Filename/size-Filename
             if len(after_images) != 5:
-                self.logger.warning(f'Unexpected source attribute in <img>: src="{path}"')
+                self.logger.warning(
+                    f'Unexpected source attribute in <img>: src="{path}"'
+                )
                 return parts[-1]
             return after_images[3]
 
@@ -124,13 +135,13 @@ class BeautifyHTML:
         You can customize the behaviour by sub-classing BeautifyHTML and overwriting this method
         @param element: Part of the BeautifulSoup data structure, will be modified directly
         """
-        del element['srcset']
-        img_src = self._extract_image_name(str(element['src']))
-        element['src'] = self._img_src_base + img_src
+        del element["srcset"]
+        img_src = self._extract_image_name(str(element["src"]))
+        element["src"] = self._img_src_base + img_src
         if self._img_src_rewrite is not None:
             if img_src in self._img_src_rewrite:
                 new_src = self._img_src_base + self._img_src_rewrite[img_src]
                 self.logger.info(f"Replacing img src {element['src']} with {new_src}")
-                element['src'] = new_src
+                element["src"] = new_src
             else:
                 self.logger.info(f"No img src replacement for {img_src}")

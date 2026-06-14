@@ -149,7 +149,7 @@ class ResourcesBot:
                 # Now we read the details for each language
                 for lang in language_list:
                     self.logger.info(
-                        f"Reading details for " f"language {lang} from cache..."
+                        f"Reading details for language {lang} from cache..."
                     )
                     page = pywikibot.Page(self.site, f"4training:{lang}.json")
                     if not page.exists():

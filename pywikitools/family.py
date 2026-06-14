@@ -1,4 +1,3 @@
-
 """Family file for connecting to 4training.net with pywikibot
 
 This is intended to be used without using the traditional pywikibot approach
@@ -15,6 +14,7 @@ family = '4training'
 mylang = 'test'
 usernames['4training']['test'] = 'YourUserName'
 """
+
 import pywikibot
 
 
@@ -27,23 +27,24 @@ class Family(pywikibot.family.SubdomainFamily):
     self.site = pywikibot.Site(code='test', fam=family, user='username')
     code can be either '4training' or 'test' to connect to www.4training.net / test.4training.net
     """
-    name = '4training'
 
-    domain = '4training.net'
+    name = "4training"
+
+    domain = "4training.net"
 
     # Our live and test environments
     langs = {
-        '4training': 'www.4training.net',
-        'test': 'test.4training.net',
-        'local': 'localhost:8082'
+        "4training": "www.4training.net",
+        "test": "test.4training.net",
+        "local": "localhost:8082",
     }
 
     # this must have the same value as $wgScriptPath in LocalSettings.php of the mediawiki installation
     def scriptpath(self, code):
-        return ''
+        return ""
 
     # TODO can be removed when upgrading to pywikibot ^8.2
     def protocol(self, code):
-        if code == 'local':
-            return 'http'
-        return 'https'
+        if code == "local":
+            return "http"
+        return "https"

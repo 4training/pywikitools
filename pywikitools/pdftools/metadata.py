@@ -8,6 +8,7 @@ This contains our standards for filling metadata.
 TODO: Find a good place for our standards in a dedicated module and avoid duplicate code -
       they're also in TranslateODT._set_properties()
 """
+
 import re
 from typing import List
 import pikepdf
@@ -16,7 +17,9 @@ from pywikitools.fortraininglib import ForTrainingLib
 from pywikitools.resourcesbot.data_structures import PdfMetadataSummary, WorksheetInfo
 
 
-def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: WorksheetInfo) -> PdfMetadataSummary:
+def check_metadata(
+    fortraininglib: ForTrainingLib, filename: str, info: WorksheetInfo
+) -> PdfMetadataSummary:
     """Check the PDF metadata whether it meets our standards. This involves:
     - title must start with translated title (identical if there is no subheadline)
     - subject must start with English worksheet name and end with correct language names
@@ -34,7 +37,7 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
     title = ""
     subject = ""
     keywords = ""
-    if (meta := pdf.open_metadata()):
+    if meta := pdf.open_metadata():
         # This PDF has proper XMP metadata
         if "dc:title" in meta:
             title = meta["dc:title"]
@@ -63,15 +66,21 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
         expected_title = expected_title[:pos]
     if not title.startswith(expected_title):
         metadata_correct = False
-        warnings.append(f"Expected title to start with '{expected_title}' but found '{title}'")
+        warnings.append(
+            f"Expected title to start with '{expected_title}' but found '{title}'"
+        )
 
     # Check subject metadata (except for the English originals)
     if info.language_code != "en":
         expected_subject = info.page.replace("_", " ")
         if not subject.startswith(expected_subject):
             metadata_correct = False
-            warnings.append(f"Expected subject to start with '{expected_subject}' but found '{subject}'")
-        english_language_name = str(fortraininglib.get_language_name(info.language_code, 'en'))
+            warnings.append(
+                f"Expected subject to start with '{expected_subject}' but found '{subject}'"
+            )
+        english_language_name = str(
+            fortraininglib.get_language_name(info.language_code, "en")
+        )
         autonym = str(fortraininglib.get_language_name(info.language_code))
         expected_subject_end = f"{english_language_name} {autonym}"
         # TODO the following special cases should go into some dedicated module
@@ -83,7 +92,9 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
             expected_subject_end = "Persian Farsi فارسی"
         if not subject.endswith(expected_subject_end):
             metadata_correct = False
-            warnings.append(f"Expected subject to end with '{expected_subject_end}' but found '{subject}'")
+            warnings.append(
+                f"Expected subject to end with '{expected_subject_end}' but found '{subject}'"
+            )
 
     # Check keywords (should contain Template:CC0Notice with version information)
     handler = re.search(r"\d\.\d[a-zA-Z]?", keywords)
@@ -91,9 +102,17 @@ def check_metadata(fortraininglib: ForTrainingLib, filename: str, info: Workshee
         version = handler.group(0)
         if version != info.version:
             metadata_correct = False
-            warnings.append(f"Version inconsistency: PDF says {version}, worksheet says {info.version}")
+            warnings.append(
+                f"Version inconsistency: PDF says {version}, worksheet says {info.version}"
+            )
     else:
         metadata_correct = False
         warnings.append(f"Couldn't extract version from keyword string '{keywords}'")
 
-    return PdfMetadataSummary(version, metadata_correct, meta.pdfa_status == "1A", only_docinfo, "\n".join(warnings))
+    return PdfMetadataSummary(
+        version,
+        metadata_correct,
+        meta.pdfa_status == "1A",
+        only_docinfo,
+        "\n".join(warnings),
+    )

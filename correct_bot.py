@@ -35,15 +35,27 @@ def parse_arguments() -> argparse.Namespace:
     Returns:
         CorrectBot instance
     """
-    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
+    log_levels: List[str] = ["debug", "info", "warning", "error"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("page", help="Name of the mediawiki page")
     parser.add_argument("language_code", help="Language code")
-    parser.add_argument("-s", "--simulate", action="store_true",
-                        help="Simulates the corrections but does not apply them to the webpage.")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
-    parser.add_argument("--only", help="Only apply the correction rule with the specified method name")
+    parser.add_argument(
+        "-s",
+        "--simulate",
+        action="store_true",
+        help="Simulates the corrections but does not apply them to the webpage.",
+    )
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        choices=log_levels,
+        default="warning",
+        help="set loglevel for the script",
+    )
+    parser.add_argument(
+        "--only", help="Only apply the correction rule with the specified method name"
+    )
     return parser.parse_args()
 
 
@@ -54,7 +66,7 @@ if __name__ == "__main__":
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     sh = logging.StreamHandler(sys.stdout)
-    fformatter = logging.Formatter('%(levelname)s: %(message)s')
+    fformatter = logging.Formatter("%(levelname)s: %(message)s")
     sh.setFormatter(fformatter)
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)

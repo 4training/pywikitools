@@ -2,6 +2,7 @@
 Contains the classes ChangeType, ChangeItem and ChangeLog that describe the list of changes on the 4training.net website
 since the last run of the resourcesbot.
 """
+
 from enum import Enum
 from typing import List
 
@@ -11,15 +12,16 @@ class ChangeType(Enum):
     The different types of changes that can happen.
     Normally there wouldn't be any deletions
     """
-    NEW_WORKSHEET = 'new worksheet'
-    NEW_PDF = 'new PDF'
-    NEW_ODT = 'new ODT'
-    UPDATED_WORKSHEET = 'updated worksheet'
-    UPDATED_PDF = 'updated PDF'
-    UPDATED_ODT = 'updated ODT'
-    DELETED_WORKSHEET = 'deleted worksheet'
-    DELETED_PDF = 'deleted PDF'
-    DELETED_ODT = 'deleted ODT'
+
+    NEW_WORKSHEET = "new worksheet"
+    NEW_PDF = "new PDF"
+    NEW_ODT = "new ODT"
+    UPDATED_WORKSHEET = "updated worksheet"
+    UPDATED_PDF = "updated PDF"
+    UPDATED_ODT = "updated ODT"
+    DELETED_WORKSHEET = "deleted worksheet"
+    DELETED_PDF = "deleted PDF"
+    DELETED_ODT = "deleted ODT"
 
 
 class ChangeItem:
@@ -27,7 +29,8 @@ class ChangeItem:
     Holds the details of one change
     This shouldn't be modified after creation (is there a way to enforce that?)
     """
-    __slots__ = ['worksheet', 'change_type']
+
+    __slots__ = ["worksheet", "change_type"]
 
     def __init__(self, worksheet: str, change_type: ChangeType):
         self.worksheet = worksheet
@@ -37,7 +40,9 @@ class ChangeItem:
         return f"{self.change_type}: {self.worksheet}"
 
     def __eq__(self, other) -> bool:
-        return self.worksheet == other.worksheet and self.change_type == other.change_type
+        return (
+            self.worksheet == other.worksheet and self.change_type == other.change_type
+        )
 
     def __hash__(self) -> int:
         return hash((self.worksheet, self.change_type))
@@ -47,7 +52,8 @@ class ChangeLog:
     """
     Holds all changes that happened in one language since the last resourcesbot run
     """
-    __slots__ = ['_changes', '_iterate_pos']
+
+    __slots__ = ["_changes", "_iterate_pos"]
 
     def __init__(self):
         self._changes: List[ChangeItem] = []

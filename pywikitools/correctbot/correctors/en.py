@@ -16,7 +16,7 @@ class EnglishCorrector(CorrectorBase, UniversalCorrector):
     def correct_single_apostrophe(self, text: str) -> str:
         """Correct single apostrophe ' with ’"""
         # TODO what if we have ''/''' as markup for italics/bold in text?
-        return re.sub("'", '’', text)
+        return re.sub("'", "’", text)
 
     # TODO: Count appearances of german, english quotation marks
     # TODO: parse text from left to right and replace odd appearences with “ and even ones with ”

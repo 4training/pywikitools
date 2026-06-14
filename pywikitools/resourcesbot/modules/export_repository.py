@@ -17,6 +17,7 @@ class ExportRepository(LanguagePostProcessor):
     Export the HTML files (result of ExportHTML) to a git repository.
     Needs to run after ExportHTML.
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Exports the HTML files into a git repo"
@@ -52,8 +53,13 @@ class ExportRepository(LanguagePostProcessor):
         )
 
     def run(
-        self, language_info: LanguageInfo, _english_info, _changes, _english_changes,
-        *, force_rewrite: bool = False
+        self,
+        language_info: LanguageInfo,
+        _english_info,
+        _changes,
+        _english_changes,
+        *,
+        force_rewrite: bool = False,
     ):
         """Pushing all changes in the local repository (created by ExportHTML) to the
         remote repository.

@@ -18,14 +18,20 @@ class DummyLibreOffice(LibreOffice):
     """Inherited class to produce a dummy LibreOffice that doesn't do anything
     TODO: Currently unused. Is their any benefit in this approach over just using a Mock()?
     """
+
     def __init__(self, headless: bool = False):
         super().__init__(headless)
 
     def open_file(self, file_name: str):
         self.logger.debug(f"DummyLibreOffice.open_file({file_name})")
 
-    def search_and_replace(self, search: str, replace: str,
-                           warn_if_pages_change: bool = False, parse_formatting: bool = False) -> bool:
+    def search_and_replace(
+        self,
+        search: str,
+        replace: str,
+        warn_if_pages_change: bool = False,
+        parse_formatting: bool = False,
+    ) -> bool:
         self.logger.debug("DummyLibreOffice.search_and_replace()")
         return True
 
@@ -68,11 +74,17 @@ def parse_arguments() -> argparse.Namespace:
     Returns:
         argparse.Namespace: parsed arguments
     """
-    log_levels: List[str] = ['debug', 'info', 'warning', 'error']
+    log_levels: List[str] = ["debug", "info", "warning", "error"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("language_code", help="Language code")
-    parser.add_argument("-l", "--loglevel", choices=log_levels, default="warning", help="set loglevel for the script")
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        choices=log_levels,
+        default="warning",
+        help="set loglevel for the script",
+    )
     return parser.parse_args()
 
 
@@ -81,7 +93,7 @@ if __name__ == "__main__":
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     sh = logging.StreamHandler(sys.stdout)
-    fformatter = logging.Formatter('%(levelname)s: %(message)s')
+    fformatter = logging.Formatter("%(levelname)s: %(message)s")
     sh.setFormatter(fformatter)
     numeric_level = getattr(logging, args.loglevel.upper(), None)
     assert isinstance(numeric_level, int)
@@ -90,6 +102,6 @@ if __name__ == "__main__":
 
     fortraininglib = ForTrainingLib("https://www.4training.net")
     translate_odt = DummyTranslateODT()
-#    translate_odt = TranslateODT(keep_english_file=False)    # uncomment this to invoke LibreOffice for each worksheet
+    #    translate_odt = TranslateODT(keep_english_file=False)    # uncomment this to invoke LibreOffice for each worksheet
     for worksheet in fortraininglib.get_worksheet_list():
         translate_odt.translate_worksheet(worksheet, args.language_code)

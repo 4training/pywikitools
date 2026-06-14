@@ -5,6 +5,7 @@ TODO many tests are missing still
 Run tests:
     python3 -m unittest test_fortraininglib.py
 """
+
 import unittest
 from unittest.mock import Mock, patch
 import requests
@@ -37,7 +38,7 @@ class TestFortrainingLib(unittest.TestCase):
     def test_get_with_timeouts(self, mock_get):
         # Let's emulate repeated Timeouts and assert that requests.get() got called CONNECT_RETRIES times
         mock_get.side_effect = requests.exceptions.Timeout
-        with self.assertLogs('pywikitools.lib', level='WARNING') as logs:
+        with self.assertLogs("pywikitools.lib", level="WARNING") as logs:
             self.lib._get({})
             self.assertEqual(len(logs.output), self.lib.CONNECT_RETRIES + 1)
         self.assertEqual(mock_get.call_count, self.lib.CONNECT_RETRIES)
@@ -50,9 +51,9 @@ class TestFortrainingLib(unittest.TestCase):
         response.json = Mock()
         response.json.return_value = {}
         mock_get.side_effect = [requests.exceptions.Timeout, response]
-        with self.assertLogs('pywikitools.lib', level='WARNING') as logs:
+        with self.assertLogs("pywikitools.lib", level="WARNING") as logs:
             self.lib._get({})
-            self.assertEqual(len(logs.output), 1)   # there should be only one warning
+            self.assertEqual(len(logs.output), 1)  # there should be only one warning
         self.assertEqual(mock_get.call_count, 2)
 
     @patch("pywikitools.fortraininglib.requests.Session.get")
@@ -60,30 +61,44 @@ class TestFortrainingLib(unittest.TestCase):
         response = requests.Response()
         response.status_code = 200
         response.json = Mock()
-        response.json.side_effect = requests.exceptions.JSONDecodeError('Test', 'Test', 0)
+        response.json.side_effect = requests.exceptions.JSONDecodeError(
+            "Test", "Test", 0
+        )
         mock_get.return_value = response
-        with self.assertLogs('pywikitools.lib', level='WARNING'):
+        with self.assertLogs("pywikitools.lib", level="WARNING"):
             self.lib._get({})
         mock_get.assert_called_once()
 
     def test_convert_to_filename(self):
-        self.assertEqual(ForTrainingLib.convert_to_filename("Hearing from God"), "Hearing_from_God")
-        self.assertEqual(ForTrainingLib.convert_to_filename("Nothing_changes"), "Nothing_changes")
-        self.assertEqual(ForTrainingLib.convert_to_filename("Title's nightmare: Test."), "Titles_nightmare_Test")
-        self.assertEqual(ForTrainingLib.convert_to_filename("RTL (challenge)\u200f"), "RTL_(challenge)\u200f")
+        self.assertEqual(
+            ForTrainingLib.convert_to_filename("Hearing from God"), "Hearing_from_God"
+        )
+        self.assertEqual(
+            ForTrainingLib.convert_to_filename("Nothing_changes"), "Nothing_changes"
+        )
+        self.assertEqual(
+            ForTrainingLib.convert_to_filename("Title's nightmare: Test."),
+            "Titles_nightmare_Test",
+        )
+        self.assertEqual(
+            ForTrainingLib.convert_to_filename("RTL (challenge)\u200f"),
+            "RTL_(challenge)\u200f",
+        )
 
     def test_get_language_name(self):
-        self.assertEqual(self.lib.get_language_name('de'), 'Deutsch')
-        self.assertEqual(self.lib.get_language_name('en'), 'English')
-        self.assertEqual(self.lib.get_language_name('tr'), 'Türkçe')
-        self.assertEqual(self.lib.get_language_name('de', 'en'), 'German')
-        self.assertEqual(self.lib.get_language_name('tr', 'de'), 'Türkisch')
+        self.assertEqual(self.lib.get_language_name("de"), "Deutsch")
+        self.assertEqual(self.lib.get_language_name("en"), "English")
+        self.assertEqual(self.lib.get_language_name("tr"), "Türkçe")
+        self.assertEqual(self.lib.get_language_name("de", "en"), "German")
+        self.assertEqual(self.lib.get_language_name("tr", "de"), "Türkisch")
 
     def test_list_page_translations(self):
-        with self.assertLogs('pywikitools.lib', level='INFO'):
-            result = self.lib.list_page_translations('Prayer')
-        with self.assertLogs('pywikitools.lib', level='INFO'):
-            result_with_unfinished = self.lib.list_page_translations('Prayer', include_unfinished=True)
+        with self.assertLogs("pywikitools.lib", level="INFO"):
+            result = self.lib.list_page_translations("Prayer")
+        with self.assertLogs("pywikitools.lib", level="INFO"):
+            result_with_unfinished = self.lib.list_page_translations(
+                "Prayer", include_unfinished=True
+            )
         self.assertTrue(len(result) >= 5)
         self.assertTrue(len(result) <= len(result_with_unfinished))
         for language, progress in result.items():
@@ -96,39 +111,53 @@ class TestFortrainingLib(unittest.TestCase):
         self.assertEqual(len(self.lib.list_page_translations("NotExisting", "de")), 0)
 
     def test_list_page_templates(self):
-        result = self.lib.list_page_templates('Polish')
-        result_de = self.lib.list_page_templates('Polish/de')
-        self.assertListEqual(result, result_de)     # Make sure that language codes at the end are removed
+        result = self.lib.list_page_templates("Polish")
+        result_de = self.lib.list_page_templates("Polish/de")
+        self.assertListEqual(
+            result, result_de
+        )  # Make sure that language codes at the end are removed
         self.assertIn("Template:BibleTranslation", result)
         self.assertIn("Template:JesusFilm", result)
         self.assertIn("Template:Translatable template", result)
-        self.assertEqual(len(self.lib.list_page_templates('NotExisting')), 0)
+        self.assertEqual(len(self.lib.list_page_templates("NotExisting")), 0)
 
     def test_get_pdf_name(self):
-        self.assertEqual(self.lib.get_pdf_name('Forgiving_Step_by_Step', 'en'), 'Forgiving_Step_by_Step.pdf')
-        self.assertEqual(self.lib.get_pdf_name('Forgiving_Step_by_Step', 'de'), 'Schritte_der_Vergebung.pdf')
-        self.assertIsNone(self.lib.get_pdf_name('NotExisting', 'en'))
+        self.assertEqual(
+            self.lib.get_pdf_name("Forgiving_Step_by_Step", "en"),
+            "Forgiving_Step_by_Step.pdf",
+        )
+        self.assertEqual(
+            self.lib.get_pdf_name("Forgiving_Step_by_Step", "de"),
+            "Schritte_der_Vergebung.pdf",
+        )
+        self.assertIsNone(self.lib.get_pdf_name("NotExisting", "en"))
 
     def test_get_version(self):
-        self.assertEqual(self.lib.get_version('Forgiving_Step_by_Step', 'en'), '1.3')
-        self.assertEqual(self.lib.get_version('Forgiving_Step_by_Step', 'de'), '1.3')
-        self.assertIsNone(self.lib.get_version('NotExisting', 'en'))
+        self.assertEqual(self.lib.get_version("Forgiving_Step_by_Step", "en"), "1.3")
+        self.assertEqual(self.lib.get_version("Forgiving_Step_by_Step", "de"), "1.3")
+        self.assertIsNone(self.lib.get_version("NotExisting", "en"))
 
     def test_title_to_message(self):
-        self.assertEqual(self.lib.title_to_message('Time_with_God'), 'sidebar-timewithgod')
-        self.assertEqual(self.lib.title_to_message('Dealing with Money'), 'sidebar-dealingwithmoney')
+        self.assertEqual(
+            self.lib.title_to_message("Time_with_God"), "sidebar-timewithgod"
+        )
+        self.assertEqual(
+            self.lib.title_to_message("Dealing with Money"), "sidebar-dealingwithmoney"
+        )
 
-# Disabled because this test takes fairly long (currently demands more than half of the time of a full test run)
-#    def test_get_worksheet_list(self):
-#        for worksheet in self.lib.get_worksheet_list():
-#            page_source = self.lib.get_page_source(worksheet)
-#            self.assertIsNotNone(page_source)
-#            self.assertGreater(len(page_source), 100)
+    # Disabled because this test takes fairly long (currently demands more than half of the time of a full test run)
+    #    def test_get_worksheet_list(self):
+    #        for worksheet in self.lib.get_worksheet_list():
+    #            page_source = self.lib.get_page_source(worksheet)
+    #            self.assertIsNotNone(page_source)
+    #            self.assertGreater(len(page_source), 100)
 
     def test_get_file_url(self):
-        test_file = 'Forgiving_Step_by_Step.pdf'
-        self.assertIsNone(self.lib.get_file_url('NotExisting'))
-        self.assertTrue(self.lib.get_file_url(test_file).startswith('https://test.4training.net'))
+        test_file = "Forgiving_Step_by_Step.pdf"
+        self.assertIsNone(self.lib.get_file_url("NotExisting"))
+        self.assertTrue(
+            self.lib.get_file_url(test_file).startswith("https://test.4training.net")
+        )
         self.assertTrue(self.lib.get_file_url(test_file).endswith(test_file))
 
     def test_get_translation_units(self):
@@ -154,5 +183,5 @@ class TestFortrainingLib(unittest.TestCase):
             self.assertEqual(self.lib.count_jobs(), 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

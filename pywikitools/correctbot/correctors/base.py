@@ -29,6 +29,7 @@ it gets a bit tricky with multiple inheritance and making sure that __init__() o
 each base class gets called
 
 """
+
 from abc import ABC, abstractmethod
 import copy
 import functools
@@ -44,18 +45,22 @@ from pywikitools.lang.translated_page import TranslationUnit
 
 def use_snippets(func):
     """Decorator: indicate that a correction function should run on the snippets of a translation unit"""
+
     @functools.wraps(func)
     def decorator_use_snippets(*args, **kwargs):
         return func(*args, **kwargs)
+
     decorator_use_snippets.use_snippets = True
     return decorator_use_snippets
 
 
 def suggest_only(func):
     """Decorator: correction function should not directly correct but suggest its changes to the user"""
+
     @functools.wraps(func)
     def decorator_suggest_only(*args, **kwargs):
         return func(*args, **kwargs)
+
     decorator_suggest_only.suggest_only = True
     return decorator_suggest_only
 
@@ -65,9 +70,23 @@ class CorrectionResult:
 
     This data structure is meant to be read-only after creation.
     """
-    __slots__ = ["corrections", "suggestions", "correction_stats", "suggestion_stats", "warnings"]
-    def __init__(self, corrections: TranslationUnit, suggestions: TranslationUnit,
-                 correction_stats: Dict[str, int], suggestion_stats: Dict[str, int], warnings: str):
+
+    __slots__ = [
+        "corrections",
+        "suggestions",
+        "correction_stats",
+        "suggestion_stats",
+        "warnings",
+    ]
+
+    def __init__(
+        self,
+        corrections: TranslationUnit,
+        suggestions: TranslationUnit,
+        correction_stats: Dict[str, int],
+        suggestion_stats: Dict[str, int],
+        warnings: str,
+    ):
         self.corrections: Final[TranslationUnit] = corrections
         self.suggestions: Final[TranslationUnit] = suggestions
         self.correction_stats: Final[Dict[str, int]] = correction_stats
@@ -85,6 +104,7 @@ class CorrectorBase(ABC):
     correct() and title_correct() (and filename_correct()) are the two entry functions. They don't touch
     the given translation unit but return all changes and suggestions in the CorrectionResult structure
     """
+
     @abstractmethod
     def _suffix_for_print_version(self) -> str:
         """For correction of filenames: What suffix should be added if we have a printing-version PDF?
@@ -94,7 +114,9 @@ class CorrectorBase(ABC):
         In English the suffix is "_print", as in Bible_Reading_Hints_print.pdf"""
         return "_print"
 
-    def _compose_filename(self, converted_title: str, extension: str, is_print_pdf: bool) -> str:
+    def _compose_filename(
+        self, converted_title: str, extension: str, is_print_pdf: bool
+    ) -> str:
         """Return the complete translated filename
 
         This function can also be overwritten by a language-specific corrector (e.g. for a language variant)"""
@@ -103,15 +125,21 @@ class CorrectorBase(ABC):
         converted_title += extension
         return converted_title
 
-    def filename_correct(self, unit: TranslationUnit, converted_title: str) -> CorrectionResult:
+    def filename_correct(
+        self, unit: TranslationUnit, converted_title: str
+    ) -> CorrectionResult:
         """Correct filename (according to title)
 
         We directly construct the correct filename and don't call any rules
         Args:
             converted_title: worksheet title converted for filename usage (see ForTrainingLib.convert_to_filename())
         """
-        is_print_pdf = len(unit.get_definition()) > 10 and unit.get_definition().endswith("_print.pdf")
-        extension = unit.get_definition()[-4:]  # Currently all possible extensions have three characters
+        is_print_pdf = len(
+            unit.get_definition()
+        ) > 10 and unit.get_definition().endswith("_print.pdf")
+        extension = unit.get_definition()[
+            -4:
+        ]  # Currently all possible extensions have three characters
 
         # Tedious work: We need to build up the CorrectionResult structure
         corrections: TranslationUnit = copy.copy(unit)
@@ -119,25 +147,37 @@ class CorrectorBase(ABC):
         new_title = self._compose_filename(converted_title, extension, is_print_pdf)
         if new_title != unit.get_translation():
             corrections.set_translation(new_title)
-            correction_stats['filename_correct'] = 1        # the name of our function
+            correction_stats["filename_correct"] = 1  # the name of our function
         suggestions = copy.copy(corrections)
         return CorrectionResult(corrections, suggestions, correction_stats, {}, "")
 
-    def correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
+    def correct(
+        self, unit: TranslationUnit, apply_only_rule: Optional[str] = None
+    ) -> CorrectionResult:
         """Call all available correction functions one after the other"""
         if apply_only_rule is not None:
-            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
-        return self._run_functions(unit, (s for s in dir(self) if s.startswith("correct_")))
+            return self._run_functions(
+                unit, (s for s in dir(self) if s == apply_only_rule)
+            )
+        return self._run_functions(
+            unit, (s for s in dir(self) if s.startswith("correct_"))
+        )
 
-    def title_correct(self, unit: TranslationUnit, apply_only_rule: Optional[str] = None) -> CorrectionResult:
+    def title_correct(
+        self, unit: TranslationUnit, apply_only_rule: Optional[str] = None
+    ) -> CorrectionResult:
         """Call all correction functions for titles one after the other
         We don't do any checks if unit actually is a title - that's the responsibility of the caller
         """
         if apply_only_rule is not None:
-            return self._run_functions(unit, (s for s in dir(self) if s == apply_only_rule))
+            return self._run_functions(
+                unit, (s for s in dir(self) if s == apply_only_rule)
+            )
         return self._run_functions(unit, (s for s in dir(self) if s.endswith("_title")))
 
-    def _run_functions(self, unit: TranslationUnit, functions: Generator[str, None, None]) -> CorrectionResult:
+    def _run_functions(
+        self, unit: TranslationUnit, functions: Generator[str, None, None]
+    ) -> CorrectionResult:
         """
         Call all the functions given by the generator one after the other
 
@@ -166,16 +206,24 @@ class CorrectorBase(ABC):
         corrections: TranslationUnit = copy.copy(unit)
         correction_stats: DefaultDict[str, int] = defaultdict(int)
         for correction_function in correction_functions:
-            if self._correct_unit(correction_function, corrections,
-                                  hasattr(correction_function, "use_snippets") and is_unit_well_structured):
+            if self._correct_unit(
+                correction_function,
+                corrections,
+                hasattr(correction_function, "use_snippets")
+                and is_unit_well_structured,
+            ):
                 correction_stats[correction_function.__name__] += 1
 
         # Now run all functions that make suggestions
         suggestions = copy.copy(corrections)
         suggestion_stats: DefaultDict[str, int] = defaultdict(int)
         for suggestion_function in suggestion_functions:
-            if self._correct_unit(suggestion_function, suggestions,
-                                  hasattr(suggestion_function, "use_snippets") and is_unit_well_structured):
+            if self._correct_unit(
+                suggestion_function,
+                suggestions,
+                hasattr(suggestion_function, "use_snippets")
+                and is_unit_well_structured,
+            ):
                 suggestion_stats[suggestion_function.__name__] += 1
 
         # Save warnings from the Corrector class in our CorrectionResult
@@ -184,9 +232,16 @@ class CorrectorBase(ABC):
             if warning != "":
                 warning += "\n"
             warning += record.message
-        return CorrectionResult(corrections, suggestions, correction_stats, suggestion_stats, warning)
+        return CorrectionResult(
+            corrections, suggestions, correction_stats, suggestion_stats, warning
+        )
 
-    def _correct_unit(self, corrector_function: Callable, unit: TranslationUnit, correct_snippets: bool) -> bool:
+    def _correct_unit(
+        self,
+        corrector_function: Callable,
+        unit: TranslationUnit,
+        correct_snippets: bool,
+    ) -> bool:
         """
         Run a correction function on a translation unit
         @param unit: the translation unit the correction function should be applied to. Will be modified directly
@@ -198,7 +253,9 @@ class CorrectorBase(ABC):
         if correct_snippets:
             # run correction function on snippets
             for orig_snippet, trans_snippet in unit:
-                result = self._call_function(corrector_function, trans_snippet.content, orig_snippet.content)
+                result = self._call_function(
+                    corrector_function, trans_snippet.content, orig_snippet.content
+                )
                 if result != trans_snippet.content:
                     has_changes = True
                     trans_snippet.content = result
@@ -206,14 +263,18 @@ class CorrectorBase(ABC):
                 unit.sync_from_snippets()
         else:
             # otherwise run the correction function on the whole translation unit
-            result = self._call_function(corrector_function, unit.get_translation(), unit.get_definition())
+            result = self._call_function(
+                corrector_function, unit.get_translation(), unit.get_definition()
+            )
             if result != unit.get_translation():
                 has_changes = True
                 unit.set_translation(result)
 
         return has_changes
 
-    def _call_function(self, corrector_function: Callable, text: str, original: str) -> str:
+    def _call_function(
+        self, corrector_function: Callable, text: str, original: str
+    ) -> str:
         """
         Call a correction function with the correct number of parameters
 
@@ -245,7 +306,10 @@ class CorrectorBase(ABC):
         """
         details: str = ""
         for function_name, counter in stats.items():
-            if hasattr(self, function_name) and (docstring := getattr(self, function_name).__doc__) is not None:
+            if (
+                hasattr(self, function_name)
+                and (docstring := getattr(self, function_name).__doc__) is not None
+            ):
                 details += "* " + docstring.partition("\n")[0]
             else:
                 details += "* " + function_name

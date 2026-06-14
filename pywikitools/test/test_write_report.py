@@ -86,7 +86,7 @@ class TestWriteReport(unittest.TestCase):
                 )
 
     @patch(
-        "pywikitools.resourcesbot.modules.write_report.WriteReport" ".create_mediawiki"
+        "pywikitools.resourcesbot.modules.write_report.WriteReport.create_mediawiki"
     )  # don't go into create_mediawiki()
     @patch("pywikibot.Page")
     def test_save_language_report(self, mock_page, mock_create_mediawiki):
@@ -114,8 +114,7 @@ class TestWriteReport(unittest.TestCase):
         mock_page.return_value.save.assert_called_with("Updated language report")
 
     @patch(
-        "pywikitools.resourcesbot.modules.write_report.WriteReport"
-        ".save_language_report"
+        "pywikitools.resourcesbot.modules.write_report.WriteReport.save_language_report"
     )
     def test_run(self, mock_save):
         write_report = WriteReport(self.fortraininglib, self.config, None)

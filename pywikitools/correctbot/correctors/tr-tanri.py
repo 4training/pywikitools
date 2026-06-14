@@ -7,7 +7,10 @@ class TurkishSecularCorrector(TurkishCorrector):
     Uses all Turkish correction rules.
     Generates correct filenames for this language variant
     """
-    def _compose_filename(self, converted_title: str, extension: str, is_print_pdf: bool) -> str:
+
+    def _compose_filename(
+        self, converted_title: str, extension: str, is_print_pdf: bool
+    ) -> str:
         """Overwrite this to integrate Tanrı correctly into the filename
 
         If Tanrı is already part of the translated worksheet title, we don't need to do anything.

@@ -19,6 +19,7 @@ class WriteList(LanguagePostProcessor):
 
     This class can be re-used to call run() several times
     """
+
     @classmethod
     def help_summary(cls) -> str:
         return "Write list of available training resources for languages"
@@ -35,7 +36,7 @@ class WriteList(LanguagePostProcessor):
         self,
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
-        site: pywikibot.site.APISite
+        site: pywikibot.site.APISite,
     ):
         super().__init__(fortraininglib, config, site)
         self._username: Final[str] = config.get("resourcesbot", "username", fallback="")
@@ -95,7 +96,7 @@ class WriteList(LanguagePostProcessor):
         file_name: str = file_info.url
         pos: int = file_name.rfind("/")
         if pos > -1:
-            file_name = file_name[pos + 1:]
+            file_name = file_name[pos + 1 :]
         else:
             self.logger.warning(f"Couldn't find / in {file_name}")
         return (
@@ -124,7 +125,9 @@ class WriteList(LanguagePostProcessor):
                 content += (
                     "{{int:" + self.fortraininglib.title_to_message(worksheet) + "}}]]"
                 )
-                content += self._create_file_mediawiki(worksheet_info.get_file_type_info("pdf"))
+                content += self._create_file_mediawiki(
+                    worksheet_info.get_file_type_info("pdf")
+                )
                 content += self._create_file_mediawiki(
                     worksheet_info.get_file_type_info("printPdf")
                 )
@@ -190,7 +193,7 @@ class WriteList(LanguagePostProcessor):
         changes: ChangeLog,
         _english_changes,
         *,
-        force_rewrite: bool = False
+        force_rewrite: bool = False,
     ) -> None:
         if not force_rewrite and not self.needs_rewrite(language_info, changes):
             return
@@ -236,7 +239,7 @@ class WriteList(LanguagePostProcessor):
         new_page_content = page.text[0:list_start] + self.create_mediawiki(
             language_info, english_info
         )
-        new_page_content += page.text[list_end + 1:]
+        new_page_content += page.text[list_end + 1 :]
         self.logger.debug(new_page_content)
 
         # Save page and mark it for translation if necessary
