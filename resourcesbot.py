@@ -65,9 +65,14 @@ import os
 import sys
 import traceback
 from configparser import ConfigParser
-from typing import Dict, List
+from typing import List
 
-from pywikitools.resourcesbot.bot import AVAILABLE_MODULES, ResourcesBot, load_module
+from pywikitools.resourcesbot.bot import (
+    ResourcesBot,
+    build_module_choices,
+    load_module,
+    resolve_run_modules,
+)
 
 
 def parse_arguments() -> ResourcesBot:
@@ -85,16 +90,17 @@ def parse_arguments() -> ResourcesBot:
 
     log_levels: List[str] = ["debug", "info", "warning", "error"]
     rewrite_options: List[str] = ["all", "json", "summary"]
-    modules: Dict[str, str] = {}  # abbreviation -> full name
+    modules = build_module_choices()
     modules_help = "Select the modules to be run. Available options are:\n"
-    # Read module information from the module classes
-    for selected_module in AVAILABLE_MODULES:
+    for abbr, selected_module in modules.items():
         module = load_module(selected_module)
-        modules_help += f" - {module.abbreviation()}: {module.help_summary()}\n"
-        modules[module.abbreviation()] = selected_module
+        modules_help += f" - {abbr}: {module.help_summary()}\n"
         if module.can_be_rewritten():
-            rewrite_options.append(module.abbreviation())
-    modules_help += "Default: run all modules"
+            rewrite_options.append(abbr)
+    modules_help += (
+        "Default: all modules, or set [resourcesbot] modules= in config.ini "
+        "(overridden by -m)"
+    )
 
     parser.add_argument(
         "--read-from-cache",
@@ -133,11 +139,7 @@ def parse_arguments() -> ResourcesBot:
     assert isinstance(numeric_level, int)
     set_loglevel(config, numeric_level)
 
-    # Map abbreviations to full module names
-    if args.m is None:
-        run_modules = AVAILABLE_MODULES
-    else:
-        run_modules = [modules[abbr] for abbr in args.m]
+    run_modules = resolve_run_modules(modules, config, args.m)
 
     return ResourcesBot(
         config=config,
