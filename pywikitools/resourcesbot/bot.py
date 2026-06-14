@@ -57,6 +57,43 @@ def load_module(module_name: str) -> Callable:
     raise RuntimeError(f"Couldn't load module {module_name}. Giving up")
 
 
+def build_module_choices() -> Dict[str, str]:
+    """Return module abbreviations mapped to full module names."""
+    modules: Dict[str, str] = {}
+    for selected_module in AVAILABLE_MODULES:
+        module = load_module(selected_module)
+        modules[module.abbreviation()] = selected_module
+    return modules
+
+
+def resolve_run_modules(
+    modules: Dict[str, str],
+    config: ConfigParser,
+    cli_modules: Optional[List[str]] = None,
+) -> list[str]:
+    """
+    Resolve which post-processing modules to run.
+
+    Command-line ``-m`` overrides ``[resourcesbot] modules`` in config.ini.
+    """
+    if cli_modules is not None:
+        return [modules[abbr] for abbr in cli_modules]
+
+    config_value = config.get("resourcesbot", "modules", fallback="all").strip()
+    if config_value.lower() == "all":
+        return AVAILABLE_MODULES
+
+    selected = config_value.split()
+    unknown = [abbr for abbr in selected if abbr not in modules]
+    if unknown:
+        available = ", ".join(sorted(modules.keys()))
+        raise ValueError(
+            "Unknown module(s) in config.ini [resourcesbot] modules: "
+            f"{', '.join(unknown)}. Available: {available}"
+        )
+    return [modules[abbr] for abbr in selected]
+
+
 class ResourcesBot:
     """Contains all the logic of our bot"""
 

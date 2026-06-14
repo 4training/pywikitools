@@ -14,7 +14,13 @@ from unittest.mock import Mock, patch
 
 import pywikibot
 
-from pywikitools.resourcesbot.bot import ResourcesBot, load_module
+from pywikitools.resourcesbot.bot import (
+    AVAILABLE_MODULES,
+    ResourcesBot,
+    build_module_choices,
+    load_module,
+    resolve_run_modules,
+)
 from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo
 from pywikitools.test.test_data_structures import TEST_PROGRESS, TEST_TIME, TEST_URL
 
@@ -339,6 +345,54 @@ class TestResourcesBot(unittest.TestCase):
                 )
 
     # TODO: test_run_with_limit_lang
+
+
+class TestResolveRunModules(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.modules = build_module_choices()
+
+    def _config_with_modules(self, modules_value: str) -> ConfigParser:
+        config = ConfigParser()
+        config.read_dict(
+            {
+                "resourcesbot": {
+                    "site": "test",
+                    "username": "TestBotName",
+                    "modules": modules_value,
+                }
+            }
+        )
+        return config
+
+    def test_default_is_all_modules(self):
+        config = ConfigParser()
+        config.read_dict({"resourcesbot": {"site": "test", "username": "TestBotName"}})
+        self.assertEqual(resolve_run_modules(self.modules, config), AVAILABLE_MODULES)
+
+    def test_config_all(self):
+        config = self._config_with_modules("all")
+        self.assertEqual(resolve_run_modules(self.modules, config), AVAILABLE_MODULES)
+
+    def test_config_specific_modules(self):
+        config = self._config_with_modules("list report")
+        self.assertEqual(
+            resolve_run_modules(self.modules, config),
+            ["write_lists", "write_report"],
+        )
+
+    def test_cli_overrides_config(self):
+        config = self._config_with_modules("list")
+        self.assertEqual(
+            resolve_run_modules(self.modules, config, cli_modules=["report"]),
+            ["write_report"],
+        )
+
+    def test_config_unknown_module_raises(self):
+        config = self._config_with_modules("list unknown")
+        with self.assertRaises(ValueError) as context:
+            resolve_run_modules(self.modules, config)
+        self.assertIn("unknown", str(context.exception))
 
 
 if __name__ == "__main__":
