@@ -52,12 +52,14 @@ class WriteReport(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
+        *,
+        simulate: bool = False,
     ):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
         """
-        super().__init__(fortraininglib, config, site)
+        super().__init__(fortraininglib, config, site, simulate=simulate)
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_report"
         )
@@ -173,14 +175,11 @@ class WriteReport(LanguagePostProcessor):
             self.logger.warning(
                 f"Language report page {page_url} doesn't exist, creating..."
             )
-            page.text = report
-            page.save("Created language report")
+            self._save_page(page, report, "Created language report")
         else:
             if page.text.strip() != report.strip():
-                page.text = report
-                page.save(
-                    "Updated language report"
-                )  # TODO write human-readable changes here in the save message
+                self._save_page(page, report, "Updated language report")
+                # TODO write human-readable changes here in the save message
                 self.logger.info(
                     f"Updated language report for {language_info.english_name}"
                 )

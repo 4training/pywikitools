@@ -87,6 +87,9 @@ set the logging level to INFO (default is WARN) by adding `-l info`.
 $ python path/to/script args
 ```
 
+Bots use `config.ini` for site and username settings and run directly with Python,
+not via pywikibot's `pwb.py` wrapper.
+
 If you're not yet logged in, `pywikibot` will ask you for the password for the
 user you defined in `config.ini`. After successful login, the login cookie is
 stored in `pywikibot-[UserName].lwp` so you don't have to log in every time.

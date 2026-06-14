@@ -20,6 +20,7 @@ from pywikitools.resourcesbot.data_structures import (
     WorksheetInfo,
     json_decode,
 )
+from pywikitools.pywikibot_io import save_page
 from pywikitools.resourcesbot.modules.post_processing import LanguagePostProcessor
 from pywikitools.resourcesbot.modules.write_summary import WriteSummary
 
@@ -32,6 +33,10 @@ AVAILABLE_MODULES: Final[List[str]] = [
     "write_report",
     "write_sidebar_messages",
 ]
+
+SIMULATE_SKIP_MODULES: Final[frozenset[str]] = frozenset(
+    {"export_html", "export_pdf", "export_repository"}
+)
 
 
 def load_module(module_name: str) -> Callable:
@@ -62,6 +67,7 @@ class ResourcesBot:
         limit_to_lang: Optional[str] = None,
         modules: list[str] = AVAILABLE_MODULES,
         rewrite: Optional[str] = None,
+        simulate: bool = False,
     ):
         """
         Args:
@@ -72,8 +78,13 @@ class ResourcesBot:
                 limit processing to one language (string with a language code)
             modules:
                 specify which post-processing modules should be executed
+            simulate:
+                dry-run: show pywikibot diffs, skip login, writes, and export modules
         """
+        self._simulate = simulate
         self.modules = modules
+        if simulate:
+            self.modules = [m for m in self.modules if m not in SIMULATE_SKIP_MODULES]
         # read-only list of download file types
         self._file_types: Final[List[str]] = ["pdf", "odt", "odg", "printPdf"]
         self._config = config
@@ -128,6 +139,18 @@ class ResourcesBot:
         self._changelog: Dict[str, ChangeLog] = {}
 
     def run(self):
+        previous_simulate = pywikibot.config.simulate
+        if self._simulate:
+            pywikibot.config.simulate = True
+            self.logger.info(
+                "Simulate mode: no MediaWiki writes, skipping export modules"
+            )
+        try:
+            self._run()
+        finally:
+            pywikibot.config.simulate = previous_simulate
+
+    def _run(self):
         if self._read_from_cache:
             try:
                 # List of languages to be read from cache
@@ -175,7 +198,9 @@ class ResourcesBot:
         # failed with a WARNING from pywikibot:
         # "No user is logged in on site 4training:en"-> better check and try
         # to log in if necessary
-        if not self.site.logged_in():
+        if self._simulate:
+            self.logger.info("Simulate mode: skipping login")
+        elif not self.site.logged_in():
             self.logger.info("We're not logged in. Trying to log in...")
             self.site.login()
             if not self.site.logged_in():
@@ -208,7 +233,10 @@ class ResourcesBot:
 
         for selected_module in self.modules:
             module = load_module(selected_module)(
-                self.fortraininglib, self._config, self.site
+                self.fortraininglib,
+                self._config,
+                self.site,
+                simulate=self._simulate,
             )
             for lang in self._result:
                 module.run(
@@ -222,7 +250,7 @@ class ResourcesBot:
 
         # Now run all GlobalPostProcessors
         if not self._limit_to_lang:
-            write_summary = WriteSummary(self.site)
+            write_summary = WriteSummary(self.site, simulate=self._simulate)
             write_summary.run(
                 self._result,
                 self._changelog,
@@ -457,8 +485,12 @@ class ResourcesBot:
             self.logger.warning(
                 f"{page.full_url()} doesn't seem to exist yet. Creating..."
             )
-            page.text = encoded_json
-            page.save("Created JSON data structure")
+            save_page(
+                page,
+                encoded_json,
+                "Created JSON data structure",
+                simulate=self._simulate,
+            )
             rewrite_json = False
         else:
             # Load "old" data structure of this language (from previous resourcesbot run)
@@ -481,8 +513,12 @@ class ResourcesBot:
 
         if rewrite_json:
             # Write the updated JSON structure
-            page.text = encoded_json
-            page.save("Updated JSON data structure")
+            save_page(
+                page,
+                encoded_json,
+                "Updated JSON data structure",
+                simulate=self._simulate,
+            )
             self.logger.info(f"Updated 4training:{lang}.json")
 
         return changes
@@ -510,8 +546,9 @@ class ResourcesBot:
         # TODO compare language_list and json.loads(previous_json) to find out if a new
         #  language was added
         if previous_json != encoded_json:
-            page.text = encoded_json
-            page.save("Updated list of languages")
+            save_page(
+                page, encoded_json, "Updated list of languages", simulate=self._simulate
+            )
             self.logger.info("Updated 4training:languages.json")
 
     def _save_number_of_languages(self):
@@ -546,8 +583,12 @@ class ResourcesBot:
 
         if previous_number_of_languages != number_of_languages:
             try:
-                page.text = number_of_languages
-                page.save("Updated number of languages")
+                save_page(
+                    page,
+                    str(number_of_languages),
+                    "Updated number of languages",
+                    simulate=self._simulate,
+                )
                 self.logger.info(
                     f"Updated MediaWiki:Numberoflanguages to {number_of_languages}"
                 )

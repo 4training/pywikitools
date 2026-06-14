@@ -4,6 +4,7 @@ from typing import Dict, Final
 import pywikibot
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
+from pywikitools.pywikibot_io import save_page
 from pywikitools.resourcesbot.modules.post_processing import GlobalPostProcessor
 
 
@@ -19,12 +20,13 @@ class WriteSummary(GlobalPostProcessor):
     It will be written to https://www.4training.net/4training:Summary - see also there for more explanations
     """
 
-    def __init__(self, site: pywikibot.site.APISite):
+    def __init__(self, site: pywikibot.site.APISite, *, simulate: bool = False):
         """
         Args:
             site: our pywikibot object to be able to write to the mediawiki system
         """
         self._site: Final[pywikibot.site.APISite] = site
+        self._simulate: Final[bool] = simulate
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_summary"
         )
@@ -69,14 +71,13 @@ class WriteSummary(GlobalPostProcessor):
             self.logger.warning(
                 f"Summary report page {page_url} doesn't exist, creating..."
             )
-            page.text = report
-            page.save("Created summary report")
+            save_page(page, report, "Created summary report", simulate=self._simulate)
         else:
             if page.text.strip() != report.strip():
-                page.text = report
-                page.save(
-                    "Updated summary report"
-                )  # TODO write human-readable changes here in the save message
+                save_page(
+                    page, report, "Updated summary report", simulate=self._simulate
+                )
+                # TODO write human-readable changes here in the save message
                 self.logger.info("Updated summary report")
 
     def create_mediawiki(self, language_data: Dict[str, LanguageInfo]) -> str:

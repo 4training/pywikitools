@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          coverage run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test
+          coverage run --source=pywikitools/,pywikitools/correctbot/ -m unittest discover -s pywikitools/test
           coverage xml
 
       - name: Upload coverage to Codecov

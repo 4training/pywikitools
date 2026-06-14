@@ -43,8 +43,10 @@ class WriteSidebarMessages(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
+        *,
+        simulate: bool = False,
     ):
-        super().__init__(fortraininglib, config, site)
+        super().__init__(fortraininglib, config, site, simulate=simulate)
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.write_sidebar_messages"
         )
@@ -65,8 +67,7 @@ class WriteSidebarMessages(LanguagePostProcessor):
 
         if previous_content != worksheet.title:
             self.logger.info(f"Updating system message {title}")
-            page.text = worksheet.title
-            page.save("Updated translated worksheet title")
+            self._save_page(page, worksheet.title, "Updated translated worksheet title")
 
     @staticmethod
     def has_relevant_change(worksheet: str, changes: ChangeLog) -> bool:

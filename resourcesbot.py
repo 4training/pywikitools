@@ -28,6 +28,8 @@ Command line options:
     --rewrite: Force rewriting of one component or all
     --read-from-cache: Read from the JSON structure instead of querying the current
     status of all worksheets
+    --simulate: Dry-run without login, MediaWiki writes, git push, or local exports;
+    shows pywikibot diffs for wiki page changes (pair with --read-from-cache for speed)
 
 Logging:
     If configured in config.ini (see config.example.ini), output will be logged to three
@@ -48,9 +50,11 @@ Quickly rewrite German exported HTML files
 Normal run (updating language information pages where necessary)
     python3 resourcesbot.py
 
-Run script completely without making any changes on the server:
-Best for understanding what the script does, but requires running via pywikibot pwb.py
-    python3 pwb.py -simulate resourcesbot.py -l info
+Run without making changes (best for understanding what the script does):
+    python3 resourcesbot.py --simulate -l info
+
+Pair with --read-from-cache for a faster dry-run:
+    python3 resourcesbot.py --simulate --read-from-cache -l info
 
 This is only the wrapper script, all main logic is in resourcesbot/bot.py
 """
@@ -111,6 +115,11 @@ def parse_arguments() -> ResourcesBot:
         default="warning",
         help="Set loglevel for the script",
     )
+    parser.add_argument(
+        "--simulate",
+        action="store_true",
+        help="Dry-run: show diffs, skip login, writes, and export modules.",
+    )
 
     args = parser.parse_args()
     limit_to_lang = None
@@ -136,6 +145,7 @@ def parse_arguments() -> ResourcesBot:
         limit_to_lang=limit_to_lang,
         modules=run_modules,
         rewrite=args.rewrite,
+        simulate=args.simulate,
     )
 
 

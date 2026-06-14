@@ -14,6 +14,7 @@ from typing import Dict, Final, Optional
 import pywikibot
 
 from pywikitools.fortraininglib import ForTrainingLib
+from pywikitools.pywikibot_io import save_page
 from pywikitools.resourcesbot.changes import ChangeLog
 from pywikitools.resourcesbot.data_structures import LanguageInfo
 
@@ -47,10 +48,18 @@ class LanguagePostProcessor(ABC):
         fortraininglib: ForTrainingLib,
         config: ConfigParser = None,
         site: pywikibot.site.APISite = None,
+        *,
+        simulate: bool = False,
     ):
         self.fortraininglib: Final[ForTrainingLib] = fortraininglib
         self._config: Final[ConfigParser] = config
         self._site: Final[Optional[pywikibot.site.APISite]] = site
+        self._simulate: Final[bool] = simulate
+
+    def _save_page(
+        self, page: pywikibot.page.BasePage, new_text: str, summary: str
+    ) -> None:
+        save_page(page, new_text, summary, simulate=self._simulate)
 
     @abstractmethod
     def run(

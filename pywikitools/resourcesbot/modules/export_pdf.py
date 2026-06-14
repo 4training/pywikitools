@@ -36,8 +36,10 @@ class ExportPDF(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite = None,
+        *,
+        simulate: bool = False,
     ):
-        super().__init__(fortraininglib, config, site)
+        super().__init__(fortraininglib, config, site, simulate=simulate)
         self._base_folder: str = self._config.get("Paths", "pdfexport", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
             "pywikitools.resourcesbot.modules.export_pdf"

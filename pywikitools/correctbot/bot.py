@@ -244,8 +244,7 @@ class CorrectBot:
         """
         Write corrections back to mediawiki
 
-        You should disable pywikibot throttling to avoid CorrectBot runs to take quite long:
-        `put_throttle = 0` in user-config.py
+        Throttling is disabled in __init__ via site.throttle.set_delays(...).
 
         Returns:
             bool: Did we save any corrections to the mediawiki system?

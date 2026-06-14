@@ -210,6 +210,38 @@ class TestWriteList(unittest.TestCase):
             mock_page.return_value.text, page_content1 + self.expected_output
         )
 
+    @patch("pywikibot.showDiff")
+    @patch("pywikibot.Page")
+    @patch.object(ForTrainingLib, "mark_for_translation")
+    def test_run_skips_mark_for_translation_in_simulate_mode(
+        self, mock_mark_for_translation, mock_page, mock_show_diff
+    ):
+        config = ConfigParser()
+        config["resourcesbot"] = {"username": "TestBot", "password": "secret"}
+        write_list = WriteList(
+            ForTrainingLib("https://test.4training.net"),
+            config,
+            None,
+            simulate=True,
+        )
+
+        changes = ChangeLog()
+        changes.add_change("Prayer", ChangeType.NEW_WORKSHEET)
+        mock_page.return_value.exists.return_value = True
+        mock_page.return_value.isRedirectPage.return_value = False
+        page_content1 = (
+            "Some text\n== <translate>Available training resources"
+            " in Russian</translate> ==\n"
+        )
+        mock_page.return_value.text = page_content1 + "* List\n* List"
+        mock_page.return_value.title.return_value = "Russian"
+
+        write_list.run(self.language_info, self.english_info, changes, ChangeLog())
+
+        mock_show_diff.assert_called_once()
+        mock_page.return_value.save.assert_not_called()
+        mock_mark_for_translation.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -42,7 +42,7 @@ format: ## auto-format code with ruff
 	$(RUFF) format .
 
 coverage: ## run tests with coverage report and open HTML in browser
-	$(COVERAGE) run --source=pywikitools/,pywikitools/correctbot/ --omit=pywikitools/user-config.py -m unittest discover -s pywikitools/test
+	$(COVERAGE) run --source=pywikitools/,pywikitools/correctbot/ -m unittest discover -s pywikitools/test
 	$(COVERAGE) report -m
 	$(COVERAGE) html
 	$(BROWSER) htmlcov/index.html

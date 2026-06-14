@@ -37,8 +37,10 @@ class WriteList(LanguagePostProcessor):
         fortraininglib: ForTrainingLib,
         config: ConfigParser,
         site: pywikibot.site.APISite,
+        *,
+        simulate: bool = False,
     ):
-        super().__init__(fortraininglib, config, site)
+        super().__init__(fortraininglib, config, site, simulate=simulate)
         self._username: Final[str] = config.get("resourcesbot", "username", fallback="")
         self._password: Final[str] = config.get("resourcesbot", "password", fallback="")
         self.logger: Final[logging.Logger] = logging.getLogger(
@@ -245,18 +247,24 @@ class WriteList(LanguagePostProcessor):
         # Save page and mark it for translation if necessary
         if page.text.strip() == new_page_content.strip():
             return
-        page.text = new_page_content
-        page.save(
-            "Updated list of available training resources"
+        self._save_page(
+            page,
+            new_page_content,
+            "Updated list of available training resources",
         )  # TODO write list of changes here in the save message
         if self._username != "" and self._password != "":
-            self.fortraininglib.mark_for_translation(
-                page.title(), self._username, self._password
-            )
-            self.logger.info(
-                f"Updated language information page {language} and marked it "
-                f"for translation."
-            )
+            if self._simulate:
+                self.logger.info(
+                    f"Simulate mode: skipping mark_for_translation for {language}"
+                )
+            else:
+                self.fortraininglib.mark_for_translation(
+                    page.title(), self._username, self._password
+                )
+                self.logger.info(
+                    f"Updated language information page {language} and marked it "
+                    f"for translation."
+                )
         else:
             self.logger.info(
                 f"Updated language information page {language}. Couldn't mark it "

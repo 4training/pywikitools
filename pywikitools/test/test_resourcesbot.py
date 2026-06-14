@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 
 import pywikibot
 
-from pywikitools.resourcesbot.bot import ResourcesBot
+from pywikitools.resourcesbot.bot import ResourcesBot, load_module
 from pywikitools.resourcesbot.data_structures import TranslationProgress, WorksheetInfo
 from pywikitools.test.test_data_structures import TEST_PROGRESS, TEST_TIME, TEST_URL
 
@@ -28,8 +28,7 @@ HEARING_FROM_GOD = """[...]
 
 class TestResourcesBot(unittest.TestCase):
     """
-    We mock pywikibot because otherwise we would need to provide a valid user-config.py
-    (and because it saves time)
+    We mock pywikibot to keep tests fast and independent of live wikis.
     """
 
     def setUp(self):
@@ -289,6 +288,55 @@ class TestResourcesBot(unittest.TestCase):
         bot.run()
         for mocked_component in rewrite_check.values():
             self.assertFalse(mocked_component.call_args.kwargs.get("force_rewrite"))
+
+    @patch("pywikibot.config.simulate", False)
+    @patch("pywikibot.Site", autospec=True)
+    @patch("pywikibot.Page", autospec=True)
+    @patch(
+        "pywikitools.resourcesbot.modules.write_summary.WriteSummary.run", autospec=True
+    )
+    @patch("pywikitools.resourcesbot.modules.export_repository.ExportRepository")
+    @patch("pywikitools.resourcesbot.bot.load_module", wraps=load_module)
+    def test_simulate_mode(
+        self,
+        mock_load_module,
+        mock_export_repository_cls,
+        mock_write_summary,
+        mock_pywikibot_page,
+        mock_pywikibot_site,
+    ):
+        mock_pywikibot_page.side_effect = self.json_test_loader
+        mock_pywikibot_site.return_value.logged_in.return_value = False
+        construction_calls: Dict[str, bool] = {}
+
+        def tracking_load(module_name: str):
+            module_cls = load_module(module_name)
+
+            def factory(*args, **kwargs):
+                construction_calls[module_name] = kwargs.get("simulate", False)
+                instance = Mock()
+                instance.abbreviation.return_value = module_cls.abbreviation()
+                return instance
+
+            return factory
+
+        mock_load_module.side_effect = tracking_load
+
+        bot = ResourcesBot(config=self.config, read_from_cache=True, simulate=True)
+        for skipped in ("export_html", "export_pdf", "export_repository"):
+            with self.subTest(module=skipped):
+                self.assertNotIn(skipped, bot.modules)
+        bot.run()
+
+        self.assertFalse(pywikibot.config.simulate)
+        mock_pywikibot_site.return_value.login.assert_not_called()
+        mock_export_repository_cls.assert_not_called()
+        self.assertEqual(set(construction_calls.keys()), set(bot.modules))
+        for module_name, simulate in construction_calls.items():
+            with self.subTest(module=module_name):
+                self.assertTrue(
+                    simulate, f"{module_name} not constructed with simulate"
+                )
 
     # TODO: test_run_with_limit_lang
 
