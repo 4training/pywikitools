@@ -41,6 +41,8 @@ class Family(pywikibot.family.SubdomainFamily):
 
     # this must have the same value as $wgScriptPath in LocalSettings.php of the mediawiki installation
     def scriptpath(self, code):
+        if code == "local":
+            return "/mediawiki"
         return ""
 
     # TODO can be removed when upgrading to pywikibot ^8.2
