@@ -19,6 +19,7 @@ Command line options:
     -h, --help: help message
     -l [debug, info, warning, error]: set loglevel
     --keep-english-file: don't delete the downloaded English ODT file after we're finished
+    --skip-correctbot: skip the pre-flight CorrectBot check
 """
 
 import argparse
@@ -51,6 +52,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Don't delete the downloaded English ODT file after we're finished",
     )
+    parser.add_argument(
+        "--skip-correctbot",
+        dest="skip_correctbot",
+        action="store_true",
+        help="Skip the pre-flight CorrectBot check",
+    )
 
     args = parser.parse_args()
     root = logging.getLogger()
@@ -63,5 +70,8 @@ if __name__ == "__main__":
     sh.setLevel(numeric_level)
     root.addHandler(sh)
 
-    translateodt = TranslateODT(keep_english_file=args.keep_english_file)
+    translateodt = TranslateODT(
+        keep_english_file=args.keep_english_file,
+        skip_correctbot=args.skip_correctbot,
+    )
     translateodt.translate_worksheet(args.worksheet, args.language_code)

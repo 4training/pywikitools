@@ -550,9 +550,7 @@ class TestQuotationMarkCorrector(CorrectorTestCase):
         corrector = QuotationMarkCorrectorTester()
         self.assertEqual(correct(corrector, "» Test«"), "»Test«")
         self.assertEqual(correct(corrector, "»Test «"), "»Test«")
-        self.assertEqual(
-            correct(corrector, "Start » word « end"), "Start »word« end"
-        )
+        self.assertEqual(correct(corrector, "Start » word « end"), "Start »word« end")
 
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
