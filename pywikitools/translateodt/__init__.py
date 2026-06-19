@@ -30,10 +30,15 @@ class UsableUniversalCorrector(UniversalCorrector):
 
 class TranslateODT:
     def __init__(
-        self, *, keep_english_file: bool = False, config: Dict[str, Dict[str, str]] = {}
+        self,
+        *,
+        keep_english_file: bool = False,
+        skip_correctbot: bool = False,
+        config: Dict[str, Dict[str, str]] = {},
     ):
         """Variable initializations (no connection to LibreOffice here)
         @param keep_english_file: Don't delete English ODT file afterwards (command line option)
+        @param skip_correctbot: Skip the pre-flight CorrectBot check (command line option)
         @param config: can be used to overwrite config settings
         """
         # Read configuration from config.ini in this folder; set default values in case it doesn't exist
@@ -47,7 +52,10 @@ class TranslateODT:
         self.config.read(join(dirname(abspath(__file__)), "..", "..", "config.ini"))
         self.config.read_dict(config)
 
-        self.correctbot = CorrectBot(self.config, simulate=True)
+        self.skip_correctbot: bool = skip_correctbot
+        self.correctbot = (
+            None if skip_correctbot else CorrectBot(self.config, simulate=True)
+        )
 
         self.logger = logging.getLogger("pywikitools.translateodt")
         self.keep_english_file: bool = keep_english_file
@@ -363,13 +371,14 @@ class TranslateODT:
             file name of the created ODT file (or None in case of error)
         """
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
-        self.correctbot.check_page(worksheet, language_code)
-        if (
-            self.correctbot.get_correction_counter() > 0
-            or self.correctbot.get_warning_counter() > 0
-        ):
-            self.logger.error("Please run CorrectBot first and then try again.")
-            return None
+        if not self.skip_correctbot:
+            self.correctbot.check_page(worksheet, language_code)
+            if (
+                self.correctbot.get_correction_counter() > 0
+                or self.correctbot.get_warning_counter() > 0
+            ):
+                self.logger.error("Please run CorrectBot first and then try again.")
+                return None
         translated_page: Optional[TranslatedPage] = (
             self.fortraininglib.get_translation_units(worksheet, language_code)
         )

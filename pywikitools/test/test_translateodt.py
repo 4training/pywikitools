@@ -262,6 +262,28 @@ class TestTranslateODT(unittest.TestCase):
 
         # TODO test all the main functionality of translate_worksheet()
 
+    @patch("pywikitools.translateodt.ForTrainingLib", autospec=True)
+    @patch("pywikitools.translateodt.CorrectBot", autospec=True)
+    def test_translate_worksheet_skips_correctbot(
+        self, mock_correctbot, mock_fortraininglib
+    ):
+        translateodt = TranslateODT(
+            keep_english_file=True,
+            skip_correctbot=True,
+            config={"translateodt": {"site": "4training"}},
+        )
+        translateodt._loffice = Mock(spec=LibreOffice)
+        self.addCleanup(translateodt.fortraininglib.session.close)
+
+        mock_fortraininglib.return_value.get_translation_units.return_value = None
+        with self.assertLogs("pywikitools.translateodt", level="ERROR"):
+            self.assertIsNone(translateodt.translate_worksheet("Prayer", "de"))
+
+        mock_correctbot.assert_not_called()
+        mock_fortraininglib.return_value.get_translation_units.assert_called_with(
+            "Prayer", "de"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
