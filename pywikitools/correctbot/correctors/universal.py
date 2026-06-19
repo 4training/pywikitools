@@ -371,7 +371,8 @@ class QuotationMarkCorrector(ABC):
 
         We do this by replacing all of „“”" with start and end quotation mark (alternating).
         This only works if we have an even amount of quotation marks. If not, we issue a warning
-        and don't change anything.
+        and don't change anything. After normalization, redundant whitespace immediately inside
+        the quotation marks is removed (e.g. „ word ” becomes „word”).
 
         Args:
             start_quotation_mark: The character used at the start of a quotation
@@ -391,6 +392,10 @@ class QuotationMarkCorrector(ABC):
             for counter in range(1, len(splitted_text)):
                 text += start_quotation_mark if counter % 2 == 1 else end_quotation_mark
                 text += splitted_text[counter]
+            start = re.escape(start_quotation_mark)
+            end = re.escape(end_quotation_mark)
+            text = re.sub(start + r"\s+", start_quotation_mark, text)
+            text = re.sub(r"\s+" + end, end_quotation_mark, text)
         return text
 
 

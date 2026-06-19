@@ -19,6 +19,7 @@ from pywikitools.correctbot.correctors.ar import ArabicCorrector
 from pywikitools.correctbot.correctors.base import CorrectorBase
 from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
+from pywikitools.correctbot.correctors.ro import RomanianCorrector
 from pywikitools.correctbot.correctors.tr import TurkishCorrector
 from pywikitools.correctbot.correctors.universal import (
     NoSpaceBeforePunctuationCorrector,
@@ -545,6 +546,14 @@ class TestQuotationMarkCorrector(CorrectorTestCase):
                 correct(corrector, '"Something" wrong"'), '"Something" wrong"'
             )
 
+    def test_correct_quotes_spacing(self):
+        corrector = QuotationMarkCorrectorTester()
+        self.assertEqual(correct(corrector, "» Test«"), "»Test«")
+        self.assertEqual(correct(corrector, "»Test «"), "»Test«")
+        self.assertEqual(
+            correct(corrector, "Start » word « end"), "Start »word« end"
+        )
+
 
 class RTLCorrectorTester(CorrectorBase, RTLCorrector):
     """With this class we can test the rules of RTLCorrector"""
@@ -610,6 +619,9 @@ class TestGermanCorrector(CorrectorTestCase):
                 correct(self.corrector, '"Das ist" seltsam"'), '"Das ist" seltsam"'
             )
 
+        for spaced in ["„ Test “", "„Test “", "„ Test“"]:
+            self.assertEqual(correct(self.corrector, spaced), "„Test“")
+
         valid_strings: List[str] = [  # Some more complex examples
             "(siehe Arbeitsblatt „[[Forgiving Step by Step/de|Schritte der Vergebung]]“)",
             "[[How to Continue After a Prayer Time/de|„Wie es nach einer Gebetszeit weitergeht“]]",
@@ -663,6 +675,24 @@ class TestGermanCorrector(CorrectorTestCase):
 
     def test_suffix_for_print_version(self):
         self.assertNotEqual(self.corrector._suffix_for_print_version(), "_print")
+
+
+class TestRomanianCorrector(CorrectorTestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.corrector = RomanianCorrector()
+
+    def test_correct_quotes(self):
+        for spaced in ["„ cuvânt”", "„cuvânt ”", "„ cuvânt ”"]:
+            self.assertEqual(correct(self.corrector, spaced), "„cuvânt”")
+        self.assertEqual(correct(self.corrector, "„cuvânt”"), "„cuvânt”")
+        self.assertEqual(
+            correct(self.corrector, "Spune: „ da ” și „ nu ”"),
+            "Spune: „da” și „nu”",
+        )
+
+    def test_get_language_code(self):
+        self.assertEqual(self.corrector._get_language_code(), "ro")
 
 
 """TODO
