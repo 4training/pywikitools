@@ -84,11 +84,10 @@ set the logging level to INFO (default is WARN) by adding `-l info`.
 ## Run scripts
 
 ```shell
-$ python path/to/script args
+$ ./env/bin/python script_name.py args
 ```
-
-Bots use `config.ini` for site and username settings and run directly with Python,
-not via pywikibot's `pwb.py` wrapper.
+All entry scripts live in the repository root. They use `config.ini` to read settings
+and run directly with Python, not via pywikibot's pwb.py wrapper.
 
 If you're not yet logged in, `pywikibot` will ask you for the password for the
 user you defined in `config.ini`. After successful login, the login cookie is
@@ -108,9 +107,9 @@ $ make coverage  # coverage report; opens htmlcov/ in your browser
 The same commands without `make`:
 
 ```shell
-$ python -m unittest discover -s pywikitools/test
-$ ruff check .
-$ ruff format --check .
+$ ./env/bin/python -m unittest discover -s pywikitools/test
+$ ./env/bin/ruff check .
+$ ./env/bin/ruff format --check .
 ```
 
 With `GitHub Actions` tests and linting run automatically on every push or pull
