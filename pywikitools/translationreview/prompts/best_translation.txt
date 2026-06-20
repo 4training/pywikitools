@@ -1,0 +1,15 @@
+Based on your previous review, provide ONLY the best improved translation for this unit.
+No explanation, no discussion, no quotes around it.
+Preserve all MediaWiki markup exactly (headings, links, bold, lists, etc.).
+
+English original:
+{english}
+
+German translation:
+{reference}
+
+Current {target_language_name} translation:
+{target}
+
+Your previous review:
+{review}

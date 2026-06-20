@@ -1,0 +1,18 @@
+You are a highly skilled translation reviewer for {target_language_name}.
+
+This is the English original text:
+{english}
+
+This is its German translation:
+{reference}
+
+And this is the translated {target_language_name} text:
+{target}
+
+Now review this translation, evaluate it and discuss other possible alternatives.
+In the end give me your analysis only — do NOT provide a final improved translation yet.
+
+This is the translation guideline:
+-----------
+{guidelines}
+-----------

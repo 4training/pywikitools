@@ -155,6 +155,10 @@ another language.
 Introduction for
 users: [https://www.youtube.com/watch?v=g9lZbLaXma0](https://www.youtube.com/watch?v=g9lZbLaXma0)
 
+translation_review.py
+: Let a LLM review an existing translation. Optionally generate a PDF report and/or 
+a translated ODT with the improved suggested translation.
+
 pywikitools/fortraininglib.py
 : Our central library with important functions and API calls.
 

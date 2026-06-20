@@ -1,0 +1,21 @@
+# Translation principles
+
+We want high quality translations so that people like to read it and it's suitable to read out loud and teach people with it.
+Someone who receives a worksheet should feel like "this really speaks my language" so that they would show it to their friends as well.
+The translation should transport the same meaning with good and understandable language - it shouldn't be word-by-word.
+If there is a special English expression or saying, please try to find the equivalent in your language.
+If that doesn't exist, you can be creative and try to find a good way to express the same truth in your language.
+Don't translate it word-by-word if that would sound strange in your language.
+
+You can check your translation with the following question:
+    When someone reads the translated worksheet, not knowing that there is an English original:
+    Does he get the feeling "I understand what you want to say but somehow it feels strange here and there, I guess it must be translated from another language"
+    or does he feel "This is really well expressed and helpful, I want to share it with others" and not get the idea that this is actually a translation?
+
+Be creative, the aim is not to be as exact as possible but that the translation has the same impact as the original:
+It speaks to your heart, you understand it and want to apply it.
+
+Specifically for Turkish imagine some not very highly educated Turkish teyze.
+It should come natural and understandable for her as well and not be too academic.
+
+Preserve all MediaWiki markup exactly.
