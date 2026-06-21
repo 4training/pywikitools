@@ -9,4 +9,5 @@ GitPython>=3.1.37
 pikepdf>=8.5.1
 googletrans-py==4.0.0
 openai>=1.0.0
+fpdf2>=2.8.0
 # Workaround because googletrans>=4.0.0rc1 uses outdated httpx version leading to problems

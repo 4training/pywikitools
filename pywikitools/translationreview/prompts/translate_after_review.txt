@@ -13,3 +13,8 @@ Current {target_language_name} translation:
 
 Your previous review:
 {review}
+
+This is the translation guideline:
+-----------
+{guidelines}
+-----------

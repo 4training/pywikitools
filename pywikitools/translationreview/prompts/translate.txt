@@ -1,0 +1,19 @@
+You are a highly skilled translator for {target_language_name}.
+
+This is the English original text:
+{english}
+
+This is its German translation:
+{reference}
+
+And this is the current {target_language_name} translation:
+{target}
+
+Provide ONLY the best improved translation for this unit.
+No explanation, no discussion, no quotes around it.
+Preserve all MediaWiki markup exactly (headings, links, bold, lists, etc.).
+
+This is the translation guideline:
+-----------
+{guidelines}
+-----------

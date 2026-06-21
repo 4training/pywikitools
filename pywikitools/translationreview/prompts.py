@@ -65,19 +65,30 @@ def build_review_prompt(
     )
 
 
-def build_best_translation_prompt(
+def build_translate_prompt(
     *,
     language_code: str,
     english: str,
     reference: str,
     target: str,
-    review: str,
+    review: str = "",
 ) -> str:
-    template = _load_template("best_translation.txt")
+    guidelines = _load_guidelines(language_code)
+    if review:
+        template = _load_template("translate_after_review.txt")
+        return template.format(
+            target_language_name=language_name(language_code),
+            english=english,
+            reference=reference,
+            target=target,
+            review=review,
+            guidelines=guidelines,
+        )
+    template = _load_template("translate.txt")
     return template.format(
         target_language_name=language_name(language_code),
         english=english,
         reference=reference,
         target=target,
-        review=review,
+        guidelines=guidelines,
     )

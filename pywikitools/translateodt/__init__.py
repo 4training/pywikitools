@@ -3,7 +3,7 @@ import os
 from os.path import abspath, dirname, join
 import re
 from configparser import ConfigParser
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import requests
 from pywikitools.correctbot.bot import CorrectBot
 from pywikitools.family import Family
@@ -361,15 +361,10 @@ class TranslateODT:
         self._original_page_count = self._loffice.get_page_count()
         self._search_and_replace(self._cleanup_units(translated_page, config))
 
-    def translate_worksheet(self, worksheet: str, language_code: str) -> Optional[str]:
-        """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT
-
-        Args:
-            worksheet: name of the worksheet (e.g. "Forgiving_Step_by_Step")
-            language_code: what language we should translate to (e.g. "de")
-        Returns:
-            file name of the created ODT file (or None in case of error)
-        """
+    def _load_translated_page_for_odt(
+        self, worksheet: str, language_code: str
+    ) -> Optional[Tuple[TranslatedPage, str, TranslateOdtConfig]]:
+        """Fetch worksheet data and English ODT for search-and-replace translation."""
         self.logger.debug(f"Worksheet: {worksheet}, language code: {language_code}")
         if not self.skip_correctbot:
             self.correctbot.check_page(worksheet, language_code)
@@ -449,20 +444,36 @@ class TranslateODT:
             return None
 
         config = self.read_worksheet_config(worksheet)
-        self.translate_odt(odt_path, translated_page, config)
+        return translated_page, odt_path, config
+
+    def _apply_translation_overrides(
+        self, translated_page: TranslatedPage, translation_overrides: Dict[str, str]
+    ) -> None:
+        for unit in translated_page:
+            override = translation_overrides.get(unit.identifier)
+            if override:
+                unit.set_translation(override)
+
+    def _finalize_translated_odt(self, translated_page: TranslatedPage) -> None:
         self._set_properties(translated_page)
         self._loffice.set_default_styles(
             translated_page.language_code,
             self.fortraininglib.get_language_direction(translated_page.language_code)
             == "rtl",
-        )  # noqa: E128
+        )
 
-        # Save in folder worksheets/[language_code]/ as odt and pdf, close LibreOffice
-        save_path = self.config["Paths"]["worksheets"] + translated_page.language_code
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        filename = self._get_odt_filename(translated_page)
-        file_path = f"{save_path}/{filename}"
+    def _save_translated_odt(
+        self,
+        translated_page: TranslatedPage,
+        odt_path: str,
+        file_path: str,
+        *,
+        export_pdf: bool,
+        return_none_on_save_error: bool = False,
+    ) -> Optional[str]:
+        output_dir = os.path.dirname(file_path)
+        if output_dir and not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
 
         self.logger.info(f"Saving translated document to {file_path}...")
         try:
@@ -471,9 +482,13 @@ class TranslateODT:
             self.logger.error(
                 f"Couldn't save {file_path}: File exists and is currently opened."
             )
-        pdf_path = file_path.replace(".odt", ".pdf")
-        self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
-        self._loffice.export_pdf(pdf_path)
+            if return_none_on_save_error:
+                return None
+
+        if export_pdf:
+            pdf_path = file_path.replace(".odt", ".pdf")
+            self.logger.info(f"Exporting translated document as PDF to {pdf_path}...")
+            self._loffice.export_pdf(pdf_path)
 
         if self.config.getboolean("translateodt", "closeoffice"):
             self._loffice.close()
@@ -484,6 +499,53 @@ class TranslateODT:
             self.logger.debug(f"Removing {odt_path}")
             os.remove(odt_path)
         return file_path
+
+    def translate_worksheet(
+        self,
+        worksheet: str,
+        language_code: str,
+        *,
+        output_path: Optional[str] = None,
+        export_pdf: bool = True,
+        translation_overrides: Optional[Dict[str, str]] = None,
+    ) -> Optional[str]:
+        """Create translated worksheet: Fetch information, download original ODT, process it, save translated ODT
+
+        Args:
+            worksheet: name of the worksheet (e.g. "Forgiving_Step_by_Step")
+            language_code: what language we should translate to (e.g. "de")
+            output_path: where to save the ODT (default: worksheets/[language_code]/)
+            export_pdf: also export a PDF next to the ODT file
+            translation_overrides: optional unit identifier → translation replacements
+        Returns:
+            file name of the created ODT file (or None in case of error)
+        """
+        prepared = self._load_translated_page_for_odt(worksheet, language_code)
+        if prepared is None:
+            return None
+        translated_page, odt_path, config = prepared
+        if translation_overrides:
+            self._apply_translation_overrides(translated_page, translation_overrides)
+        self.translate_odt(odt_path, translated_page, config)
+        self._finalize_translated_odt(translated_page)
+
+        if output_path is not None:
+            file_path = output_path
+        else:
+            save_path = (
+                self.config["Paths"]["worksheets"] + translated_page.language_code
+            )
+            if not os.path.isdir(save_path):
+                os.makedirs(save_path)
+            file_path = f"{save_path}/{self._get_odt_filename(translated_page)}"
+
+        return self._save_translated_odt(
+            translated_page,
+            odt_path,
+            file_path,
+            export_pdf=export_pdf,
+            return_none_on_save_error=output_path is not None,
+        )
 
     def _set_properties(self, page: TranslatedPage):
         """Set the properties of the ODT file"""
