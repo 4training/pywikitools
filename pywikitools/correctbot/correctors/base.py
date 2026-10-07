@@ -226,6 +226,10 @@ class CorrectorBase(ABC):
             ):
                 suggestion_stats[suggestion_function.__name__] += 1
 
+        # Our handler did its job: Remove it again so handlers don't pile up
+        # on the (global) corrector logger with every translation unit we process
+        corrector_logger.removeHandler(log_handler)
+
         # Save warnings from the Corrector class in our CorrectionResult
         while not log_queue.empty():
             record: logging.LogRecord = log_queue.get()
