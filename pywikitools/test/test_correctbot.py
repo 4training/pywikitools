@@ -21,6 +21,7 @@ from pywikitools.correctbot.correctors.de import GermanCorrector
 from pywikitools.correctbot.correctors.fr import FrenchCorrector
 from pywikitools.correctbot.correctors.ro import RomanianCorrector
 from pywikitools.correctbot.correctors.tr import TurkishCorrector
+from pywikitools.correctbot.correctors.ur import UrduCorrector
 from pywikitools.correctbot.correctors.universal import (
     NoSpaceBeforePunctuationCorrector,
     QuotationMarkCorrector,
@@ -858,6 +859,84 @@ class TestPersianCorrector(CorrectorTestCase):
         )
         self.assertEqual(
             correct(corrector, "کلمه ”شنیدن“ استفاده"), "کلمه «شنیدن» استفاده"
+        )
+
+
+class TestUrduCorrector(CorrectorTestCase):
+    # TODO add real life examples with compare_revisions() as soon as we have Urdu translations
+    @classmethod
+    def setUpClass(cls):
+        cls.corrector = UrduCorrector()
+
+    def test_correct_quotes(self):
+        self.assertEqual(
+            correct(self.corrector, 'یسوع نے کہا "میں راستہ ہوں"'),
+            "یسوع نے کہا ”میں راستہ ہوں“",
+        )
+        self.assertEqual(
+            correct(self.corrector, "یسوع نے کہا “میں راستہ ہوں”"),
+            "یسوع نے کہا ”میں راستہ ہوں“",
+        )
+
+    def test_correct_urdu_characters(self):
+        # Arabic kaf (ك), yeh (ي) and heh (ه) get replaced by keheh (ک), farsi yeh (ی) and heh goal (ہ)
+        self.assertEqual(correct(self.corrector, "كتاب"), "کتاب")
+        self.assertEqual(correct(self.corrector, "يسوع"), "یسوع")
+        self.assertEqual(correct(self.corrector, "الله"), "اللہ")
+        self.assertEqual(title_correct(self.corrector, "يسوع كي كتاب"), "یسوع کی کتاب")
+
+    def test_correct_full_stop(self):
+        self.assertEqual(correct(self.corrector, "یہ ایک جملہ ہے."), "یہ ایک جملہ ہے۔")
+        # correct_missing_final_dot() must not add a dot after an Urdu full stop
+        self.assertEqual(
+            correct(self.corrector, "یہ ایک جملہ ہے۔", "This is a sentence."),
+            "یہ ایک جملہ ہے۔",
+        )
+        # ... also not if the Urdu full stop is inside a quotation: then we warn instead
+        unit = TranslationUnit(
+            "Test/1", "ur", 'Because "this is a sentence".', 'کیونکہ "یہ ایک جملہ ہے۔"'
+        )
+        result = self.corrector.correct(unit)
+        self.assertEqual(
+            result.suggestions.get_translation(), "کیونکہ ”یہ ایک جملہ ہے۔“"
+        )
+        self.assertIn("inside a quotation or bracket", result.warnings)
+        # If the final punctuation is really missing, an Urdu full stop gets suggested (not a dot)
+        self.assertEqual(
+            correct(self.corrector, "یہ ایک جملہ ہے", "This is a sentence."),
+            "یہ ایک جملہ ہے۔",
+        )
+        # A dot after a closing quotation mark or bracket also ends a sentence
+        self.assertEqual(
+            correct(self.corrector, 'اس نے کہا: "خدا اچھا ہے".'),
+            "اس نے کہا: ”خدا اچھا ہے“۔",
+        )
+        self.assertEqual(correct(self.corrector, "(یوحنا 3:16)."), "(یوحنا 3:16)۔")
+        # Dots that don't end an Urdu sentence are left alone
+        self.assertEqual(
+            correct(self.corrector, "تقریباً 1.5 گھنٹے"), "تقریباً 1.5 گھنٹے"
+        )
+        self.assertEqual(correct(self.corrector, "1. پہلا قدم"), "1. پہلا قدم")
+
+    def test_correct_spaces(self):
+        self.assertEqual(
+            correct(self.corrector, "ہم دعا کرتے ہیں۔پھر"), "ہم دعا کرتے ہیں۔ پھر"
+        )
+        self.assertEqual(correct(self.corrector, "جی ہاں, بالکل"), "جی ہاں، بالکل")
+        self.assertEqual(correct(self.corrector, "جی  ہاں ، بالکل"), "جی ہاں، بالکل")
+
+    def test_titles(self):
+        self.assertEqual(
+            title_correct(self.corrector, "قدم بہ قدم معاف کرنا۔"),
+            "قدم بہ قدم معاف کرنا",
+        )
+        self.assertEqual(
+            title_correct(self.corrector, "قدم بہ قدم معاف کرنا."),
+            "قدم بہ قدم معاف کرنا",
+        )
+        self.assertEqual(
+            self.corrector._compose_filename("معاف_کرنا", ".pdf", False),
+            "معاف_کرنا.pdf",
         )
 
 

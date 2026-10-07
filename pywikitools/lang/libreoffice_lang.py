@@ -115,5 +115,8 @@ LANG_LOCALE: Final[Dict[str, Lang]] = {
     ),  # sudo apt-get install fonts-taml-tamu
     "te": Lang("te", "IN", FontType.FONT_CTL),
     "th": Lang("th", "TH", FontType.FONT_CTL),
-    "ti": Lang("ti", "ER", FontType.FONT_CTL, "Abyssinica SIL"),
-}  # sudo apt-get install fonts-sil-abyssinica
+    "ti": Lang(
+        "ti", "ER", FontType.FONT_CTL, "Abyssinica SIL"
+    ),  # sudo apt-get install fonts-sil-abyssinica
+    "ur": Lang("ur", "PK", FontType.FONT_CTL, "Noto Naskh Arabic"),
+}
