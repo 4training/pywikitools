@@ -16,6 +16,9 @@ from typing import List, Match
 
 from pywikitools.correctbot.correctors.base import suggest_only, use_snippets
 
+# Closing quotation marks and brackets: they can come after the final punctuation mark of a sentence
+CLOSING_CHARACTERS: str = "“”»)]"
+
 
 class UniversalCorrector(ABC):
     """Has language-independent correction functions"""
@@ -190,14 +193,38 @@ class UniversalCorrector(ABC):
         """When finding a normal dash ( - ) surrounded by spaces: Make long dash ( – ) out of it"""
         return re.sub(" - ", " – ", text)
 
+    def _final_punctuation(self) -> str:
+        """Which character ends a sentence in this language?
+
+        Override this if your language doesn't use a dot (Urdu e.g. uses the Urdu full stop ۔)
+        """
+        return "."
+
     @suggest_only
     @use_snippets
     def correct_missing_final_dot(self, text: str, original: str) -> str:
-        """If the original has a trailing dot, the translation also needs one at the end."""
-        if original.endswith("."):
-            if len(text.strip()) > 1 and not text.strip().endswith("."):
-                return text.strip() + "."
-        return text
+        """If the original has a trailing dot, the translation also needs one at the end.
+
+        Which character ends a sentence is defined by _final_punctuation().
+        If that character is inside a closing quotation mark or bracket
+        (example: Denn „verletzte Menschen.“) we only warn: It can be correct (if a whole
+        sentence is quoted) or a mistake (then it belongs after the closing quotation mark) -
+        we can't decide that, so we leave it to a human.
+        """
+        if not original.endswith("."):
+            return text
+        final = self._final_punctuation()
+        stripped = text.strip()
+        if len(stripped) <= 1 or stripped.endswith(final):
+            return text
+        if stripped.rstrip(CLOSING_CHARACTERS).endswith(final):
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Found the final {final} inside a quotation or bracket. Please check whether "
+                f"it should be after the closing quotation mark / bracket: {stripped}"
+            )
+            return text
+        return stripped + final
 
     def correct_mediawiki_bold_italic(self, text: str) -> str:
         """Replace mediawiki formatting '''bold''' with <b>bold</b> and ''italic'' with <i>italic</i>"""

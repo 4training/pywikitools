@@ -387,6 +387,25 @@ class TestUniversalCorrector(unittest.TestCase):
             correct(self.corrector, "Ein ganzer Satz", "A full sentence"),
             "Ein ganzer Satz",
         )
+        # If the final dot is inside a quotation we don't add another one but warn instead:
+        # It can be correct (if a whole sentence is quoted) or the dot is in the wrong place
+        unit = TranslationUnit(
+            "Test/1", "de", "Because <i>hurt people</i>.", "Denn „verletzte Menschen.“"
+        )
+        result = self.corrector.correct(unit)
+        self.assertEqual(
+            result.suggestions.get_translation(), "Denn „verletzte Menschen.“"
+        )
+        self.assertIn("inside a quotation or bracket", result.warnings)
+
+        self.assertEqual(
+            correct(
+                self.corrector,
+                "Ein ganzer Satz (oder zwei)",
+                "A full sentence (or two).",
+            ),
+            "Ein ganzer Satz (oder zwei).",
+        )
 
     def test_mediawiki_bold_italic(self):
         self.assertEqual(
